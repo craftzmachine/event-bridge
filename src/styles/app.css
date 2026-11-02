@@ -540,3 +540,60 @@ h1 em, h2 em { font-family: var(--script); font-style: normal; font-weight: 400;
   .basket-inner { max-height: 55vh; }
 }
 
+/* ---------- login ---------- */
+.login { min-height: 100vh; min-height: 100dvh; display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); background: var(--paper); }
+.login-art { position: relative; display: grid; place-items: center; background: var(--espresso); overflow: hidden; }
+.login-art-img { position: absolute; inset: 0; }
+.login-art::after { content: ""; position: absolute; inset: 0; background: radial-gradient(ellipse at center, rgba(36, 29, 24, 0.66), rgba(36, 29, 24, 0.93)); }
+.login-art-text { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; text-align: center; padding: 48px; }
+.login-logo { width: min(320px, 70%); height: auto; filter: drop-shadow(0 2px 14px rgba(0, 0, 0, 0.35)); }
+.login-art .ornament { margin: 26px auto 18px; }
+.login-art .eyebrow { color: var(--gold-light); }
+.login-art-line { margin: 8px 0 0; font-family: var(--serif); font-size: 24px; color: rgba(251, 246, 236, 0.85); }
+
+.login-main { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 48px var(--gutter) 24px; }
+.login-card { width: 100%; max-width: 400px; display: flex; flex-direction: column; gap: 18px; }
+.login-card h1 { font-size: 40px; margin: -6px 0 0; }
+.login-sub { margin: -8px 0 6px; color: var(--ink-2); }
+.login-logo-sm { display: none; }
+.field > label { font-size: 12px; font-weight: 500; color: var(--ink-2); letter-spacing: 0.02em; }
+.field input[aria-invalid="true"] { border-color: var(--danger); }
+.pw-wrap { position: relative; }
+.pw-wrap input { padding-right: 92px; }
+.pw-toggle {
+  position: absolute; top: 4px; right: 4px; bottom: 4px; display: inline-flex; align-items: center; gap: 6px;
+  padding: 0 12px; border: 0; border-radius: 4px; background: transparent; color: var(--gold-text); font-size: 13px; font-weight: 500;
+}
+.pw-toggle:hover { background: var(--paper-2); }
+.login-submit { min-height: 50px; font-size: 15.5px; margin-top: 4px; }
+.login-error { display: flex; gap: 12px; align-items: flex-start; padding: 12px 14px; border-radius: var(--r-sm); background: #fbeeec; border: 1px solid #ecc9c3; color: #7d3127; animation: fade 0.2s ease both; }
+.login-error span { flex: none; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; background: var(--danger); color: #fff; font-weight: 600; font-size: 13px; }
+.login-error p { margin: 0; font-size: 14px; line-height: 1.45; }
+.login-help { margin: 4px 0 0; font-size: 13px; color: var(--stone); line-height: 1.5; }
+.login-help a { color: var(--gold-text); }
+.login-foot { margin: 40px 0 0; font-size: 12px; color: var(--stone); }
+
+@media (max-width: 900px) {
+  .login { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
+  .login-art { min-height: 0; }
+  .login-art-text { padding: 36px var(--gutter) 30px; }
+  .login-logo { width: min(210px, 56vw); }
+  .login-art .ornament { margin: 18px auto 0; }
+  .login-art .eyebrow, .login-art-line { display: none; }
+  .login-main { justify-content: flex-start; padding-top: 32px; }
+  .login-card h1 { font-size: 34px; }
+}
+@media (max-height: 560px) and (max-width: 900px) {
+  .login-art { display: none; }
+  .login-logo-sm { display: block; width: 120px; margin-bottom: 4px; }
+}
+
+.home-account { position: absolute; top: 14px; right: var(--gutter); z-index: 2; display: flex; align-items: center; gap: 12px; color: rgba(251, 246, 236, 0.75); font-size: 13px; max-width: calc(100% - 2 * var(--gutter)); }
+.home-account-email { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.btn-outline-light { min-height: 36px; padding: 0 14px; border-radius: 999px; border: 1px solid rgba(216, 195, 154, 0.6); background: rgba(36, 29, 24, 0.35); color: var(--gold-light); font-size: 13px; flex: none; }
+.btn-outline-light:hover { background: rgba(216, 195, 154, 0.15); border-color: var(--gold-light); }
+@media (max-width: 760px) {
+  .home-account { top: 10px; font-size: 12px; }
+  .home-hero-text { padding-top: 64px; }
+}
+

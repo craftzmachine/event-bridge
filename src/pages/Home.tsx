@@ -10,7 +10,19 @@ import Ornament from "../components/Ornament";
 
 type Store = ReturnType<typeof useProposals>;
 
-export default function Home({ store, onOpen, onNew }: { store: Store; onOpen: (id: string) => void; onNew: () => void }) {
+export default function Home({
+  store,
+  account,
+  onSignOut,
+  onOpen,
+  onNew,
+}: {
+  store: Store;
+  account: string;
+  onSignOut: () => void;
+  onOpen: (id: string) => void;
+  onNew: () => void;
+}) {
   const { catalog, brand } = useConfig();
   const fileRef = useRef<HTMLInputElement>(null);
   const [msg, setMsg] = useState("");
@@ -39,6 +51,10 @@ export default function Home({ store, onOpen, onNew }: { store: Store; onOpen: (
     <div className="home">
       <header className="home-hero">
         <Img src={hero} alt="" className="home-hero-img" />
+        <div className="home-account">
+          <span className="home-account-email" title={account}>{account}</span>
+          <button className="btn-outline-light btn-sm" onClick={onSignOut}>Sign out</button>
+        </div>
         <div className="home-hero-text">
           <img className="brand-logo" src={`${import.meta.env.BASE_URL}${brand.logo}`} alt={`${brand.company} — ${brand.tagline}`} />
           <p className="eyebrow">Proposal studio</p>

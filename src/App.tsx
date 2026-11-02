@@ -4,11 +4,19 @@ import { ConfigContext } from "./config/context";
 import { newProposal, useProposals } from "./state/proposals";
 import Home from "./pages/Home";
 import Builder from "./pages/Builder";
+import Login from "./pages/Login";
+import { endSession, readSession, startSession, type Session } from "./auth/auth";
 
 export default function App() {
   const [config, setConfig] = useState<Loaded | null>(null);
   const [openId, setOpenId] = useState<string | null>(null);
+  const [session, setSession] = useState<Session | null>(readSession);
   const store = useProposals();
+  const signOut = () => {
+    endSession();
+    setOpenId(null);
+    setSession(null);
+  };
 
   useEffect(() => {
     loadConfig().then(setConfig);
@@ -32,11 +40,15 @@ export default function App() {
   const open = store.list.find((p) => p.id === openId);
   return (
     <ConfigContext.Provider value={config}>
-      {open ? (
+      {!session ? (
+        <Login onSignedIn={(email) => setSession(startSession(email))} />
+      ) : open ? (
         <Builder key={open.id} proposal={open} onChange={store.save} onClose={() => setOpenId(null)} />
       ) : (
         <Home
           store={store}
+          account={session.email}
+          onSignOut={signOut}
           onOpen={setOpenId}
           onNew={() => {
             const p = newProposal(config.brand);
