@@ -1,19 +1,44 @@
 # Proposal Builder — Parinay Weddings
 
-A browser app for the sales team to build tailored event proposals and export them as a branded Excel file.
+A browser app for the Parinay Weddings (Events IQ) sales team to build tailored event proposals and export them as a branded Excel file.
 
-**Flow:** client & event → occasion (event type × ceremony style) → curate elements (qty, rate, notes, upgrades, additional options) → review → **Export to Excel**.
+## What it does
+
+1. **Sign in** with an authorised team account.
+2. **Client & event**: client name, event date, contact, venue, location, quotation reference.
+3. **Occasion**: any event type (Wedding, Engagement, Reception) with any ceremony style (Hindu, Christian, Muslim).
+4. **Elements**: browse the catalogue, filtered to the chosen occasion (or show everything), search, and filter by category. For each selected element, set qty, rate (or *as per actuals*), notes for the client, optional upgrades, and whether it is an *additional option*. You can also reorder elements or add a custom one-off line.
+5. **Review**: a branded preview of the proposal as the client will see it. Adjust co-ordination %, round off the Grand Total (one-click suggestions) and edit notes and terms.
+6. **Export to Excel**.
+
+Drafts save automatically in the browser on each device. Use **Save file** / **Back up all** on the home page to move proposals between devices, and **Import** to load them. Clearing the browser's site data deletes that device's drafts, so back up regularly.
+
+It works on phones, tablets and laptops. On smaller screens the selection becomes a bottom drawer.
 
 ## Run
+
+Requires Node 18+.
 
 ```bash
 npm install
 npm run dev        # http://localhost:5173
-npm test           # totals, config validation, Excel export
-npm run build      # static site in dist/ — host anywhere
+npm test           # totals, config validation, sign-in, Excel export
+npm run build      # static site in dist/
 ```
 
-Drafts are saved automatically in the browser on each device. Use **Save file** / **Back up all** on the home page to move proposals between devices, and **Import** to load them.
+## Deploy
+
+`npm run build` produces a static site in `dist/` with relative paths. Upload it to any static host (Netlify, Vercel, Cloudflare Pages, GitHub Pages, an internal web server). There is no server or database. Config files in `dist/config/` can be edited on the host afterwards.
+
+## How totals work
+
+- **Sub Total**: included elements (qty × rate) plus upgrades marked *Include*.
+- **Event Co-ordination Charges**: Sub Total × co-ordination % (default from `brand.json`).
+- **Rounded Off**: the difference when a round Grand Total is quoted.
+- **Grand Total**: shown before GST. GST and the total including GST are reference figures.
+- *As per actuals* elements, *additional options* and upgrades marked *Offer* are listed separately and **never** added to the Grand Total.
+
+Amounts use Indian digit grouping (₹ 4,41,303.50).
 
 ## Sign-in
 
@@ -68,9 +93,13 @@ An element:
 
 Company name, logo (`images/parinay-logo-gold.png`, a transparent gold PNG used in the app and embedded in the Excel file), address, GSTIN, point of contact, default co-ordination %, GST %, colours used in the Excel file, and the standard terms.
 
+### Logo and look
+
+The gold crest at `public/images/parinay-logo-gold.png` appears on the sign-in page, home page, top bar, proposal preview and the Excel file. To replace it, swap the file, or point `logo` in `brand.json` at a new transparent PNG. The site's palette and fonts (antique gold on ivory and espresso; Cinzel, Cormorant Garamond, Pinyon Script) are defined in `src/styles/tokens.css`.
+
 ### Images
 
-The sample photos are hot-linked from Unsplash. To use your own, drop files into `public/images/` and set e.g. `"image": "images/hindu-wedding.jpg"`. A soft neutral background is shown if an image is missing.
+The sample photos are hot-linked from Unsplash, so they need an internet connection. To use your own, drop files into `public/images/` and set e.g. `"image": "images/hindu-wedding.jpg"`. A soft neutral background is shown if an image is missing.
 
 ## Excel output
 
@@ -79,3 +108,20 @@ The sample photos are hot-linked from Unsplash. To use your own, drop files into
 - **Proposal**: event details, items by section, live formulas for Amount, Sub Total, co-ordination (% in its own cell), Rounded Off (yellow input), Grand Total, plus GST and total-incl.-GST reference rows. Set up for A4, fit to width.
 - **Additional Options**: optional items and offered upgrades with their total (never part of the Grand Total).
 - **Terms**: terms & conditions and point of contact.
+
+The workbook stores calculated values alongside the formulas, so totals display correctly even before Excel recalculates.
+
+## Project layout
+
+| Path | What's there |
+|---|---|
+| `public/config/` | `catalog.json` and `brand.json`: offerings and branding, editable without a rebuild |
+| `public/images/` | logo, favicon, your own photos |
+| `src/pages/` | `Login`, `Home` (saved proposals), `Builder` (the four-step wizard) |
+| `src/components/` | preview, element cards, line editor, totals panel and other UI pieces |
+| `src/lib/` | totals, ₹ formatting, Excel export |
+| `src/auth/` | allow-listed accounts and the 12-hour session |
+| `src/config/` | loading and validating the JSON config |
+| `src/styles/` | design tokens and all styles |
+
+Built with Vite, React 18, TypeScript, ExcelJS and Vitest. Guidance for AI coding assistants is in `CLAUDE.md`.

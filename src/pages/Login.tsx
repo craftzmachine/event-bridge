@@ -126,7 +126,7 @@ export default function Login({ onSignedIn }: { onSignedIn: (email: string) => v
           </button>
 
           <p className="login-help">
-            Access is limited to authorised team members. Need help? Contact {brand.contact.name} at{" "}
+            {/* Access is limited to authorised team members. Need help? Contact {brand.contact.name} at{" "} */}
             <a href={`mailto:${brand.contact.email}`}>{brand.contact.email}</a>.
           </p>
         </form>
