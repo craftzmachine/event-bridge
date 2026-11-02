@@ -27,8 +27,8 @@ export default function ElementCard({
           {!fits && <span className="pill pill-muted">other occasion</span>}
         </p>
       </div>
-      <button className={count ? "btn-ghost btn-sm" : "btn-add"} onClick={onAdd} aria-label={`Add ${element.name}`}>
-        {count ? `✓ Added${count > 1 ? ` ×${count}` : ""} · +1` : "+ Add"}
+      <button className={count ? "btn-added" : "btn-add"} onClick={onAdd} aria-label={`Add ${element.name}`} title={count ? "Add another" : undefined}>
+        {count ? `✓ Added${count > 1 ? ` ×${count}` : ""}` : "+ Add"}
       </button>
     </article>
   );

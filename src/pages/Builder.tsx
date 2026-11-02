@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { Line, Proposal } from "../types";
 import { elementFits, useConfig } from "../config/context";
 import { customLine, lineFromElement } from "../state/proposals";
@@ -27,6 +27,15 @@ export default function Builder({ proposal: p, onChange, onClose }: { proposal: 
   };
   const setClient = (patch: Partial<Proposal["client"]>) => set((cur) => ({ client: { ...cur.client, ...patch } }));
   const t = computeTotals(p, brand.gstPct);
+  // the mobile selection drawer sits on top of the step bar, whatever height it wraps to
+  const navRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const el = navRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => document.documentElement.style.setProperty("--nav-h", `${el.offsetHeight}px`));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
   const canReach = (i: number) => i <= 1 || occasionChosen;
   const go = (i: number) => {
     setStep(i);
@@ -36,7 +45,9 @@ export default function Builder({ proposal: p, onChange, onClose }: { proposal: 
   return (
     <div className="builder">
       <header className="topbar">
-        <button className="btn-ghost btn-sm" onClick={onClose}>← All proposals</button>
+        <button className="btn-ghost btn-sm" onClick={onClose} aria-label="All proposals">
+          ←<span className="hide-phone"> All proposals</span>
+        </button>
         <div className="topbar-title">
           <span className="eyebrow">{occasionChosen ? proposalTitle(p, catalog) : "New proposal"}</span>
           <strong>{p.client.name || "Untitled client"}</strong>
@@ -48,21 +59,21 @@ export default function Builder({ proposal: p, onChange, onClose }: { proposal: 
       </header>
       <StepRail step={step} onStep={go} canReach={canReach} />
 
-      <main className="stage">
+      <main className="stage" key={step}>
         {step === 0 && <ClientStep p={p} setClient={setClient} set={set} />}
         {step === 1 && <OccasionStep p={p} set={set} />}
         {step === 2 && <ElementsStep p={p} set={set} />}
         {step === 3 && <ReviewStep p={p} set={set} />}
       </main>
 
-      <footer className="stepnav">
+      <footer className="stepnav" ref={navRef}>
         <button className="btn-ghost" disabled={step === 0} onClick={() => go(step - 1)}>Back</button>
         <span className="stepnav-hint">
           {step === 1 && !occasionChosen ? "Choose an event type and a ceremony style to continue." : `Step ${step + 1} of ${STEPS.length} · saved automatically`}
         </span>
         {step < STEPS.length - 1 ? (
           <button className="btn-primary" disabled={!canReach(step + 1)} onClick={() => go(step + 1)}>
-            Continue to {STEPS[step + 1].toLowerCase()}
+            Continue<span className="hide-phone"> to {STEPS[step + 1].toLowerCase()}</span>
           </button>
         ) : (
           <ExportButton p={p} />
@@ -209,6 +220,7 @@ function ElementsStep({ p, set }: StepProps) {
         </button>
       </div>
 
+      {sheet && <div className="sheet-backdrop" onClick={() => setSheet(false)} aria-hidden />}
       <aside className={`basket ${sheet ? "is-open" : ""}`} aria-label="Selected elements">
         <button className="basket-handle" onClick={() => setSheet(!sheet)} aria-expanded={sheet}>
           <span>{p.lines.length} selected</span>
@@ -265,7 +277,7 @@ function ReviewStep({ p, set }: StepProps) {
           <h3>Notes on the proposal</h3>
           <textarea rows={3} value={p.notes} placeholder="Anything the client should know" onChange={(e) => set({ notes: e.target.value })} />
         </div>
-        <div className="side-card">
+        <div className="side-card side-terms">
           <h3>Terms &amp; conditions</h3>
           <ol className="terms-edit">
             {p.terms.map((term, i) => (
