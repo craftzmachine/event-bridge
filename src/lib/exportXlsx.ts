@@ -1,8 +1,11 @@
 import ExcelJS from "exceljs";
 import type { Brand, Catalog, Line, Proposal } from "../types";
 import { computeTotals } from "./totals";
-import { formatDate } from "./format";
-import { exportFileName, groupLines, proposalTitle } from "./proposal";
+import { formatDate, todayISO } from "./format";
+import { exportFileName, groupLines, proposalTitle, venueLine } from "./proposal";
+import { logoToPng, saveBlob } from "./files";
+
+export { logoToPng };
 
 // Indian grouping (₹ 4,41,303.50) for amounts up to crores
 export const INR_FMT =
@@ -72,9 +75,9 @@ export function buildWorkbook(p: Proposal, catalog: Catalog, brand: Brand, logoP
     ["Contact", p.client.contact || "To Be Confirmed"],
     ["Event", title],
     ["Event date", formatDate(p.client.date)],
-    ["Venue", [p.client.venue, p.client.location].filter(Boolean).join(", ") || "To Be Confirmed"],
+    ["Venue", venueLine(p) || "To Be Confirmed"],
     ["Quotation ref", p.ref || "To Be Assigned"],
-    ["Dated", formatDate(new Date().toISOString().slice(0, 10))],
+    ["Dated", formatDate(todayISO())],
   ];
   let r = 5;
   for (const [k, v] of info) {
@@ -315,32 +318,9 @@ function styleItemRow(row: ExcelJS.Row, thin: Partial<ExcelJS.Border>, c: Brand[
   row.height = Math.max(18, Math.ceil(Math.max(name.length / 50, notes.length / 32)) * 14);
 }
 
-/** Rasterises an SVG/PNG URL to base64 PNG so it can be embedded in the workbook (browser only). */
-export async function logoToPng(url: string, width = 600, height = 408): Promise<string | undefined> {
-  try {
-    const img = new Image();
-    img.src = url;
-    await img.decode();
-    const canvas = document.createElement("canvas");
-    canvas.width = width;
-    canvas.height = height;
-    const ctx = canvas.getContext("2d")!;
-    const scale = Math.min(width / img.width, height / img.height);
-    ctx.drawImage(img, (width - img.width * scale) / 2, (height - img.height * scale) / 2, img.width * scale, img.height * scale);
-    return canvas.toDataURL("image/png").split(",")[1];
-  } catch {
-    return undefined;
-  }
-}
-
 export async function downloadXlsx(p: Proposal, catalog: Catalog, brand: Brand) {
   const logo = await logoToPng(`${import.meta.env.BASE_URL}${brand.logo}`);
   const wb = buildWorkbook(p, catalog, brand, logo);
   const buf = await wb.xlsx.writeBuffer();
-  const blob = new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = exportFileName(p, catalog);
-  a.click();
-  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  saveBlob(new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }), exportFileName(p, catalog));
 }

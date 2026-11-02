@@ -17,6 +17,12 @@ export function formatINRShort(n: number, symbol = "₹"): string {
   return `${symbol}${groupINR(Math.round(n), 0)}`;
 }
 
+/** Today as YYYY-MM-DD in the user's own time zone (toISOString() would give the UTC date). */
+export function todayISO(d = new Date()): string {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
 export function formatDate(iso: string): string {
   if (!iso) return "Date to be confirmed";
   const d = new Date(`${iso}T00:00:00`);

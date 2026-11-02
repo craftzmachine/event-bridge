@@ -3,7 +3,7 @@ import type { Proposal } from "../types";
 import { useConfig } from "../config/context";
 import { downloadJson, isProposal, type useProposals } from "../state/proposals";
 import { computeTotals } from "../lib/totals";
-import { formatDate, formatINRShort, safeFilePart } from "../lib/format";
+import { formatDate, formatINRShort, safeFilePart, todayISO } from "../lib/format";
 import { proposalTitle } from "../lib/proposal";
 import Img from "../components/Img";
 import Ornament from "../components/Ornament";
@@ -78,7 +78,7 @@ export default function Home({
           <div className="home-actions">
             <button className="btn-ghost" onClick={() => fileRef.current?.click()}>Import</button>
             <button className="btn-ghost" disabled={!store.list.length}
-              onClick={() => downloadJson(`Proposals_backup_${new Date().toISOString().slice(0, 10)}.json`, store.list)}>
+              onClick={() => downloadJson(`Proposals_backup_${todayISO()}.json`, store.list)}>
               Back up all
             </button>
             <input ref={fileRef} type="file" accept="application/json,.json" multiple hidden onChange={(e) => onImport(e.target.files)} />

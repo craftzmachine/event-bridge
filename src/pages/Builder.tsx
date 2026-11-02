@@ -315,27 +315,64 @@ function ReviewStep({ p, set }: StepProps) {
   );
 }
 
+/** Split button: "Export to Excel", with a ▾ menu for the PDF. Both libraries load only when used. */
 function ExportButton({ p, wide = false }: { p: Proposal; wide?: boolean }) {
   const { catalog, brand } = useConfig();
-  const [busy, setBusy] = useState(false);
+  const [busy, setBusy] = useState<"" | "xlsx" | "pdf">("");
   const [err, setErr] = useState("");
+  const [menu, setMenu] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!menu) return;
+    const close = (e: MouseEvent | KeyboardEvent) => {
+      if (e instanceof KeyboardEvent ? e.key === "Escape" : !ref.current?.contains(e.target as Node)) setMenu(false);
+    };
+    document.addEventListener("mousedown", close);
+    document.addEventListener("keydown", close);
+    return () => {
+      document.removeEventListener("mousedown", close);
+      document.removeEventListener("keydown", close);
+    };
+  }, [menu]);
+
+  const run = async (kind: "xlsx" | "pdf") => {
+    setMenu(false);
+    setBusy(kind);
+    setErr("");
+    try {
+      if (kind === "xlsx") await (await import("../lib/exportXlsx")).downloadXlsx(p, catalog, brand);
+      else await (await import("../lib/exportPdf")).downloadPdf(p, catalog, brand);
+    } catch (e) {
+      setErr(`Export failed: ${(e as Error).message}`);
+    } finally {
+      setBusy("");
+    }
+  };
+  const disabled = !!busy || !p.lines.length;
+
   return (
-    <div className={wide ? "export export-wide" : "export"}>
-      <button className="btn-primary" disabled={busy || !p.lines.length}
-        onClick={async () => {
-          setBusy(true);
-          setErr("");
-          try {
-            const { downloadXlsx } = await import("../lib/exportXlsx");
-            await downloadXlsx(p, catalog, brand);
-          } catch (e) {
-            setErr(`Export failed: ${(e as Error).message}`);
-          } finally {
-            setBusy(false);
-          }
-        }}>
-        {busy ? "Preparing…" : "Export to Excel"}
-      </button>
+    <div className={`export ${wide ? "export-wide" : "export-up"}`} ref={ref}>
+      <div className="split">
+        <button className="btn-primary split-main" disabled={disabled} onClick={() => run("xlsx")}>
+          {busy === "xlsx" ? "Preparing…" : busy === "pdf" ? "Preparing PDF…" : "Export to Excel"}
+        </button>
+        <button className="btn-primary split-toggle" disabled={disabled} aria-haspopup="menu" aria-expanded={menu} aria-label="More export options" onClick={() => setMenu((m) => !m)}>
+          <span aria-hidden>▾</span>
+        </button>
+      </div>
+      {menu && (
+        <div className="export-menu" role="menu">
+          <button role="menuitem" onClick={() => run("xlsx")}>
+            <span className="export-ic" aria-hidden>XLS</span>
+            <span>Excel workbook<small>Editable, with live formulas</small></span>
+          </button>
+          <button role="menuitem" onClick={() => run("pdf")}>
+            <span className="export-ic export-ic-pdf" aria-hidden>PDF</span>
+            <span>PDF document<small>Ready to send to the client</small></span>
+          </button>
+        </div>
+      )}
       {err && <p className="error" role="alert">{err}</p>}
     </div>
   );

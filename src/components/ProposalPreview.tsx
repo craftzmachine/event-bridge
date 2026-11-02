@@ -1,7 +1,7 @@
 import type { Line, Proposal } from "../types";
 import { useConfig } from "../config/context";
 import { computeTotals, lineAmount } from "../lib/totals";
-import { formatDate, formatINR } from "../lib/format";
+import { formatDate, formatINR, todayISO } from "../lib/format";
 import { groupLines, proposalTitle } from "../lib/proposal";
 import Img from "./Img";
 import TotalsPanel from "./TotalsPanel";
@@ -56,7 +56,7 @@ export default function ProposalPreview({ p }: { p: Proposal }) {
         <div><span>Event date</span><strong>{formatDate(p.client.date)}</strong></div>
         <div><span>Venue</span><strong>{p.client.venue || "To Be Confirmed"}</strong><small>{p.client.location}</small></div>
       </section>
-      <p className="pv-ref">Quotation ref: {p.ref || "To Be Assigned"} · Dated {formatDate(new Date().toISOString().slice(0, 10))}</p>
+      <p className="pv-ref">Quotation ref: {p.ref || "To Be Assigned"} · Dated {formatDate(todayISO())}</p>
 
       <p className="eyebrow">Scope of work</p>
       <h3 className="pv-h">Elements &amp; Investment</h3>

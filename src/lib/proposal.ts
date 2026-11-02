@@ -12,10 +12,17 @@ export function proposalTitle(p: Proposal, catalog: Catalog): string {
   return `${style} ${type}`.trim();
 }
 
-export function exportFileName(p: Proposal, catalog: Catalog): string {
+export function exportFileName(p: Proposal, catalog: Catalog, ext: "xlsx" | "pdf" = "xlsx"): string {
   const { style, type } = labels(p, catalog);
   const parts = ["Proposal", safeFilePart(p.client.name), style && safeFilePart(style), safeFilePart(type), p.client.date || "TBC"];
-  return parts.filter(Boolean).join("_") + ".xlsx";
+  return `${parts.filter(Boolean).join("_")}.${ext}`;
+}
+
+/** "Venue, Location" — without repeating the location when the venue name already ends with it. */
+export function venueLine(p: Proposal): string {
+  const { venue, location } = p.client;
+  if (venue && location && venue.toLowerCase().includes(location.toLowerCase())) return venue;
+  return [venue, location].filter(Boolean).join(", ");
 }
 
 /** Lines grouped by catalogue category order; categories with no lines are left out. */

@@ -113,6 +113,10 @@ The gold crest at `public/images/parinay-logo-gold.png` appears on the sign-in p
 
 The sample photos are hot-linked from Unsplash, so they need an internet connection. To use your own, drop files into `public/images/` and set e.g. `"image": "images/hindu-wedding.jpg"`. A soft neutral background is shown if an image is missing.
 
+## PDF output
+
+The ▾ next to **Export to Excel** opens a menu with **PDF document**, which downloads `Proposal_<Client>_<Style>_<Event>_<Date>.pdf`. This is an A4, client-ready PDF with the crest, event details, items by section, totals, additional options, terms and point of contact. It's generated in the browser with pdfmake, using its bundled Roboto font, which includes the ₹ sign.
+
 ## Excel output
 
 `Proposal_<Client>_<Style>_<Event>_<Date>.xlsx` with three tabs:

@@ -607,6 +607,26 @@ h1 em, h2 em { font-family: var(--script); font-style: normal; font-weight: 400;
 .tab-count { margin-left: 4px; font-size: 11.5px; opacity: 0.7; }
 .home-account .appearance { margin-right: 4px; }
 
+/* ---------- export split button ---------- */
+.export { position: relative; }
+.split { display: flex; }
+.split .split-main { border-top-right-radius: 0; border-bottom-right-radius: 0; flex: 1; }
+.split .split-toggle { width: auto; flex: none; border-top-left-radius: 0; border-bottom-left-radius: 0; padding: 0 14px; border-left: 1px solid color-mix(in srgb, var(--on-primary) 25%, transparent); }
+.export-wide .split .btn-primary { min-height: 52px; font-size: 16px; }
+.export-wide .split .split-main { width: auto; }
+.export-menu {
+  position: absolute; right: 0; top: calc(100% + 8px); z-index: 40; min-width: 260px; padding: 6px;
+  background: var(--card); color: var(--ink); border: 1px solid var(--line); border-radius: var(--r); box-shadow: var(--shadow-lift);
+  animation: fade 0.15s ease both;
+}
+.export-up .export-menu { top: auto; bottom: calc(100% + 8px); }
+.export-wide .export-menu { left: 0; }
+.export-menu button { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 52px; padding: 6px 10px; border: 0; border-radius: var(--r-sm); background: none; color: inherit; text-align: left; font-size: 14px; }
+.export-menu button:hover, .export-menu button:focus-visible { background: var(--paper-2); }
+.export-menu small { display: block; font-size: 12px; color: var(--stone); }
+.export-ic { flex: none; width: 38px; height: 38px; border-radius: 8px; display: grid; place-items: center; font: 600 10px/1 var(--sans); letter-spacing: 0.04em; background: #1f7a4d; color: #fff; }
+.export-ic-pdf { background: #b3261e; }
+
 /* ---------- theme + font controls ---------- */
 .appearance { position: relative; display: flex; gap: 6px; }
 .ap-btn {
