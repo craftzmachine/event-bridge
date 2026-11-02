@@ -1,4 +1,4 @@
-import type { Brand, Catalog } from "../types";
+import type { Brand, Catalog, VenueDirectory } from "../types";
 
 /** Returns readable problems with an edited catalog.json; empty when it is fine. */
 export function validateCatalog(c: unknown): string[] {
@@ -47,6 +47,28 @@ export function validateCatalog(c: unknown): string[] {
       if (!u.id || !u.name || typeof u.price !== "number")
         errs.push(`${at} has an upgrade without id, name or numeric price.`);
     });
+  });
+  return errs;
+}
+
+export function validateVenues(v: unknown): string[] {
+  const dir = v as VenueDirectory;
+  if (!dir || typeof dir !== "object") return ["venues.json is not a JSON object."];
+  if (!Array.isArray(dir.venueTypes)) return [`venues.json is missing the "venueTypes" list.`];
+  if (!Array.isArray(dir.venues)) return [`venues.json is missing the "venues" list.`];
+  const errs: string[] = [];
+  const types = new Set(dir.venueTypes.map((t) => t?.id));
+  const ids = new Set<string>();
+  dir.venues.forEach((x, i) => {
+    const at = x?.id ? `Venue "${x.id}"` : `Venue #${i + 1}`;
+    if (!x?.id) errs.push(`${at} has no "id".`);
+    else if (ids.has(x.id)) errs.push(`Venue id "${x.id}" is used twice.`);
+    else ids.add(x.id);
+    if (!x?.name) errs.push(`${at} has no "name".`);
+    if (!x?.area) errs.push(`${at} has no "area".`);
+    if (!types.has(x?.type)) errs.push(`${at} has unknown type "${x?.type}".`);
+    if (x?.stars !== undefined && (typeof x.stars !== "number" || x.stars < 1 || x.stars > 5)) errs.push(`${at} "stars" must be 1–5.`);
+    if (!Array.isArray(x?.spaces)) errs.push(`${at} needs a "spaces" list (can be empty).`);
   });
   return errs;
 }

@@ -1,7 +1,7 @@
-import type { Brand, Catalog } from "../types";
-import { validateBrand, validateCatalog } from "./validate";
+import type { Brand, Catalog, VenueDirectory } from "../types";
+import { validateBrand, validateCatalog, validateVenues } from "./validate";
 
-export type Loaded = { catalog: Catalog; brand: Brand } | { errors: string[] };
+export type Loaded = { catalog: Catalog; brand: Brand; venues: VenueDirectory } | { errors: string[] };
 
 async function getJson(path: string): Promise<unknown> {
   // no-store so an edited config shows up on the next reload, no rebuild needed
@@ -16,10 +16,14 @@ async function getJson(path: string): Promise<unknown> {
 
 export async function loadConfig(): Promise<Loaded> {
   try {
-    const [catalog, brand] = await Promise.all([getJson("config/catalog.json"), getJson("config/brand.json")]);
-    const errors = [...validateCatalog(catalog), ...validateBrand(brand)];
+    const [catalog, brand, venues] = await Promise.all([
+      getJson("config/catalog.json"),
+      getJson("config/brand.json"),
+      getJson("config/venues.json"),
+    ]);
+    const errors = [...validateCatalog(catalog), ...validateBrand(brand), ...validateVenues(venues)];
     if (errors.length) return { errors };
-    return { catalog: catalog as Catalog, brand: brand as Brand };
+    return { catalog: catalog as Catalog, brand: brand as Brand, venues: venues as VenueDirectory };
   } catch (e) {
     return { errors: [(e as Error).message] };
   }

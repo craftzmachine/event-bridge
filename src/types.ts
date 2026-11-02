@@ -57,6 +57,38 @@ export interface Brand {
   terms: string[];
 }
 
+export interface VenueSpace {
+  name: string;
+  size?: string;
+  capacity?: number;
+  note?: string;
+}
+
+export interface Venue {
+  id: string;
+  name: string;
+  aka?: string;
+  type: string;
+  area: string;
+  city: string;
+  address?: string;
+  stars?: number;
+  phone?: string;
+  website?: string;
+  photo?: string;
+  photoIsRepresentative?: boolean;
+  spaces: VenueSpace[];
+  features?: string[];
+  verification?: string;
+  sources?: string[];
+}
+
+export interface VenueDirectory {
+  note?: string;
+  venueTypes: { id: string; label: string }[];
+  venues: Venue[];
+}
+
 /** off = not shown, offer = listed as an optional upgrade, include = added to the price */
 export type UpgradeMode = "off" | "offer" | "include";
 

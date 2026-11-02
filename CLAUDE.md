@@ -21,13 +21,17 @@ There is no linter configured. The shell is Windows PowerShell 5.1 (no `&&`); Gi
 
 ## Architecture
 
-**Config is data, loaded at runtime — not imported.** `public/config/catalog.json` (event types, ceremony styles, categories, elements) and `public/config/brand.json` (company, logo path, contact, GSTIN, coordination %, GST %, Excel colours, default terms) are fetched with `cache: "no-store"` by `src/config/load.ts`, validated by `src/config/validate.ts`, and exposed through `ConfigContext` (`useConfig()`). Editing them changes offerings without a rebuild. Any change to their shape must be reflected in `src/types.ts` *and* `validate.ts` (which produces the human-readable error list shown instead of the app). Tests read these same JSON files from disk.
+**Config is data, loaded at runtime — not imported.** `public/config/catalog.json` (event types, ceremony styles, categories, elements), `public/config/brand.json` (company, logo path, contact, GSTIN, coordination %, GST %, Excel colours, default terms) and `public/config/venues.json` (TVM venue directory; search/filter logic in `src/lib/venues.ts`) are fetched with `cache: "no-store"` by `src/config/load.ts`, validated by `src/config/validate.ts`, and exposed through `ConfigContext` (`useConfig()`). Editing them changes offerings without a rebuild. Any change to their shape must be reflected in `src/types.ts` *and* `validate.ts` (which produces the human-readable error list shown instead of the app). Tests read these same JSON files from disk.
 
 **Element relevance** is tag-based: each element has `eventTypes` / `ceremonyStyles` arrays, `["*"]` meaning all; `elementFits()` in `src/config/context.ts` decides what the Elements step shows. `defaultPrice: null` means "as per actuals".
 
-**Navigation is component state.** `App.tsx` switches between `Login` → `Home` → `Builder` based on the session and an `openId`. `Builder` is a 4-step wizard (client, occasion, elements, review); steps are inner components of `src/pages/Builder.tsx`.
+**Venue facts must stay sourced.** Each venue carries `verification` and `sources`; photos are stock unless `photoIsRepresentative` is false. Don't add or change names, star ratings or capacities without a source.
+
+**Navigation is component state.** `App.tsx` switches between `Login` → `Home` / `Venues` → `Builder` based on the session, a `view` and an `openId`. `Builder` is a 4-step wizard (client, occasion, elements, review); steps are inner components of `src/pages/Builder.tsx`.
 
 **Persistence** (`src/state/proposals.ts`): all proposals live in `localStorage` under `proposal-builder.proposals.v1`, written on every change via `useProposals()`. JSON export/import is the only way to move them between devices. Changing the `Proposal` shape needs migration-tolerant reads, since old drafts persist.
+
+**Quotation references** (`src/lib/quoteRef.ts`) are `YYYYDDMM-ABC` (year, *day*, *month*, 3 random capitals) and must be unique per device. `newProposal(brand, takenRefs)` and `duplicate` generate them; `ensureUniqueRefs` runs on load and import to backfill empty refs (dated from `createdAt`) and replace collisions. The ref is read-only in the UI.
 
 **Builder updates must be functional.** `Builder`'s `set` accepts a patch *or* `(cur) => patch` and builds on a `latest` ref; line edits go through `setLines(fn)`. Reading `p.lines` from the render closure and writing back loses rapid successive edits (this bug occurred once).
 
@@ -47,7 +51,10 @@ If you change totals logic, update the preview (`ProposalPreview`, `TotalsPanel`
 
 - **Files:** `src/styles/tokens.css` holds the palette and fonts, taken from the gold crest (`--gold` #B79A68 for rules and fills, `--gold-text` for small text on ivory, `--espresso` for dark surfaces; Cinzel for caps labels, Cormorant for headings, Pinyon Script for accents). `src/styles/app.css` holds everything else, ordered: base → components → brand theme block → motion → breakpoints (≥1600, ≤1180, ≤1023 tablet, ≤760 phone, short landscape) → login.
 - **Cascade:** the breakpoint rules intentionally come after the brand block, so put new base styles above the breakpoints.
+- **Themes and fonts:** `src/state/appearance.ts` sets `data-theme` (`parinay` default, `solarized-light`, `solarized-dark`, `nord`, `dark`, `white`) and `data-font` (`classic`, `sans`, `mono`) on `<html>`. It is applied in `main.tsx` before first paint and shared through `AppearanceContext`. Every theme redefines the same tokens in `tokens.css`, so **never hard-code colours** in `app.css`; use the tokens, or `color-mix(in srgb, var(--token) N%, transparent)` for alpha. `--espresso`/`--on-espresso` are the dark hero surfaces (dark in every theme). `--primary`/`--on-primary` are for main buttons, the active tab and step (gold on dark themes). Sans and Mono remap `--serif`/`--caps`/`--script`, so the script and caps accents need the font-mode overrides near the end of `app.css`.
 - **Gotchas found the hard way:**
   - Grid columns that hold horizontally scrolling content must be `minmax(0, 1fr)`, not `1fr`, or the page overflows on phones.
   - Entrance animations on `.stage > *` use `animation-fill-mode: backwards`. A transform left behind by `both` turns the step into a containing block and traps the fixed mobile selection drawer (`.basket`).
   - The mobile drawer sits above the step bar using `--nav-h`, which `Builder` sets with a `ResizeObserver`.
+  - Always use braces in `useEffect` bodies: newer Chrome returns a Promise from `window.scrollTo`, and a one-line arrow hands it to React as a cleanup, which crashes the app.
+  - The venue `<dialog>` must not call `close()` in effect cleanup: it fires `onClose`, and React's dev double-run of effects would dismiss the dialog straight away.

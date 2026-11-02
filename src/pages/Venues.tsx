@@ -1,0 +1,194 @@
+import { useEffect, useMemo, useRef, useState } from "react";
+import type { Venue } from "../types";
+import { useConfig } from "../config/context";
+import { filterVenues, largestCapacity } from "../lib/venues";
+import Img from "../components/Img";
+import AppearanceControls from "../components/AppearanceControls";
+
+const Stars = ({ n }: { n?: number }) =>
+  n ? (
+    <span className="stars" aria-label={`${n}-star`}>
+      {"★".repeat(n)}
+    </span>
+  ) : null;
+
+export default function Venues({ onBack, onStartProposal }: { onBack: () => void; onStartProposal: (v: Venue) => void }) {
+  const { venues: dir, brand } = useConfig();
+  const [q, setQ] = useState("");
+  const [type, setType] = useState("all");
+  const [area, setArea] = useState("all");
+  const [open, setOpen] = useState<Venue | null>(null);
+
+  const areas = useMemo(() => [...new Set(dir.venues.map((v) => v.area))].sort(), [dir]);
+  const shown = filterVenues(dir.venues, { q, type, area });
+  const typeLabel = (id: string) => dir.venueTypes.find((t) => t.id === id)?.label ?? id;
+  const count = (id: string) => dir.venues.filter((v) => id === "all" || v.type === id).length;
+  const filtered = q || type !== "all" || area !== "all";
+
+  return (
+    <div className="venues-page">
+      <header className="topbar">
+        <button className="btn-ghost btn-sm" onClick={onBack} aria-label="Back to proposals">
+          ←<span className="hide-phone"> Proposals</span>
+        </button>
+        <img className="topbar-logo" src={`${import.meta.env.BASE_URL}${brand.logo}`} alt={brand.company} />
+        <div className="topbar-title">
+          <span className="eyebrow">Directory</span>
+          <strong>Venues</strong>
+        </div>
+        <AppearanceControls />
+      </header>
+
+      <main className="venues-main">
+        <p className="eyebrow">Thiruvananthapuram &amp; around</p>
+        <h1>Hotels, resorts &amp; venues</h1>
+        {dir.note && <p className="venues-note">{dir.note}</p>}
+
+        <div className="venue-filters">
+          <input className="search" type="search" placeholder="Search by name, area or space…" aria-label="Search venues" value={q} onChange={(e) => setQ(e.target.value)} />
+          <label className="area-select">
+            <span className="sr-only">Area</span>
+            <select value={area} onChange={(e) => setArea(e.target.value)} aria-label="Filter by area">
+              <option value="all">All areas</option>
+              {areas.map((a) => (
+                <option key={a} value={a}>{a}</option>
+              ))}
+            </select>
+          </label>
+        </div>
+        <div className="tabs" role="tablist" aria-label="Venue type">
+          {[{ id: "all", label: "All" }, ...dir.venueTypes.map((t) => ({ ...t, label: `${t.label}s` }))].map((t) => (
+            <button key={t.id} role="tab" aria-selected={type === t.id} className={type === t.id ? "is-on" : ""} onClick={() => setType(t.id)}>
+              {t.label} <span className="tab-count">{count(t.id)}</span>
+            </button>
+          ))}
+        </div>
+
+        <p className="venue-count" aria-live="polite">
+          {shown.length} venue{shown.length === 1 ? "" : "s"}
+          {filtered && (
+            <button className="link-btn" onClick={() => { setQ(""); setType("all"); setArea("all"); }}>Clear filters</button>
+          )}
+        </p>
+
+        {shown.length === 0 ? (
+          <div className="empty-state">
+            {type === "venue" && !q && area === "all"
+              ? "No other event venues in the directory yet. Add them to public/config/venues.json."
+              : "No venues match. Try a different search or clear the filters."}
+          </div>
+        ) : (
+          <ul className="venue-grid">
+            {shown.map((v) => {
+              const cap = largestCapacity(v);
+              return (
+                <li key={v.id} className="venue-card">
+                  <button className="venue-open" onClick={() => setOpen(v)} aria-label={`Details for ${v.name}`}>
+                    <div className="venue-photo">
+                      <Img src={v.photo} alt={v.photoIsRepresentative ? "" : v.name} />
+                      <span className="venue-type">{typeLabel(v.type)}</span>
+                      {v.photoIsRepresentative && <span className="venue-photo-note">Representative photo</span>}
+                    </div>
+                    <div className="venue-body">
+                      <Stars n={v.stars} />
+                      <h3>{v.name}</h3>
+                      <p className="venue-area">{v.area}, {v.city}</p>
+                      <ul className="venue-spaces">
+                        {v.spaces.slice(0, 3).map((s) => (
+                          <li key={s.name}>
+                            <span>{s.name}</span>
+                            <em>{s.capacity ? `up to ${s.capacity.toLocaleString("en-IN")}` : s.size ?? "TBC"}</em>
+                          </li>
+                        ))}
+                      </ul>
+                      {cap && <p className="venue-cap">Largest space · up to {cap.toLocaleString("en-IN")} guests</p>}
+                    </div>
+                  </button>
+                  <div className="venue-actions">
+                    <button className="btn-ghost btn-sm" onClick={() => setOpen(v)}>Details</button>
+                    <button className="btn-primary btn-sm" onClick={() => onStartProposal(v)} aria-label={`Start a proposal at ${v.name}`}>Start proposal</button>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </main>
+      {open && <VenueDialog v={open} typeLabel={typeLabel(open.type)} onClose={() => setOpen(null)} onStart={() => onStartProposal(open)} />}
+    </div>
+  );
+}
+
+function VenueDialog({ v, typeLabel, onClose, onStart }: { v: Venue; typeLabel: string; onClose: () => void; onStart: () => void }) {
+  const ref = useRef<HTMLDialogElement>(null);
+  // no close() on cleanup: it would fire onClose (and React's dev double-run of effects would
+  // immediately dismiss the dialog); removing the element from the page closes it anyway
+  useEffect(() => {
+    const d = ref.current;
+    if (d && !d.open) d.showModal();
+  }, []);
+  return (
+    <dialog ref={ref} className="venue-dialog" onClose={onClose} onClick={(e) => e.target === ref.current && onClose()} aria-labelledby="venue-dialog-title">
+      <div className="vd-photo">
+        <Img src={v.photo} alt={v.photoIsRepresentative ? "" : v.name} />
+        {v.photoIsRepresentative && <span className="venue-photo-note">Representative photo</span>}
+        <button className="vd-close" onClick={onClose} aria-label="Close">×</button>
+      </div>
+      <div className="vd-body">
+        <p className="eyebrow">{typeLabel}{v.stars ? ` · ${v.stars}-star` : ""}</p>
+        <h2 id="venue-dialog-title">{v.name}</h2>
+        {v.aka && <p className="vd-aka">Also known as {v.aka}</p>}
+        <dl className="vd-facts">
+          <div><dt>Area</dt><dd>{v.area}, {v.city}</dd></div>
+          {v.address && <div><dt>Address</dt><dd>{v.address}</dd></div>}
+          {v.phone && <div><dt>Phone</dt><dd><a href={`tel:${v.phone.replace(/\s/g, "")}`}>{v.phone}</a></dd></div>}
+          {v.website && <div><dt>Website</dt><dd><a href={v.website} target="_blank" rel="noreferrer">{new URL(v.website).hostname}</a></dd></div>}
+        </dl>
+
+        <h3 className="vd-h">Event spaces</h3>
+        {v.spaces.length ? (
+          <table className="vd-spaces">
+            <thead><tr><th>Space</th><th>Size</th><th>Guests</th></tr></thead>
+            <tbody>
+              {v.spaces.map((s) => (
+                <tr key={s.name}>
+                  <td>{s.name}{s.note && <small>{s.note}</small>}</td>
+                  <td>{s.size ?? "—"}</td>
+                  <td>{s.capacity ? `up to ${s.capacity.toLocaleString("en-IN")}` : "TBC"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        ) : (
+          <p className="empty">No event spaces listed yet.</p>
+        )}
+
+        {!!v.features?.length && (
+          <>
+            <h3 className="vd-h">Highlights</h3>
+            <ul className="vd-features">{v.features.map((f) => <li key={f}>{f}</li>)}</ul>
+          </>
+        )}
+
+        {(v.verification || v.sources?.length) && (
+          <div className="vd-verify">
+            <strong>Verify before quoting.</strong> {v.verification}
+            {!!v.sources?.length && (
+              <span className="vd-sources">
+                Sources:{" "}
+                {v.sources.map((s, i) => (
+                  <a key={s} href={s} target="_blank" rel="noreferrer">{new URL(s).hostname.replace(/^www\./, "")}{i < v.sources!.length - 1 ? ", " : ""}</a>
+                ))}
+              </span>
+            )}
+          </div>
+        )}
+
+        <div className="vd-actions">
+          <button className="btn-ghost" onClick={onClose}>Close</button>
+          <button className="btn-primary" onClick={onStart}>Start a proposal here</button>
+        </div>
+      </div>
+    </dialog>
+  );
+}

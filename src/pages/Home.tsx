@@ -7,6 +7,7 @@ import { formatDate, formatINRShort, safeFilePart } from "../lib/format";
 import { proposalTitle } from "../lib/proposal";
 import Img from "../components/Img";
 import Ornament from "../components/Ornament";
+import AppearanceControls from "../components/AppearanceControls";
 
 type Store = ReturnType<typeof useProposals>;
 
@@ -15,12 +16,14 @@ export default function Home({
   account,
   onSignOut,
   onOpen,
+  onVenues,
   onNew,
 }: {
   store: Store;
   account: string;
   onSignOut: () => void;
   onOpen: (id: string) => void;
+  onVenues: () => void;
   onNew: () => void;
 }) {
   const { catalog, brand } = useConfig();
@@ -52,6 +55,7 @@ export default function Home({
       <header className="home-hero">
         <Img src={hero} alt="" className="home-hero-img" />
         <div className="home-account">
+          <AppearanceControls onDark />
           <span className="home-account-email" title={account}>{account}</span>
           <button className="btn-outline-light btn-sm" onClick={onSignOut}>Sign out</button>
         </div>
@@ -61,7 +65,10 @@ export default function Home({
           <h1>Craft a proposal worth saying <em>yes</em> to.</h1>
           <Ornament />
           <p className="lede">Choose the occasion, curate the elements and hand the client a polished estimate in minutes.</p>
-          <button className="btn-gold btn-lg" onClick={onNew}>Start a new proposal</button>
+          <div className="hero-actions">
+            <button className="btn-gold btn-lg" onClick={onNew}>Start a new proposal</button>
+            <button className="btn-outline-light btn-lg" onClick={onVenues}>Browse venues</button>
+          </div>
         </div>
       </header>
 
@@ -94,6 +101,7 @@ export default function Home({
                     <span className="pcard-body">
                       <span className="eyebrow">{p.eventType ? proposalTitle(p, catalog) : "Occasion not chosen"}</span>
                       <span className="pcard-name">{p.client.name || "Untitled client"}</span>
+                      <span className="pcard-ref">{p.ref}</span>
                       <span className="pcard-meta">{formatDate(p.client.date)}{p.client.venue && ` · ${p.client.venue}`}</span>
                       <span className="pcard-total">{formatINRShort(t.grandTotal)} <small>· {p.lines.length} element{p.lines.length === 1 ? "" : "s"}</small></span>
                     </span>

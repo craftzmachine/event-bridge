@@ -12,6 +12,7 @@ import LineEditor from "../components/LineEditor";
 import TotalsPanel from "../components/TotalsPanel";
 import ProposalPreview from "../components/ProposalPreview";
 import MoneyInput from "../components/MoneyInput";
+import AppearanceControls from "../components/AppearanceControls";
 
 export default function Builder({ proposal: p, onChange, onClose }: { proposal: Proposal; onChange: (p: Proposal) => void; onClose: () => void }) {
   const { catalog, brand } = useConfig();
@@ -57,11 +58,12 @@ export default function Builder({ proposal: p, onChange, onClose }: { proposal: 
           <span>Grand Total</span>
           <strong>{formatINRShort(t.grandTotal)}</strong>
         </div>
+        <AppearanceControls />
       </header>
       <StepRail step={step} onStep={go} canReach={canReach} />
 
       <main className="stage" key={step}>
-        {step === 0 && <ClientStep p={p} setClient={setClient} set={set} />}
+        {step === 0 && <ClientStep p={p} setClient={setClient} />}
         {step === 1 && <OccasionStep p={p} set={set} />}
         {step === 2 && <ElementsStep p={p} set={set} />}
         {step === 3 && <ReviewStep p={p} set={set} />}
@@ -87,7 +89,13 @@ export default function Builder({ proposal: p, onChange, onClose }: { proposal: 
 type SetFn = (patch: Partial<Proposal> | ((cur: Proposal) => Partial<Proposal>)) => void;
 type StepProps = { p: Proposal; set: SetFn };
 
-function ClientStep({ p, set, setClient }: StepProps & { setClient: (c: Partial<Proposal["client"]>) => void }) {
+function ClientStep({ p, setClient }: { p: Proposal; setClient: (c: Partial<Proposal["client"]>) => void }) {
+  const { venues } = useConfig();
+  // picking a directory venue fills its area into Location (unless one is already typed)
+  const onVenue = (name: string) => {
+    const match = venues.venues.find((v) => v.name.toLowerCase() === name.trim().toLowerCase());
+    setClient(match && !p.client.location ? { venue: name, location: match.area } : { venue: name });
+  };
   return (
     <section className="panel narrow">
       <p className="eyebrow">Step one</p>
@@ -108,16 +116,22 @@ function ClientStep({ p, set, setClient }: StepProps & { setClient: (c: Partial<
         </label>
         <label className="field">
           <span>Venue</span>
-          <input value={p.client.venue} placeholder="e.g. KTDC Samudra" onChange={(e) => setClient({ venue: e.target.value })} />
+          <input value={p.client.venue} list="venue-directory" placeholder="Type or pick from the directory" onChange={(e) => onVenue(e.target.value)} />
+          <datalist id="venue-directory">
+            {venues.venues.map((v) => (
+              <option key={v.id} value={v.name}>{v.area}</option>
+            ))}
+          </datalist>
         </label>
         <label className="field">
           <span>Location</span>
           <input value={p.client.location} placeholder="e.g. Kovalam" onChange={(e) => setClient({ location: e.target.value })} />
         </label>
-        <label className="field">
+        <div className="field">
           <span>Quotation reference</span>
-          <input value={p.ref} placeholder="To be assigned" onChange={(e) => set({ ref: e.target.value })} />
-        </label>
+          <output className="ref-badge" aria-live="polite">{p.ref || "Assigning…"}</output>
+          <small className="hint">Generated automatically (year · day · month · letters) and unique.</small>
+        </div>
       </div>
     </section>
   );

@@ -3,6 +3,7 @@ import { useConfig } from "../config/context";
 import { checkCredentials } from "../auth/auth";
 import Img from "../components/Img";
 import Ornament from "../components/Ornament";
+import AppearanceControls from "../components/AppearanceControls";
 
 const MAX_TRIES = 5;
 const LOCK_SECONDS = 30;
@@ -62,6 +63,9 @@ export default function Login({ onSignedIn }: { onSignedIn: (email: string) => v
       </aside>
 
       <main className="login-main">
+        <div className="login-appearance">
+          <AppearanceControls />
+        </div>
         <form className="login-card" onSubmit={submit} noValidate>
           <img className="login-logo-sm" src={logo} alt={brand.company} />
           <p className="eyebrow">Team access</p>

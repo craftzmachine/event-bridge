@@ -1,5 +1,5 @@
 :root {
-  /* palette drawn from the Parinay crest: antique gold on ivory and espresso */
+  /* default "Parinay" theme — drawn from the crest: antique gold on ivory and espresso */
   --paper: #fbf8f2;
   --paper-2: #f4eee3;
   --card: #fffdf8;
@@ -8,12 +8,23 @@
   --stone: #8e8377;
   --taupe: #c4b59c;
   --line: #e8dfcf;
-  --gold: #b79a68;        /* the logo gold — rules, borders, fills */
-  --gold-text: #8a6e42;   /* darker gold for small text on ivory (readable contrast) */
-  --gold-light: #d8c39a;  /* gold text on espresso */
-  --gold-soft: #f1e7d4;
-  --espresso: #241d18;
+  --gold: #b79a68;        /* accent — rules, borders, fills */
+  --gold-text: #8a6e42;   /* accent for small text on --paper (readable contrast) */
+  --gold-light: #d8c39a;  /* accent text on --espresso */
+  --gold-soft: #f1e7d4;   /* accent-tinted fills */
+  --gold-wash: #fdf8ee;   /* very light accent wash (selected cards, totals box) */
+  --espresso: #241d18;    /* dark surfaces: hero, buttons, footer */
+  --on-espresso: #fbf6ec; /* text on --espresso */
+  --on-accent: #ffffff;   /* text on --gold / --danger */
   --danger: #a4493d;
+  --danger-soft: #fbeeec;
+  --danger-line: #ecc9c3;
+  --danger-ink: #7d3127;
+  color-scheme: light;
+  /* primary actions, active tab and step: dark on light themes, accent on dark themes */
+  --primary: var(--espresso);
+  --on-primary: var(--paper);
+  --primary-accent: var(--gold-light);
 
   --serif: "Cormorant Garamond", Georgia, "Times New Roman", serif;
   --caps: Cinzel, "Trajan Pro", Georgia, serif;
@@ -23,8 +34,76 @@
   --r-sm: 6px;
   --r: 12px;
   --r-lg: 18px;
-  --shadow: 0 1px 2px rgba(46, 38, 32, 0.05), 0 8px 24px rgba(46, 38, 32, 0.06);
-  --shadow-lift: 0 2px 4px rgba(46, 38, 32, 0.06), 0 18px 44px rgba(46, 38, 32, 0.11);
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.05), 0 8px 24px rgba(0, 0, 0, 0.06);
+  --shadow-lift: 0 2px 4px rgba(0, 0, 0, 0.06), 0 18px 44px rgba(0, 0, 0, 0.11);
   --gutter: clamp(16px, 3vw, 40px);
   --tap: 44px;
+}
+
+/* ---------- themes (set on <html data-theme="…">) ---------- */
+:root[data-theme="solarized-light"] {
+  --paper: #fdf6e3; --paper-2: #eee8d5; --card: #fffbee;
+  --ink: #073642; --ink-2: #586e75; --stone: #839496; --taupe: #c9c2ab; --line: #e4ddc8;
+  --gold: #b58900; --gold-text: #8a6900; --gold-light: #e0b740; --gold-soft: #f3e5b5; --gold-wash: #fbf1d4;
+  --espresso: #073642; --on-espresso: #fdf6e3; --on-accent: #fdf6e3;
+  --danger: #dc322f; --danger-soft: #fbe3dc; --danger-line: #f0b8ad; --danger-ink: #a3221f;
+  color-scheme: light;
+}
+:root[data-theme="solarized-dark"] {
+  --paper: #002b36; --paper-2: #073642; --card: #06323e;
+  --ink: #eee8d5; --ink-2: #93a1a1; --stone: #839496; --taupe: #2c5662; --line: #0f4655;
+  --gold: #b58900; --gold-text: #d9a915; --gold-light: #e8c25a; --gold-soft: #1f3d33; --gold-wash: #0a3a3a;
+  --espresso: #001e26; --on-espresso: #eee8d5; --on-accent: #002b36;
+  --danger: #dc322f; --danger-soft: #3a1f22; --danger-line: #6a2b2b; --danger-ink: #f3a49b;
+  color-scheme: dark;
+}
+:root[data-theme="nord"] {
+  --paper: #2e3440; --paper-2: #3b4252; --card: #353c4a;
+  --ink: #eceff4; --ink-2: #d8dee9; --stone: #a3acbd; --taupe: #4c566a; --line: #434c5e;
+  --gold: #88c0d0; --gold-text: #8fbcbb; --gold-light: #88c0d0; --gold-soft: #3b4a5a; --gold-wash: #354452;
+  --espresso: #242933; --on-espresso: #eceff4; --on-accent: #2e3440;
+  --danger: #bf616a; --danger-soft: #45343b; --danger-line: #6b4550; --danger-ink: #f0b6bc;
+  color-scheme: dark;
+}
+:root[data-theme="dark"] {
+  --paper: #121212; --paper-2: #1c1c1c; --card: #191919;
+  --ink: #ededed; --ink-2: #b8b8b8; --stone: #8c8c8c; --taupe: #3a3a3a; --line: #2b2b2b;
+  --gold: #c9a96e; --gold-text: #d6b77f; --gold-light: #e2c794; --gold-soft: #2a2419; --gold-wash: #1f1b14;
+  --espresso: #0a0a0a; --on-espresso: #f2f2f2; --on-accent: #121212;
+  --danger: #e5675a; --danger-soft: #3a1d1a; --danger-line: #6b2c26; --danger-ink: #f6b0a8;
+  color-scheme: dark;
+}
+:root[data-theme="white"] {
+  --paper: #ffffff; --paper-2: #f4f4f5; --card: #ffffff;
+  --ink: #111111; --ink-2: #4a4a4a; --stone: #7a7a7a; --taupe: #d4d4d8; --line: #e6e6e8;
+  --gold: #9a7b45; --gold-text: #7a5f30; --gold-light: #d8c39a; --gold-soft: #f4efe6; --gold-wash: #faf8f3;
+  --espresso: #111111; --on-espresso: #ffffff; --on-accent: #ffffff;
+  --danger: #c0392b; --danger-soft: #fdecea; --danger-line: #f5c2bc; --danger-ink: #8e2a1f;
+  color-scheme: light;
+}
+
+:root[data-theme="solarized-dark"],
+:root[data-theme="nord"],
+:root[data-theme="dark"] {
+  --primary: var(--gold);
+  --on-primary: var(--on-accent);
+  --primary-accent: var(--on-accent);
+}
+:root[data-theme="solarized-light"],
+:root[data-theme="white"] {
+  --on-primary: var(--on-espresso);
+}
+
+/* ---------- fonts (set on <html data-font="…">); "classic" is the default above ---------- */
+:root[data-font="sans"] {
+  --serif: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --caps: var(--serif);
+  --script: var(--serif);
+  --sans: var(--serif);
+}
+:root[data-font="mono"] {
+  --serif: "JetBrains Mono", ui-monospace, "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  --caps: var(--serif);
+  --script: var(--serif);
+  --sans: var(--serif);
 }

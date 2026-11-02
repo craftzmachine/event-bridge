@@ -1,0 +1,126 @@
+{
+  "note": "Starter list. Details were checked against public listings on 2026-11-03; sources sometimes disagree, so confirm names, addresses, star ratings and capacities with each venue before quoting them to clients. Photos are representative stock images until real venue photos are added.",
+  "venueTypes": [
+    { "id": "hotel", "label": "Hotel" },
+    { "id": "resort", "label": "Resort" },
+    { "id": "venue", "label": "Event venue" }
+  ],
+  "venues": [
+    {
+      "id": "hyatt-regency-trivandrum",
+      "name": "Hyatt Regency Trivandrum",
+      "type": "hotel",
+      "area": "Thycaud",
+      "city": "Thiruvananthapuram",
+      "address": "C V Raman Pillai Road, DPI, Thycaud, Thiruvananthapuram 695014",
+      "stars": 5,
+      "phone": "",
+      "website": "https://www.hyatt.com/hyatt-regency/en-US/trvrt-hyatt-regency-trivandrum",
+      "photo": "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1000&q=70",
+      "photoIsRepresentative": true,
+      "spaces": [
+        { "name": "The Great Hall", "size": "882 sq m", "capacity": 1000 },
+        { "name": "Royal Ballroom", "size": "650 sq m", "capacity": 650, "note": "Divisible into Royal Ballroom 1–4" }
+      ],
+      "features": ["Pillared and pillarless banquet halls", "Weddings and receptions", "About 20,000 sq ft of event space"],
+      "verification": "Capacities from Hyatt's meetings page; total event space from Cvent. Some booking sites list the area as Vazhuthacaud.",
+      "sources": [
+        "https://www.hyatt.com/hyatt-regency/en-US/trvrt-hyatt-regency-trivandrum/meetings",
+        "https://cvent.com/venues/trivandrum/hotel/hyatt-regency-trivandrum/venue-0b298b76-369c-496a-b30d-36e7025fdd70"
+      ]
+    },
+    {
+      "id": "hilton-garden-inn-trivandrum",
+      "name": "Hilton Garden Inn Trivandrum",
+      "type": "hotel",
+      "area": "Punnen Road",
+      "city": "Thiruvananthapuram",
+      "address": "Punnen Road, Thiruvananthapuram 695039",
+      "stars": 5,
+      "phone": "+91 471 660 0000",
+      "website": "https://www.keralatourism.org/hotels/hilton-garden-inn-trivandrum/2282",
+      "photo": "https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?auto=format&fit=crop&w=1000&q=70",
+      "photoIsRepresentative": true,
+      "spaces": [
+        { "name": "Multi-function room", "note": "Capacity to be confirmed" },
+        { "name": "Meeting rooms", "note": "Count and sizes vary between listings" }
+      ],
+      "features": ["Wedding services", "Rooftop pool", "Business centre"],
+      "verification": "5-star classification is from the Kerala Tourism listing, which property owners publish themselves. Event-space figures differ between sources.",
+      "sources": ["https://www.keralatourism.org/hotels/hilton-garden-inn-trivandrum/2282"]
+    },
+    {
+      "id": "vivanta-thiruvananthapuram",
+      "name": "Vivanta Thiruvananthapuram",
+      "type": "hotel",
+      "area": "Thycaud",
+      "city": "Thiruvananthapuram",
+      "address": "C V Raman Pillai Road, Thycaud, Thiruvananthapuram 695014",
+      "stars": 5,
+      "phone": "+91 471 402 2100",
+      "website": "",
+      "photo": "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=1000&q=70",
+      "photoIsRepresentative": true,
+      "spaces": [
+        { "name": "Rooftop open-air banquet venue", "note": "Capacity to be confirmed" },
+        { "name": "Ballroom, lawn and Senate", "note": "Listed for weddings" },
+        { "name": "Curia 1 & 2", "capacity": 20, "note": "Boardrooms; capacity shown is Curia 2" }
+      ],
+      "features": ["Rooftop banqueting", "Weddings and receptions", "Meeting rooms"],
+      "verification": "Most sources give the Thycaud address; some directories list Extra Police Road, Palayam.",
+      "sources": [
+        "https://www.fivestaralliance.com/node/21445",
+        "https://www.cvent.com/venues/thiruvananthapuram/hotel/vivanta-thiruvananthapuram/venue-7b6f224a-8843-4d6e-a665-5318442b9ac3"
+      ]
+    },
+    {
+      "id": "hycinth-hotels",
+      "name": "Hycinth Hotels",
+      "aka": "HYCINTH by Sparsa",
+      "type": "hotel",
+      "area": "Thampanoor",
+      "city": "Thiruvananthapuram",
+      "address": "Manorama Road, Thampanoor, Thiruvananthapuram 695001",
+      "stars": 5,
+      "phone": "+91 471 666 2999",
+      "website": "https://keralatourism.org/hotels/hycinth-by-sparsa/2283",
+      "photo": "https://images.unsplash.com/photo-1564501049412-61c2a3083791?auto=format&fit=crop&w=1000&q=70",
+      "photoIsRepresentative": true,
+      "spaces": [
+        { "name": "Banquet hall", "note": "Capacity to be confirmed" },
+        { "name": "Rooftop hall", "note": "Capacity to be confirmed" },
+        { "name": "Meeting rooms (4)", "size": "Largest 1,917 sq ft" }
+      ],
+      "features": ["Banquet and conference halls", "Central location near the railway station"],
+      "verification": "5-star classification from the Kerala Tourism accreditation listing. Banquet capacities were not published.",
+      "sources": [
+        "https://keralatourism.org/hotels/hycinth-by-sparsa/2283",
+        "https://www.mitmagazine.co.uk/Meeting-Event-Venues/Thiruvananthapuram-India/Convention-Hotel/HYCINTH-by-Sparsa-Trivandrum-p57648841"
+      ]
+    },
+    {
+      "id": "taj-green-cove-kovalam",
+      "name": "Taj Green Cove Resort & Spa, Kovalam",
+      "type": "resort",
+      "area": "Kovalam",
+      "city": "Thiruvananthapuram",
+      "address": "Kovalam, Thiruvananthapuram",
+      "stars": 5,
+      "phone": "",
+      "website": "https://www.tajhotels.com/en-in/hotels/taj-green-cove/meetings-and-event-venues",
+      "photo": "https://images.unsplash.com/photo-1571896349842-33c89424de2d?auto=format&fit=crop&w=1000&q=70",
+      "photoIsRepresentative": true,
+      "spaces": [
+        { "name": "Open-air seaside lawns", "capacity": 150, "note": "Theatre 150 · reception 150 (Taj); larger figures appear on third-party listings" },
+        { "name": "Agora Hall", "size": "353 sq m", "note": "Pillarless" },
+        { "name": "Tango", "capacity": 150, "note": "Third-party listing" }
+      ],
+      "features": ["Seaside weddings facing the Arabian Sea", "In-house catering and décor", "External vendors allowed"],
+      "verification": "Lawn and Agora Hall figures from Taj's events page; Tango capacity and vendor policy from third-party listings.",
+      "sources": [
+        "https://www.tajhotels.com/en-in/hotels/taj-green-cove/meetings-and-event-venues",
+        "https://www.weddingwire.in/wedding-resorts/taj-green-cove-resort-&-spa-kovalam--e82184"
+      ]
+    }
+  ]
+}
