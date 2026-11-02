@@ -17,17 +17,22 @@ const ACCOUNTS: { email: string; hash: string }[] = [
 const SESSION_KEY = "proposal-builder.session.v1";
 const SESSION_HOURS = 12;
 
-export const normaliseEmail = (email: string) => email.trim().toLowerCase();
+// Phone keyboards and autofill can add trailing spaces, zero-width characters or
+// full-width look-alikes (＠, ９), so both fields are normalised before hashing.
+const clean = (s: string) => s.normalize("NFKC").replace(/[​-‍⁠﻿]/g, "").trim();
+
+export const normaliseEmail = (email: string) => clean(email).toLowerCase();
+export const normalisePassword = (password: string) => clean(password);
 
 export function credentialHash(email: string, password: string) {
-  return sha256(`parinay-proposals:${normaliseEmail(email)}:${password}`);
+  return sha256(`parinay-proposals:${normaliseEmail(email)}:${normalisePassword(password)}`);
 }
 
 /** Returns the account email when the pair matches an authorised account, otherwise null. */
 export function checkCredentials(email: string, password: string): string | null {
   const e = normaliseEmail(email);
   const account = ACCOUNTS.find((a) => a.email === e);
-  if (!account || !password) return null;
+  if (!account || !normalisePassword(password)) return null;
   return credentialHash(e, password) === account.hash ? account.email : null;
 }
 

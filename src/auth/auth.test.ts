@@ -21,4 +21,14 @@ describe("checkCredentials", () => {
   it("normalises the email before hashing", () => {
     expect(credentialHash("  Info.ParinayWeddings@Gmail.com ", "x")).toBe(credentialHash("info.parinayweddings@gmail.com", "x"));
   });
+  it("ignores stray spaces, zero-width and full-width characters from phone keyboards", () => {
+    const base = credentialHash("a@b.c", "pass@123");
+    expect(credentialHash("a@b.c", "pass@123 ")).toBe(base);
+    expect(credentialHash("a@b.c", " pass@123​")).toBe(base);
+    expect(credentialHash("a@b.c", "pass＠１２３")).toBe(base);
+    expect(credentialHash("a@b.c", "Pass@123")).not.toBe(base); // still case-sensitive
+  });
+  it("accepts the 000 account with a trailing space", () => {
+    expect(checkCredentials("operations.eventsiq@gmail.com", "000 ")).toBe("operations.eventsiq@gmail.com");
+  });
 });

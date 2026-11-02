@@ -44,7 +44,7 @@ export default function Login({ onSignedIn }: { onSignedIn: (email: string) => v
       setLockedFor(LOCK_SECONDS);
       setError(`Too many unsuccessful attempts. Please wait ${LOCK_SECONDS} seconds and try again.`);
     } else {
-      setError("That email and password don't match an authorised account. Check them and try again.");
+      setError("That email and password don't match an authorised account. Passwords are case-sensitive — tap Show to check what you typed.");
     }
   }
 
@@ -102,6 +102,10 @@ export default function Login({ onSignedIn }: { onSignedIn: (email: string) => v
                 type={show ? "text" : "password"}
                 name="password"
                 autoComplete="current-password"
+                // when shown as plain text, phone keyboards would otherwise capitalise or autocorrect it
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
                 value={password}
                 aria-invalid={!!error}
                 aria-describedby={error ? "login-error" : undefined}
