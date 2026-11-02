@@ -1,0 +1,77 @@
+{
+  "eventTypes": [
+    { "id": "wedding", "label": "Wedding", "blurb": "The ceremony itself — mandap, altar or nikah stage, rituals and guests.", "image": "https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1200&q=70" },
+    { "id": "engagement", "label": "Engagement", "blurb": "An intimate exchange of rings and blessings with close family.", "image": "https://images.unsplash.com/photo-1515934751635-c81c6bc9a2d8?auto=format&fit=crop&w=1200&q=70" },
+    { "id": "reception", "label": "Reception", "blurb": "An evening celebration — stage, lights, music and dinner.", "image": "https://images.unsplash.com/photo-1519225421980-715cb0215aed?auto=format&fit=crop&w=1200&q=70" }
+  ],
+  "ceremonyStyles": [
+    { "id": "hindu", "label": "Hindu", "blurb": "Mandap, marigold and jasmine, nadaswaram, thalikettu.", "image": "https://images.unsplash.com/photo-1606800052052-a08af7148866?auto=format&fit=crop&w=1200&q=70" },
+    { "id": "christian", "label": "Christian", "blurb": "Floral aisle, white florals, choir and a cake ceremony.", "image": "https://images.unsplash.com/photo-1465495976277-4387d4b0b4c6?auto=format&fit=crop&w=1200&q=70" },
+    { "id": "muslim", "label": "Muslim", "blurb": "Nikah stage, lanterns, mehndi corner and oppana.", "image": "https://images.unsplash.com/photo-1511285560929-80b456fea0bc?auto=format&fit=crop&w=1200&q=70" }
+  ],
+  "categories": [
+    { "id": "decor", "label": "Décor & Production", "order": 1 },
+    { "id": "ceremony", "label": "Ceremony & Rituals", "order": 2 },
+    { "id": "technical", "label": "Sound, Light & Power", "order": 3 },
+    { "id": "artists", "label": "Artists & Manpower", "order": 4 },
+    { "id": "experiences", "label": "Guest Experiences", "order": 5 },
+    { "id": "general", "label": "Common General Costs", "order": 6 }
+  ],
+  "elements": [
+    { "id": "welcome-board", "name": "Welcome board with flower arrangements at the lobby", "category": "decor", "unit": "nos", "defaultQty": 1, "defaultPrice": 6000, "eventTypes": ["*"], "ceremonyStyles": ["*"] },
+    { "id": "entrance-arch", "name": "Entrance arch with flower hangings and props", "category": "decor", "unit": "nos", "defaultQty": 1, "defaultPrice": 22000, "eventTypes": ["*"], "ceremonyStyles": ["*"],
+      "upgrades": [{ "id": "fresh-only", "name": "All-fresh flowers instead of mixed", "price": 8000 }] },
+    { "id": "pathway", "name": "Pathway décor with flower arrangements", "category": "decor", "unit": "lump sum", "defaultQty": 1, "defaultPrice": 16000, "eventTypes": ["*"], "ceremonyStyles": ["*"] },
+    { "id": "chiavari", "name": "Golden Chiavari chairs with tie-back", "category": "decor", "unit": "nos", "defaultQty": 150, "defaultPrice": 160, "eventTypes": ["*"], "ceremonyStyles": ["*"] },
+    { "id": "stage-platform", "name": "Stage platform", "category": "decor", "unit": "lump sum", "defaultQty": 1, "defaultPrice": 20450, "eventTypes": ["*"], "ceremonyStyles": ["*"] },
+    { "id": "stage-production", "name": "Stage structural production", "category": "decor", "unit": "lump sum", "defaultQty": 1, "defaultPrice": 95000, "eventTypes": ["*"], "ceremonyStyles": ["*"],
+      "upgrades": [{ "id": "led-backdrop", "name": "LED wall backdrop", "price": 45000 }] },
+    { "id": "stage-flowers", "name": "Flower hangings for the stage (fresh & artificial)", "category": "decor", "unit": "lump sum", "defaultQty": 1, "defaultPrice": 55000, "eventTypes": ["*"], "ceremonyStyles": ["*"] },
+    { "id": "cut-flowers", "name": "Cut flowers for the stage and venue", "category": "decor", "unit": "lump sum", "defaultQty": 1, "defaultPrice": 45000, "eventTypes": ["*"], "ceremonyStyles": ["*"] },
+    { "id": "table-centrepieces", "name": "Table centrepieces with candles", "category": "decor", "unit": "nos", "defaultQty": 20, "defaultPrice": 1200, "eventTypes": ["reception", "engagement"], "ceremonyStyles": ["*"] },
+    { "id": "mandap", "name": "Traditional Kerala mandap with brass lamps", "category": "decor", "unit": "lump sum", "defaultQty": 1, "defaultPrice": 65000, "eventTypes": ["wedding"], "ceremonyStyles": ["hindu"] },
+    { "id": "ganesh-idol", "name": "Ganesh idol with props & décor", "category": "decor", "unit": "nos", "defaultQty": 1, "defaultPrice": 4000, "eventTypes": ["*"], "ceremonyStyles": ["hindu"] },
+    { "id": "church-arch", "name": "Floral arch for the church entrance", "category": "decor", "unit": "nos", "defaultQty": 1, "defaultPrice": 28000, "eventTypes": ["wedding"], "ceremonyStyles": ["christian"] },
+    { "id": "aisle-decor", "name": "Aisle décor with pew-end florals and runner", "category": "decor", "unit": "lump sum", "defaultQty": 1, "defaultPrice": 24000, "eventTypes": ["wedding"], "ceremonyStyles": ["christian"] },
+    { "id": "nikah-stage", "name": "Nikah stage with sheer drapes and lanterns", "category": "decor", "unit": "lump sum", "defaultQty": 1, "defaultPrice": 70000, "eventTypes": ["wedding"], "ceremonyStyles": ["muslim"] },
+    { "id": "lantern-ceiling", "name": "Moroccan lantern ceiling installation", "category": "decor", "unit": "lump sum", "defaultQty": 1, "defaultPrice": 38000, "eventTypes": ["*"], "ceremonyStyles": ["muslim"] },
+    { "id": "ring-stage", "name": "Ring ceremony stage with floral frame", "category": "decor", "unit": "lump sum", "defaultQty": 1, "defaultPrice": 35000, "eventTypes": ["engagement"], "ceremonyStyles": ["*"] },
+
+    { "id": "ceremonial", "name": "All ceremonial arrangements for the wedding", "category": "ceremony", "unit": "lump sum", "defaultQty": 1, "defaultPrice": null, "description": "Billed as per actuals.", "eventTypes": ["wedding"], "ceremonyStyles": ["hindu"] },
+    { "id": "sweekarana-haram", "name": "Groom's sweekarana haram & bouquet", "category": "ceremony", "unit": "nos", "defaultQty": 1, "defaultPrice": 5000, "eventTypes": ["wedding"], "ceremonyStyles": ["hindu"] },
+    { "id": "garlands", "name": "Wedding garlands", "category": "ceremony", "unit": "pair", "defaultQty": 1, "defaultPrice": 10000, "eventTypes": ["wedding", "engagement"], "ceremonyStyles": ["hindu"] },
+    { "id": "confetti", "name": "Flower confetti for thalikettu", "category": "ceremony", "unit": "nos", "defaultQty": 4, "defaultPrice": 2000, "eventTypes": ["wedding"], "ceremonyStyles": ["hindu"] },
+    { "id": "bridal-bouquet", "name": "Bridal bouquet & boutonnieres", "category": "ceremony", "unit": "set", "defaultQty": 1, "defaultPrice": 7500, "eventTypes": ["wedding"], "ceremonyStyles": ["christian"] },
+    { "id": "cake-table", "name": "Cake table décor with backdrop", "category": "ceremony", "unit": "nos", "defaultQty": 1, "defaultPrice": 12000, "eventTypes": ["wedding", "reception", "engagement"], "ceremonyStyles": ["christian"] },
+    { "id": "nikah-props", "name": "Nikah ceremony props (mehr tray, Quran stand, attar)", "category": "ceremony", "unit": "set", "defaultQty": 1, "defaultPrice": 9000, "eventTypes": ["wedding"], "ceremonyStyles": ["muslim"] },
+    { "id": "ring-trays", "name": "Ring trays & ceremonial platters", "category": "ceremony", "unit": "set", "defaultQty": 1, "defaultPrice": 4500, "eventTypes": ["engagement"], "ceremonyStyles": ["*"] },
+
+    { "id": "coolers", "name": "Jumbo coolers", "category": "technical", "unit": "nos", "defaultQty": 6, "defaultPrice": 3500, "eventTypes": ["*"], "ceremonyStyles": ["*"] },
+    { "id": "lighting", "name": "Stage, ambient & face lighting", "category": "technical", "unit": "lump sum", "defaultQty": 1, "defaultPrice": 9000, "eventTypes": ["*"], "ceremonyStyles": ["*"],
+      "upgrades": [{ "id": "moving-heads", "name": "Moving-head lights & haze", "price": 18000 }] },
+    { "id": "sound-basic", "name": "Basic sound system with 2 cordless mics", "category": "technical", "unit": "lump sum", "defaultQty": 1, "defaultPrice": 16000, "eventTypes": ["*"], "ceremonyStyles": ["*"],
+      "upgrades": [{ "id": "line-array", "name": "Line-array sound for live band", "price": 35000 }] },
+    { "id": "generator", "name": "Power generator with diesel", "category": "technical", "unit": "nos", "defaultQty": 1, "defaultPrice": 12000, "eventTypes": ["*"], "ceremonyStyles": ["*"] },
+    { "id": "tower-ac", "name": "Tower AC for the stage", "category": "technical", "unit": "nos", "defaultQty": 2, "defaultPrice": 16000, "eventTypes": ["*"], "ceremonyStyles": ["*"] },
+
+    { "id": "hostesses", "name": "Hostesses in traditional costume", "category": "artists", "unit": "nos", "defaultQty": 4, "defaultPrice": 2000, "eventTypes": ["*"], "ceremonyStyles": ["*"] },
+    { "id": "nadaswaram", "name": "Nadaswaram (live)", "category": "artists", "unit": "lump sum", "defaultQty": 1, "defaultPrice": 9000, "eventTypes": ["wedding"], "ceremonyStyles": ["hindu"] },
+    { "id": "panchavadyam", "name": "Panchavadyam to welcome the groom", "category": "artists", "unit": "lump sum", "defaultQty": 1, "defaultPrice": 18000, "eventTypes": ["wedding", "reception"], "ceremonyStyles": ["hindu"] },
+    { "id": "kathakali", "name": "Kathakali artist to welcome the guests", "category": "artists", "unit": "nos", "defaultQty": 1, "defaultPrice": 22000, "eventTypes": ["*"], "ceremonyStyles": ["hindu", "christian"] },
+    { "id": "choir", "name": "Church choir & organist", "category": "artists", "unit": "lump sum", "defaultQty": 1, "defaultPrice": 15000, "eventTypes": ["wedding"], "ceremonyStyles": ["christian"] },
+    { "id": "string-quartet", "name": "String quartet for the walk-in", "category": "artists", "unit": "lump sum", "defaultQty": 1, "defaultPrice": 40000, "eventTypes": ["wedding", "reception"], "ceremonyStyles": ["christian"] },
+    { "id": "oppana", "name": "Oppana performance troupe", "category": "artists", "unit": "lump sum", "defaultQty": 1, "defaultPrice": 20000, "eventTypes": ["*"], "ceremonyStyles": ["muslim"] },
+    { "id": "ghazal", "name": "Ghazal / qawwali singers", "category": "artists", "unit": "lump sum", "defaultQty": 1, "defaultPrice": 35000, "eventTypes": ["reception", "engagement"], "ceremonyStyles": ["muslim"] },
+    { "id": "fusion-band", "name": "Instrumental fusion band", "category": "artists", "unit": "lump sum", "defaultQty": 1, "defaultPrice": 30000, "eventTypes": ["*"], "ceremonyStyles": ["*"] },
+    { "id": "emcee", "name": "Bilingual emcee / anchor", "category": "artists", "unit": "nos", "defaultQty": 1, "defaultPrice": 15000, "eventTypes": ["reception", "engagement"], "ceremonyStyles": ["*"] },
+
+    { "id": "wish-corner", "name": "Wish corner with themed props (wish book, Polaroid camera)", "category": "experiences", "unit": "nos", "defaultQty": 1, "defaultPrice": 16000, "eventTypes": ["*"], "ceremonyStyles": ["*"] },
+    { "id": "photo-booth", "name": "Photo booth with themed décor and props", "category": "experiences", "unit": "nos", "defaultQty": 1, "defaultPrice": 20000, "eventTypes": ["*"], "ceremonyStyles": ["*"] },
+    { "id": "mehndi-corner", "name": "Mehndi corner with two artists", "category": "experiences", "unit": "lump sum", "defaultQty": 1, "defaultPrice": 14000, "eventTypes": ["*"], "ceremonyStyles": ["muslim", "hindu"] },
+    { "id": "hangar", "name": "White-roof German hangar with open sides (82 × 50 ft)", "category": "experiences", "unit": "lump sum", "defaultQty": 1, "defaultPrice": 110000, "description": "Recommended for outdoor and seaside venues during the monsoon.", "eventTypes": ["*"], "ceremonyStyles": ["*"],
+      "upgrades": [{ "id": "hangar-drapes", "name": "Sheer ceiling drapes inside the hangar", "price": 45000 }] },
+
+    { "id": "transport", "name": "Men & material transportation", "category": "general", "unit": "lump sum", "defaultQty": 1, "defaultPrice": 18000, "eventTypes": ["*"], "ceremonyStyles": ["*"] },
+    { "id": "trade-union", "name": "Trade union charges", "category": "general", "unit": "lump sum", "defaultQty": 1, "defaultPrice": 25000, "eventTypes": ["*"], "ceremonyStyles": ["*"] }
+  ]
+}

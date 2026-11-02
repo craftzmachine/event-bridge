@@ -1,0 +1,33 @@
+{
+  "company": "Parinay Weddings",
+  "tagline": "Happily Ever After",
+  "legalName": "Events IQ",
+  "logo": "images/logo.svg",
+  "address": "TC 11/1556(3), DBNRA 94, Devaswom Board Jn, Nanthancode, Kowdiar P.O, Trivandrum – 695003",
+  "phone": "+91 9447708597",
+  "email": "info.parinayweddings@gmail.com",
+  "gstin": "32ARWPV5835B2ZE",
+  "contact": {
+    "name": "Ambadi Ashok",
+    "role": "Manager – Business Development",
+    "phone": "+91 9447708597",
+    "email": "info.parinayweddings@gmail.com"
+  },
+  "currency": "₹",
+  "coordinationPct": 3,
+  "coordinationLabel": "Event Co-ordination Charges",
+  "gstPct": 18,
+  "colors": {
+    "ink": "3A332D",
+    "accent": "A8865A",
+    "soft": "F3EEE6",
+    "line": "E3DBCF"
+  },
+  "terms": [
+    "GST @ 18% will be charged extra on the Grand Total, as applicable.",
+    "Trade union charges for loading / unloading, if applicable, will be charged extra.",
+    "Any additional requirements other than the listed elements will be charged as extra.",
+    "70% advance is required along with a formal work order to start the proceedings.",
+    "All payments should be in favour of Events IQ, payable at Trivandrum."
+  ]
+}

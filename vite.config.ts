@@ -1,0 +1,11 @@
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
+
+export default defineConfig({
+  plugins: [react()],
+  base: "./",
+  server: { port: 5173 },
+  // ExcelJS is loaded on demand when exporting, so its large chunk never blocks start-up
+  build: { chunkSizeWarningLimit: 1100 },
+  test: { environment: "node" },
+} as never);

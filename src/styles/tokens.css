@@ -1,0 +1,24 @@
+:root {
+  --paper: #faf7f2;
+  --paper-2: #f3eee6;
+  --card: #fffdf9;
+  --ink: #3a332d;
+  --ink-2: #6b6158;
+  --stone: #8c8279;
+  --taupe: #b9ac9c;
+  --line: #e6ded2;
+  --gold: #a8865a;
+  --gold-soft: #efe4d2;
+  --danger: #a4493d;
+
+  --serif: "Cormorant Garamond", Georgia, "Times New Roman", serif;
+  --sans: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  --r-sm: 6px;
+  --r: 12px;
+  --r-lg: 18px;
+  --shadow: 0 1px 2px rgba(58, 51, 45, 0.05), 0 8px 24px rgba(58, 51, 45, 0.06);
+  --shadow-lift: 0 2px 4px rgba(58, 51, 45, 0.06), 0 16px 40px rgba(58, 51, 45, 0.1);
+  --gutter: clamp(16px, 3vw, 40px);
+  --tap: 44px;
+}
