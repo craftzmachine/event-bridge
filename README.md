@@ -1,15 +1,15 @@
 # Proposal Builder — Parinay Weddings
 
-A browser app for the Parinay Weddings (Events IQ) sales team to build tailored event proposals and export them as a branded Excel file.
+A browser app for the Parinay Weddings (Events IQ) sales team to build tailored event proposals and export them as a branded Excel workbook or a client-ready PDF.
 
 ## What it does
 
 1. **Sign in** with an authorised team account.
-2. **Client & event**: client name, event date, contact, venue, location, quotation reference.
+2. **Client & event**: client name, event date, contact, venue (with suggestions from the venue directory) and location. The quotation reference is filled in automatically.
 3. **Occasion**: any event type (Wedding, Engagement, Reception) with any ceremony style (Hindu, Christian, Muslim).
 4. **Elements**: browse the catalogue, filtered to the chosen occasion (or show everything), search, and filter by category. For each selected element, set qty, rate (or *as per actuals*), notes for the client, optional upgrades, and whether it is an *additional option*. You can also reorder elements or add a custom one-off line.
 5. **Review**: a branded preview of the proposal as the client will see it. Adjust co-ordination %, round off the Grand Total (one-click suggestions) and edit notes and terms.
-6. **Export to Excel**.
+6. **Export**: **Export to Excel**, or use the ▾ menu next to it to download a **PDF**.
 
 **Venue directory**: **Browse venues** on the home page opens a searchable list of five-star hotels, resorts and event venues in and around Thiruvananthapuram. Each venue shows its name, area, type, star rating, photo and event spaces. You can search, filter by type (hotels, resorts, event venues) and area, open the full details, or **Start proposal** to begin a quotation with the venue already filled in. The Venue field in step 1 also suggests directory venues.
 
@@ -28,13 +28,16 @@ Requires Node 18+.
 ```bash
 npm install
 npm run dev        # http://localhost:5173
-npm test           # totals, config validation, sign-in, Excel export, references, venues
+npm test           # totals, config, sign-in, Excel and PDF export, references, venues
 npm run build      # static site in dist/
+npm run preview    # serve the production build locally (http://localhost:4173)
 ```
 
 ## Deploy
 
 `npm run build` produces a static site in `dist/` with relative paths. Upload it to any static host (Netlify, Vercel, Cloudflare Pages, GitHub Pages, an internal web server). There is no server or database. Config files in `dist/config/` can be edited on the host afterwards.
+
+**Vercel:** import the GitHub repository with the **Vite** framework preset, build command `npm run build` and output directory `dist`. Every push to `main` then redeploys automatically. Check under **Deployments** that the latest commit is live before testing.
 
 ## How totals work
 
@@ -49,6 +52,8 @@ Amounts use Indian digit grouping (₹ 4,41,303.50).
 ## Sign-in
 
 The studio opens only for the team accounts listed in `src/auth/auth.ts`. There is no sign-up. Passwords are not stored; each entry holds `sha256("parinay-proposals:<email>:<password>")`. Sessions last 12 hours on a device, or until **Sign out**.
+
+Emails are not case-sensitive and passwords are. Stray spaces, invisible characters and full-width look-alikes from phone keyboards are ignored. After 5 wrong attempts, sign-in pauses for 30 seconds.
 
 To add or change an account, compute the value and edit the list, then rebuild:
 
@@ -97,7 +102,7 @@ An element:
 
 ### `brand.json`
 
-Company name, logo (`images/parinay-logo-gold.png`, a transparent gold PNG used in the app and embedded in the Excel file), address, GSTIN, point of contact, default co-ordination %, GST %, colours used in the Excel file, and the standard terms.
+Company name, logo (`images/parinay-logo-gold.png`, a transparent gold PNG used in the app and embedded in the Excel and PDF files), address, GSTIN, point of contact, default co-ordination %, GST %, colours used in the Excel file, and the standard terms.
 
 ### `venues.json`
 
@@ -107,25 +112,37 @@ The five starter venues were checked against public listings on 3 November 2026.
 
 ### Logo and look
 
-The gold crest at `public/images/parinay-logo-gold.png` appears on the sign-in page, home page, top bar, proposal preview and the Excel file. To replace it, swap the file, or point `logo` in `brand.json` at a new transparent PNG. The default palette and fonts (antique gold on ivory and espresso; Cinzel, Cormorant Garamond, Pinyon Script), the five alternative themes and the Sans/Mono font modes are all defined in `src/styles/tokens.css`.
+The gold crest at `public/images/parinay-logo-gold.png` appears on the sign-in page, home page, top bar, proposal preview, and the Excel and PDF files. To replace it, swap the file, or point `logo` in `brand.json` at a new transparent PNG. The default palette and fonts (antique gold on ivory and espresso; Cinzel, Cormorant Garamond, Pinyon Script), the five alternative themes and the Sans/Mono font modes are all defined in `src/styles/tokens.css`.
 
 ### Images
 
 The sample photos are hot-linked from Unsplash, so they need an internet connection. To use your own, drop files into `public/images/` and set e.g. `"image": "images/hindu-wedding.jpg"`. A soft neutral background is shown if an image is missing.
 
-## PDF output
+## Exports
 
-The ▾ next to **Export to Excel** opens a menu with **PDF document**, which downloads `Proposal_<Client>_<Style>_<Event>_<Date>.pdf`. This is an A4, client-ready PDF with the crest, event details, items by section, totals, additional options, terms and point of contact. It's generated in the browser with pdfmake, using its bundled Roboto font, which includes the ₹ sign.
+On the review step, **Export to Excel** downloads the workbook. The ▾ next to it opens a menu with **Excel workbook** and **PDF document**. Both files are built in the browser, carry the quotation reference, and are named `Proposal_<Client>_<Style>_<Event>_<Date>.xlsx` / `.pdf`.
 
-## Excel output
+### Excel workbook
 
-`Proposal_<Client>_<Style>_<Event>_<Date>.xlsx` with three tabs:
+Three tabs:
 
 - **Proposal**: event details, items by section, live formulas for Amount, Sub Total, co-ordination (% in its own cell), Rounded Off (yellow input), Grand Total, plus GST and total-incl.-GST reference rows. Set up for A4, fit to width.
 - **Additional Options**: optional items and offered upgrades with their total (never part of the Grand Total).
 - **Terms**: terms & conditions and point of contact.
 
 The workbook stores calculated values alongside the formulas, so totals display correctly even before Excel recalculates.
+
+### PDF document
+
+An A4, client-ready PDF:
+- the crest, event title and quotation reference
+- client details
+- items by section, with notes and included upgrades
+- totals, with GST for reference
+- additional options, marked as not included
+- terms, point of contact and page numbers
+
+The text stays sharp and searchable. pdfmake's bundled Roboto font includes the ₹ sign.
 
 ## Project layout
 
@@ -135,10 +152,10 @@ The workbook stores calculated values alongside the formulas, so totals display 
 | `public/images/` | logo, favicon, your own photos |
 | `src/pages/` | `Login`, `Home` (saved proposals), `Builder` (the four-step wizard), `Venues` (directory) |
 | `src/components/` | preview, element cards, line editor, totals panel and other UI pieces |
-| `src/lib/` | totals, ₹ formatting, Excel export, quotation references, venue search |
+| `src/lib/` | totals, ₹ formatting, Excel and PDF export, quotation references, venue search |
 | `src/state/` | saved proposals, theme and font preference |
 | `src/auth/` | allow-listed accounts and the 12-hour session |
 | `src/config/` | loading and validating the JSON config |
 | `src/styles/` | design tokens and all styles |
 
-Built with Vite, React 18, TypeScript, ExcelJS and Vitest. Guidance for AI coding assistants is in `CLAUDE.md`.
+Built with Vite, React 18, TypeScript, ExcelJS, pdfmake and Vitest. Guidance for AI coding assistants is in `CLAUDE.md`.
