@@ -8,7 +8,7 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 h1, h2, h3, h4 { font-family: var(--serif); font-weight: 500; margin: 0; letter-spacing: 0.005em; }
-h1 { font-size: clamp(32px, 4vw, 46px); line-height: 1.08; }
+h1 { font-size: clamp(32px, 4vw, 46px); line-height: 1.08; text-wrap: balance; }
 h2 { font-size: 28px; }
 h3 { font-size: 21px; }
 button, input, textarea, select { font: inherit; color: inherit; }
@@ -289,6 +289,86 @@ textarea { resize: vertical; min-height: 72px; line-height: 1.45; field-sizing: 
 .pv-contact span { font-size: 13.5px; color: rgba(250, 247, 242, 0.8); }
 .pv-contact small { font-size: 11.5px; color: rgba(250, 247, 242, 0.6); border-top: 1px solid rgba(250, 247, 242, 0.15); padding-top: 10px; }
 
+/* ---------- brand: the feel of the Parinay crest ---------- */
+.eyebrow { font-family: var(--caps); font-weight: 500; font-size: 11.5px; letter-spacing: 0.24em; color: var(--gold-text); }
+.ornament { display: block; width: 180px; height: 18px; color: var(--gold); margin: 18px 0; }
+h1 em, h2 em { font-family: var(--script); font-style: normal; font-weight: 400; color: var(--gold); font-size: 1.18em; line-height: 0.8; padding: 0 0.04em; }
+::selection { background: var(--gold-soft); }
+
+.btn-primary { background: var(--espresso); color: var(--paper); }
+.btn-primary:hover:not(:disabled) { background: #120e0b; box-shadow: inset 0 0 0 1px var(--gold); }
+.btn-gold {
+  min-height: var(--tap); padding: 0 26px; border-radius: 999px; border: 1px solid var(--gold);
+  background: linear-gradient(180deg, #c9ae7d, var(--gold)); color: var(--espresso);
+  font-weight: 600; letter-spacing: 0.04em; box-shadow: 0 8px 24px rgba(183, 154, 104, 0.28);
+  transition: transform 0.15s, box-shadow 0.2s, background 0.2s;
+}
+.btn-gold:hover { background: linear-gradient(180deg, #d6be92, #c3a674); box-shadow: 0 10px 30px rgba(183, 154, 104, 0.38); }
+.btn-gold:active { transform: translateY(1px); }
+.chip { border-color: var(--gold); }
+.check input { accent-color: var(--gold-text); }
+
+/* home hero: centred like an invitation card, gold crest on espresso */
+.home-hero { min-height: 600px; align-items: center; justify-items: center; text-align: center; background: var(--espresso); }
+.home-hero::after { background: radial-gradient(ellipse at center, rgba(36, 29, 24, 0.72) 0%, rgba(36, 29, 24, 0.86) 60%, rgba(36, 29, 24, 0.95) 100%); }
+.home-hero-text { max-width: 760px; padding: 64px var(--gutter) 72px; display: flex; flex-direction: column; align-items: center; }
+.home-hero-text::before, .home-hero-text::after { content: ""; position: absolute; left: 50%; width: min(560px, 80%); transform: translateX(-50%); height: 1px; background: linear-gradient(90deg, transparent, rgba(183, 154, 104, 0.55), transparent); }
+.home-hero-text::before { top: 30px; }
+.home-hero-text::after { bottom: 34px; }
+.brand-logo { width: min(300px, 70vw); height: auto; margin: 0 0 26px; filter: drop-shadow(0 2px 14px rgba(0, 0, 0, 0.35)); }
+.home-hero .eyebrow { color: var(--gold-light); }
+.home-hero h1 { font-size: clamp(38px, 4.6vw, 56px); margin-top: 12px; color: #fbf6ec; }
+.home-hero .ornament { color: var(--gold); margin: 22px auto 6px; }
+.home-hero .lede { margin: 10px auto 30px; color: rgba(251, 246, 236, 0.8); }
+
+.home-bar h2 { position: relative; }
+.home-foot { display: flex; flex-direction: column; align-items: center; gap: 10px; background: var(--espresso); color: rgba(251, 246, 236, 0.6); border-top: 0; padding: 36px 24px; }
+.home-foot img { width: 120px; }
+
+/* builder chrome */
+.topbar { grid-template-columns: auto auto 1fr auto; }
+.topbar-logo { height: 42px; width: auto; }
+.topbar-title { padding-left: 16px; border-left: 1px solid var(--line); }
+.step.is-current { border-bottom-color: var(--gold); }
+.step.is-current .step-num { background: var(--espresso); color: var(--gold-light); border-color: var(--espresso); }
+.step.is-done .step-num { color: var(--gold-text); }
+.panel h1, .catalogue h1, .review-side h1 { position: relative; }
+.group-h { display: flex; align-items: center; gap: 14px; }
+.group-h::after { content: ""; flex: 1; height: 1px; background: linear-gradient(90deg, var(--taupe), transparent); }
+
+.choice.is-selected { box-shadow: 0 0 0 1.5px var(--gold), var(--shadow-lift); }
+.choice-label { font-family: var(--caps); font-size: 19px; letter-spacing: 0.08em; text-transform: uppercase; }
+.tabs button.is-on { background: var(--espresso); border-color: var(--espresso); color: var(--gold-light); }
+.btn-add { background: var(--gold-soft); }
+.btn-added { color: var(--gold-text); }
+.el-card.is-added { border-color: var(--gold); background: #fdf8ee; }
+.basket-inner h2, .side-card h3 { font-family: var(--caps); font-size: 15px; letter-spacing: 0.16em; text-transform: uppercase; font-weight: 500; color: var(--ink); }
+.basket-inner h2 { padding-bottom: 12px; border-bottom: 1px solid var(--gold); }
+.totals-gt { border-top-color: var(--gold); }
+.totals-gt dt { font-family: var(--caps); font-size: 15px; letter-spacing: 0.14em; text-transform: uppercase; align-self: center; }
+
+/* proposal preview: invitation cover with the crest */
+.pv-cover { min-height: 400px; justify-items: center; align-items: center; text-align: center; background: var(--espresso); }
+.pv-cover::after { background: radial-gradient(ellipse at center, rgba(36, 29, 24, 0.6), rgba(36, 29, 24, 0.9)); }
+.pv-cover-text { display: flex; flex-direction: column; align-items: center; padding: 40px 44px 44px; }
+.pv-logo { width: min(220px, 60%); height: auto; margin: 0 0 26px; filter: drop-shadow(0 2px 12px rgba(0, 0, 0, 0.35)); }
+.pv-cover .eyebrow { color: var(--gold-light); }
+.pv-cover h2 { color: #fbf6ec; }
+.pv-cover .ornament { margin: 16px auto 4px; }
+.pv-tag { font-family: var(--script); font-style: normal; font-size: 30px; color: var(--gold-light); margin-top: 4px; }
+.pv-card span { font-family: var(--caps); color: var(--gold-text); font-weight: 500; }
+.pv-h { font-family: var(--serif); }
+.pv-table th { font-family: var(--caps); font-size: 13.5px; letter-spacing: 0.12em; text-transform: uppercase; font-weight: 500; }
+.pv-table th.pv-sl { border-left-color: var(--gold); color: var(--gold-text); }
+.preview > .totals { border-color: var(--gold); background: #fffaf0; }
+.pv-terms li::marker { color: var(--gold); }
+.pv-contact { background: var(--espresso); flex-direction: row; flex-wrap: wrap; align-items: center; gap: 18px 28px; }
+.pv-contact-logo { width: 120px; height: auto; }
+.pv-contact div { flex: 1; min-width: 200px; }
+.pv-contact .eyebrow { color: var(--gold-light); }
+.pv-contact small { flex-basis: 100%; }
+.config-error .eyebrow { color: var(--danger); }
+
 /* ---------- motion ---------- */
 @keyframes rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
 @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
@@ -376,13 +456,19 @@ textarea { resize: vertical; min-height: 72px; line-height: 1.45; field-sizing: 
   .home-hero::after { background: linear-gradient(180deg, rgba(42, 36, 31, 0.55) 0%, rgba(42, 36, 31, 0.78) 60%, rgba(42, 36, 31, 0.9) 100%); }
   .home-hero-text { padding: 40px var(--gutter) 36px; }
   .home-hero h1 { font-size: 38px; }
-  .brand-logo { height: 38px; margin-bottom: 26px; }
-  .home-hero .btn-primary { width: 100%; }
+  .brand-logo { width: min(220px, 64vw); margin-bottom: 18px; }
+  .home-hero-text::before { top: 18px; }
+  .home-hero-text::after { bottom: 20px; }
+  .home-hero .btn-gold { width: 100%; }
   .home-main { padding-top: 28px; }
   .cards { grid-template-columns: 1fr; gap: 16px; }
   .pcard-img { height: 110px; }
 
   .topbar { grid-template-columns: auto 1fr; gap: 12px; padding-block: 8px; }
+  .topbar-logo { display: none; }
+  .topbar-title { padding-left: 0; border-left: 0; }
+  .pv-cover { min-height: 320px; }
+  .pv-tag { font-size: 26px; }
   .topbar .btn-ghost { width: 40px; padding: 0; }
   .topbar-title strong { font-size: 19px; }
   .topbar-total { display: none; }

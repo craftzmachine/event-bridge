@@ -2,7 +2,7 @@
   "company": "Parinay Weddings",
   "tagline": "Happily Ever After",
   "legalName": "Events IQ",
-  "logo": "images/logo.svg",
+  "logo": "images/parinay-logo-gold.png",
   "address": "TC 11/1556(3), DBNRA 94, Devaswom Board Jn, Nanthancode, Kowdiar P.O, Trivandrum – 695003",
   "phone": "+91 9447708597",
   "email": "info.parinayweddings@gmail.com",
@@ -18,10 +18,10 @@
   "coordinationLabel": "Event Co-ordination Charges",
   "gstPct": 18,
   "colors": {
-    "ink": "3A332D",
-    "accent": "A8865A",
-    "soft": "F3EEE6",
-    "line": "E3DBCF"
+    "ink": "2E2620",
+    "accent": "A0824F",
+    "soft": "F4EEE3",
+    "line": "E8DFCF"
   },
   "terms": [
     "GST @ 18% will be charged extra on the Grand Total, as applicable.",

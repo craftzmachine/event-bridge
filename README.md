@@ -54,7 +54,7 @@ An element:
 
 ### `brand.json`
 
-Company name, logo, address, GSTIN, point of contact, default co-ordination %, GST %, colours used in the Excel file, and the standard terms.
+Company name, logo (`images/parinay-logo-gold.png`, a transparent gold PNG used in the app and embedded in the Excel file), address, GSTIN, point of contact, default co-ordination %, GST %, colours used in the Excel file, and the standard terms.
 
 ### Images
 

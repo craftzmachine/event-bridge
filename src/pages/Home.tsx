@@ -6,6 +6,7 @@ import { computeTotals } from "../lib/totals";
 import { formatDate, formatINRShort, safeFilePart } from "../lib/format";
 import { proposalTitle } from "../lib/proposal";
 import Img from "../components/Img";
+import Ornament from "../components/Ornament";
 
 type Store = ReturnType<typeof useProposals>;
 
@@ -39,11 +40,12 @@ export default function Home({ store, onOpen, onNew }: { store: Store; onOpen: (
       <header className="home-hero">
         <Img src={hero} alt="" className="home-hero-img" />
         <div className="home-hero-text">
-          <img className="brand-logo" src={`${import.meta.env.BASE_URL}${brand.logo}`} alt={brand.company} />
+          <img className="brand-logo" src={`${import.meta.env.BASE_URL}${brand.logo}`} alt={`${brand.company} — ${brand.tagline}`} />
           <p className="eyebrow">Proposal studio</p>
-          <h1>Craft a proposal worth saying yes to.</h1>
+          <h1>Craft a proposal worth saying <em>yes</em> to.</h1>
+          <Ornament />
           <p className="lede">Choose the occasion, curate the elements and hand the client a polished estimate in minutes.</p>
-          <button className="btn-primary btn-lg" onClick={onNew}>Start a new proposal</button>
+          <button className="btn-gold btn-lg" onClick={onNew}>Start a new proposal</button>
         </div>
       </header>
 
@@ -94,7 +96,10 @@ export default function Home({ store, onOpen, onNew }: { store: Store; onOpen: (
           </ul>
         )}
       </main>
-      <footer className="home-foot">{brand.company} · {brand.legalName} · {brand.phone} · {brand.email}</footer>
+      <footer className="home-foot">
+        <img src={`${import.meta.env.BASE_URL}${brand.logo}`} alt={brand.company} />
+        <span>{brand.legalName} · {brand.phone} · {brand.email}</span>
+      </footer>
     </div>
   );
 }

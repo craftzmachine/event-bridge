@@ -1,24 +1,30 @@
 :root {
-  --paper: #faf7f2;
-  --paper-2: #f3eee6;
-  --card: #fffdf9;
-  --ink: #3a332d;
-  --ink-2: #6b6158;
-  --stone: #8c8279;
-  --taupe: #b9ac9c;
-  --line: #e6ded2;
-  --gold: #a8865a;
-  --gold-soft: #efe4d2;
+  /* palette drawn from the Parinay crest: antique gold on ivory and espresso */
+  --paper: #fbf8f2;
+  --paper-2: #f4eee3;
+  --card: #fffdf8;
+  --ink: #2e2620;
+  --ink-2: #64584c;
+  --stone: #8e8377;
+  --taupe: #c4b59c;
+  --line: #e8dfcf;
+  --gold: #b79a68;        /* the logo gold — rules, borders, fills */
+  --gold-text: #8a6e42;   /* darker gold for small text on ivory (readable contrast) */
+  --gold-light: #d8c39a;  /* gold text on espresso */
+  --gold-soft: #f1e7d4;
+  --espresso: #241d18;
   --danger: #a4493d;
 
   --serif: "Cormorant Garamond", Georgia, "Times New Roman", serif;
+  --caps: Cinzel, "Trajan Pro", Georgia, serif;
+  --script: "Pinyon Script", "Great Vibes", cursive;
   --sans: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
 
   --r-sm: 6px;
   --r: 12px;
   --r-lg: 18px;
-  --shadow: 0 1px 2px rgba(58, 51, 45, 0.05), 0 8px 24px rgba(58, 51, 45, 0.06);
-  --shadow-lift: 0 2px 4px rgba(58, 51, 45, 0.06), 0 16px 40px rgba(58, 51, 45, 0.1);
+  --shadow: 0 1px 2px rgba(46, 38, 32, 0.05), 0 8px 24px rgba(46, 38, 32, 0.06);
+  --shadow-lift: 0 2px 4px rgba(46, 38, 32, 0.06), 0 18px 44px rgba(46, 38, 32, 0.11);
   --gutter: clamp(16px, 3vw, 40px);
   --tap: 44px;
 }

@@ -48,6 +48,7 @@ export default function Builder({ proposal: p, onChange, onClose }: { proposal: 
         <button className="btn-ghost btn-sm" onClick={onClose} aria-label="All proposals">
           ←<span className="hide-phone"> All proposals</span>
         </button>
+        <img className="topbar-logo" src={`${import.meta.env.BASE_URL}${brand.logo}`} alt={brand.company} />
         <div className="topbar-title">
           <span className="eyebrow">{occasionChosen ? proposalTitle(p, catalog) : "New proposal"}</span>
           <strong>{p.client.name || "Untitled client"}</strong>

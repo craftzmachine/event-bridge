@@ -5,6 +5,7 @@ import { formatDate, formatINR } from "../lib/format";
 import { groupLines, proposalTitle } from "../lib/proposal";
 import Img from "./Img";
 import TotalsPanel from "./TotalsPanel";
+import Ornament from "./Ornament";
 
 function Row({ l, i }: { l: Line; i: number }) {
   const inc = l.upgrades.filter((u) => u.mode === "include");
@@ -46,7 +47,8 @@ export default function ProposalPreview({ p }: { p: Proposal }) {
           <img className="pv-logo" src={`${import.meta.env.BASE_URL}${brand.logo}`} alt={brand.company} />
           <p className="eyebrow">A proposal for</p>
           <h2>{proposalTitle(p, catalog)}</h2>
-          <p className="pv-tag">{brand.tagline}</p>
+          <Ornament />
+          {p.client.name && <p className="pv-tag">for {p.client.name}</p>}
         </div>
       </header>
       <section className="pv-card">
@@ -95,6 +97,7 @@ export default function ProposalPreview({ p }: { p: Proposal }) {
       <p className="eyebrow">Terms &amp; conditions</p>
       <ul className="pv-terms">{p.terms.filter((x) => x.trim()).map((x, i) => <li key={i}>{x}</li>)}</ul>
       <footer className="pv-contact">
+        <img className="pv-contact-logo" src={`${import.meta.env.BASE_URL}${brand.logo}`} alt={brand.company} />
         <div>
           <p className="eyebrow">Your point of contact</p>
           <strong>{brand.contact.name}</strong>

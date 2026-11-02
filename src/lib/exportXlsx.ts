@@ -41,9 +41,11 @@ export function buildWorkbook(p: Proposal, catalog: Catalog, brand: Brand, logoP
   // ---- header -----------------------------------------------------------
   if (logoPng) {
     const id = wb.addImage({ base64: logoPng, extension: "png" });
-    ws.addImage(id, { tl: { col: 0.1, row: 0.15 }, ext: { width: 200, height: 54 } });
-    ws.getRow(1).height = 26;
-    ws.getRow(2).height = 22;
+    // the crest is ~1.47:1; three header rows give it room
+    ws.addImage(id, { tl: { col: 0.15, row: 0.15 }, ext: { width: 150, height: 102 } });
+    ws.getRow(1).height = 30;
+    ws.getRow(2).height = 30;
+    ws.getRow(3).height = 24;
   } else {
     ws.mergeCells("A1:D1");
     Object.assign(ws.getCell("A1"), { value: brand.company.toUpperCase() });
@@ -61,7 +63,7 @@ export function buildWorkbook(p: Proposal, catalog: Catalog, brand: Brand, logoP
   ws.getCell("E2").value = title;
   ws.getCell("E2").font = { name: SERIF, size: 16, color: { argb: argb(c.ink) } };
   ws.getCell("E2").alignment = { horizontal: "right", vertical: "middle" };
-  ws.getRow(3).height = 8;
+  if (!logoPng) ws.getRow(3).height = 8;
   for (let col = 1; col <= 7; col++) ws.getRow(3).getCell(col).border = { bottom: { style: "medium", color: { argb: argb(c.accent) } } };
 
   // ---- event info -------------------------------------------------------
@@ -314,7 +316,7 @@ function styleItemRow(row: ExcelJS.Row, thin: Partial<ExcelJS.Border>, c: Brand[
 }
 
 /** Rasterises an SVG/PNG URL to base64 PNG so it can be embedded in the workbook (browser only). */
-export async function logoToPng(url: string, width = 400, height = 108): Promise<string | undefined> {
+export async function logoToPng(url: string, width = 600, height = 408): Promise<string | undefined> {
   try {
     const img = new Image();
     img.src = url;
@@ -324,7 +326,7 @@ export async function logoToPng(url: string, width = 400, height = 108): Promise
     canvas.height = height;
     const ctx = canvas.getContext("2d")!;
     const scale = Math.min(width / img.width, height / img.height);
-    ctx.drawImage(img, 0, (height - img.height * scale) / 2, img.width * scale, img.height * scale);
+    ctx.drawImage(img, (width - img.width * scale) / 2, (height - img.height * scale) / 2, img.width * scale, img.height * scale);
     return canvas.toDataURL("image/png").split(",")[1];
   } catch {
     return undefined;
