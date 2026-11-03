@@ -11,7 +11,7 @@ A browser app for the Parinay Weddings (Events IQ) sales team to build tailored 
 5. **Review**: a branded preview of the proposal as the client will see it. Adjust co-ordination %, round off the Grand Total (one-click suggestions) and edit notes and terms.
 6. **Export**: **Export to Excel**, or use the ▾ menu next to it to download a **PDF**.
 
-**Venue directory**: **Browse venues** on the home page opens a searchable list of five-star hotels, resorts and event venues in and around Thiruvananthapuram. Each venue shows its name, area, type, star rating, photo and event spaces. You can search, filter by type (hotels, resorts, event venues) and area, open the full details, or **Start proposal** to begin a quotation with the venue already filled in. The Venue field in step 1 also suggests directory venues.
+**Venue directory**: **Browse venues** on the home page opens a searchable list of 29 hotels, resorts, convention centres and wedding halls in and around Thiruvananthapuram. Each venue shows its name, area, type, star rating, photo and event spaces. You can search, filter by type (hotels, resorts, event venues) and area, open the full details, or **Start proposal** to begin a quotation with the venue already filled in. The Venue field in step 1 also suggests directory venues.
 
 **Quotation references** are generated automatically when a proposal is created or duplicated, in the form `YYYYDDMM-ABC`: year, day, month, then three random capital letters (3 Nov 2026 → `20260311-KQZ`). They are unique among the proposals on that device and cannot be edited. Drafts saved before this feature were given one dated from when they were created.
 
@@ -108,7 +108,7 @@ Company name, logo (`images/parinay-logo-gold.png`, a transparent gold PNG used 
 
 The venue directory. `venueTypes` lists the filter types (`hotel`, `resort`, `venue`). Each venue has `id`, `name`, `type`, `area`, `city`, and optionally `aka`, `address`, `stars` (1–5), `phone`, `website`, `photo`, `photoIsRepresentative`, `features`, `verification` and `sources`. It also has `spaces`: a list of `{ name, size?, capacity?, note? }`.
 
-The five starter venues were checked against public listings on 3 November 2026. Where sources disagreed, the venue's `verification` note says so. **Confirm names, addresses, star ratings and capacities with each venue before quoting them**, and replace the representative stock photos with real venue photos (set `photoIsRepresentative` to `false`).
+The five starter venues (Hyatt, Hilton Garden Inn, Vivanta, Hycinth, Taj Green Cove) were checked against public listings on 3 November 2026. Where sources disagreed, the venue's `verification` note says so. The 24 convention centres and resorts added from the team's list have only a name, area and source link so far, and their cards show a monogram until a photo is added. **Confirm names, addresses, star ratings and capacities with each venue before quoting them**, and replace the representative stock photos with real venue photos (set `photoIsRepresentative` to `false`).
 
 ### Logo and look
 

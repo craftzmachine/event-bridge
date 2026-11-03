@@ -12,6 +12,16 @@ const Stars = ({ n }: { n?: number }) =>
     </span>
   ) : null;
 
+/** Stand-in for venues without a photo yet: the first letters of the main words, in the crest's gold. */
+const Monogram = ({ name }: { name: string }) => {
+  const words = name.replace(/^the\s+/i, "").split(/[\s,&]+/).filter((w) => /^[A-Za-z]/.test(w));
+  return (
+    <span className="venue-monogram" aria-hidden>
+      {words.slice(0, 2).map((w) => w[0].toUpperCase()).join("")}
+    </span>
+  );
+};
+
 export default function Venues({ onBack, onStartProposal }: { onBack: () => void; onStartProposal: (v: Venue) => void }) {
   const { venues: dir, brand } = useConfig();
   const [q, setQ] = useState("");
@@ -86,6 +96,7 @@ export default function Venues({ onBack, onStartProposal }: { onBack: () => void
                   <button className="venue-open" onClick={() => setOpen(v)} aria-label={`Details for ${v.name}`}>
                     <div className="venue-photo">
                       <Img src={v.photo} alt={v.photoIsRepresentative ? "" : v.name} />
+                      {!v.photo && <Monogram name={v.name} />}
                       <span className="venue-type">{typeLabel(v.type)}</span>
                       {v.photoIsRepresentative && <span className="venue-photo-note">Representative photo</span>}
                     </div>
@@ -93,6 +104,7 @@ export default function Venues({ onBack, onStartProposal }: { onBack: () => void
                       <Stars n={v.stars} />
                       <h3>{v.name}</h3>
                       <p className="venue-area">{v.area}, {v.city}</p>
+                      {!v.spaces.length && <p className="venue-tbc">Spaces and capacity to be confirmed</p>}
                       <ul className="venue-spaces">
                         {v.spaces.slice(0, 3).map((s) => (
                           <li key={s.name}>
@@ -131,6 +143,7 @@ function VenueDialog({ v, typeLabel, onClose, onStart }: { v: Venue; typeLabel: 
     <dialog ref={ref} className="venue-dialog" onClose={onClose} onClick={(e) => e.target === ref.current && onClose()} aria-labelledby="venue-dialog-title">
       <div className="vd-photo">
         <Img src={v.photo} alt={v.photoIsRepresentative ? "" : v.name} />
+        {!v.photo && <Monogram name={v.name} />}
         {v.photoIsRepresentative && <span className="venue-photo-note">Representative photo</span>}
         <button className="vd-close" onClick={onClose} aria-label="Close">×</button>
       </div>

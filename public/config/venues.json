@@ -1,5 +1,5 @@
 {
-  "note": "Starter list. Details were checked against public listings on 2026-11-03; sources sometimes disagree, so confirm names, addresses, star ratings and capacities with each venue before quoting them to clients. Photos are representative stock images until real venue photos are added.",
+  "note": "Details were checked against public listings on 2026-11-03, and the convention centres and resorts added from the team's list carry only a name, area and source link so far. Sources sometimes disagree, so confirm names, addresses, star ratings and capacities with each venue before quoting them to clients. Photos are representative stock images until real venue photos are added.",
   "venueTypes": [
     { "id": "hotel", "label": "Hotel" },
     { "id": "resort", "label": "Resort" },
@@ -119,8 +119,275 @@
       "verification": "Lawn and Agora Hall figures from Taj's events page; Tango capacity and vendor policy from third-party listings.",
       "sources": [
         "https://www.tajhotels.com/en-in/hotels/taj-green-cove/meetings-and-event-venues",
-        "https://www.weddingwire.in/wedding-resorts/taj-green-cove-resort-&-spa-kovalam--e82184"
+        "https://www.weddingwire.in/wedding-resorts/taj-green-cove-resort-&-spa-kovalam--e82184",
+        "https://www.wedmegood.com/vendors/trivandrum-thiruvananthapuram-/wedding-venues/all/wedding-resorts/"
       ]
+    },
+    {
+      "id": "al-saj-international-convention-centre",
+      "name": "Al Saj International Convention Centre",
+      "type": "venue",
+      "area": "Kazhakkoottam",
+      "city": "Thiruvananthapuram",
+      "website": "https://www.alsajconventioncenter.com/",
+      "spaces": [],
+      "verification": "From the team's venue list (added 2026-11-03). Name and area only; star rating, capacity, address and photos not yet checked.",
+      "sources": ["https://www.alsajconventioncenter.com/"]
+    },
+    {
+      "id": "al-saj-arena",
+      "name": "Al Saj Arena",
+      "address": "Kulathoor, opposite Infosys",
+      "type": "venue",
+      "area": "Kulathoor",
+      "city": "Thiruvananthapuram",
+      "website": "https://www.alsajconventioncenter.com/",
+      "spaces": [],
+      "verification": "From the team's venue list (added 2026-11-03). Name and area only; star rating, capacity, address and photos not yet checked.",
+      "sources": ["https://www.alsajconventioncenter.com/"]
+    },
+    {
+      "id": "al-saj-amaranta",
+      "name": "Al Saj Amaranta",
+      "address": "Kazhakkoottam, opposite Technopark",
+      "type": "venue",
+      "area": "Kazhakkoottam",
+      "city": "Thiruvananthapuram",
+      "website": "https://www.alsajconventioncenter.com/",
+      "spaces": [],
+      "verification": "From the team's venue list (added 2026-11-03). Name and area only; star rating, capacity, address and photos not yet checked.",
+      "sources": ["https://www.alsajconventioncenter.com/"]
+    },
+    {
+      "id": "al-saj-convention-centre-nemom",
+      "name": "Al Saj Convention Centre, Nemom",
+      "type": "venue",
+      "area": "Nemom",
+      "city": "Thiruvananthapuram",
+      "website": "",
+      "spaces": [],
+      "verification": "From the team's venue list (added 2026-11-03). Name and area only; star rating, capacity, address and photos not yet checked. The source is a general listing page, not the venue's own site.",
+      "sources": ["https://kazhakuttam.com/listing-category/convention-center/"]
+    },
+    {
+      "id": "al-saj-convention-centre-azhicode",
+      "name": "Al Saj Convention Centre, Azhicode",
+      "type": "venue",
+      "area": "Azhicode",
+      "city": "Thiruvananthapuram",
+      "website": "",
+      "spaces": [],
+      "verification": "From the team's venue list (added 2026-11-03). Name and area only; star rating, capacity, address and photos not yet checked. The source is a general listing page, not the venue's own site.",
+      "sources": ["https://kazhakuttam.com/listing/al-saj-convention-centre-azhicode/"]
+    },
+    {
+      "id": "ragam-convention-centre",
+      "name": "Ragam Convention Centre",
+      "type": "venue",
+      "area": "Kazhakkoottam",
+      "city": "Thiruvananthapuram",
+      "website": "https://www.ragamconventioncentre.com/",
+      "spaces": [],
+      "verification": "From the team's venue list (added 2026-11-03). Name and area only; star rating, capacity, address and photos not yet checked.",
+      "sources": ["https://www.ragamconventioncentre.com/our-halls"]
+    },
+    {
+      "id": "uday-palace-convention-centre",
+      "name": "Uday Palace Convention Centre",
+      "type": "venue",
+      "area": "Kowdiar",
+      "city": "Thiruvananthapuram",
+      "website": "https://www.udshotels.com/uday-palace-convention-centre/",
+      "spaces": [],
+      "verification": "From the team's venue list (added 2026-11-03). Name and area only; star rating, capacity, address and photos not yet checked.",
+      "sources": ["https://www.udshotels.com/uday-palace-convention-centre/"]
+    },
+    {
+      "id": "gardenia-convention-center",
+      "name": "Gardenia Convention Center",
+      "type": "venue",
+      "area": "Thiruvananthapuram",
+      "city": "Thiruvananthapuram",
+      "website": "https://www.gardeniaconventioncenter.in/",
+      "spaces": [],
+      "verification": "From the team's venue list (added 2026-11-03). Name and area only; star rating, capacity, address and photos not yet checked.",
+      "sources": ["https://www.gardeniaconventioncenter.in/"]
+    },
+    {
+      "id": "veli-international-convention-centre",
+      "name": "Veli International Convention Centre",
+      "type": "venue",
+      "area": "Veli",
+      "city": "Thiruvananthapuram",
+      "website": "",
+      "spaces": [],
+      "verification": "From the team's venue list (added 2026-11-03). Name and area only; star rating, capacity, address and photos not yet checked. The source is a Kerala Tourism news item.",
+      "sources": ["https://www.keralatourism.org/newsletter/news/2024/veli-international-convention-centre/2219"]
+    },
+    {
+      "id": "crystal-convention-centre",
+      "name": "Crystal Convention Centre",
+      "type": "venue",
+      "area": "Nagaroor",
+      "city": "Thiruvananthapuram",
+      "website": "",
+      "spaces": [],
+      "verification": "From the team's venue list (added 2026-11-03). Name and area only; star rating, capacity, address and photos not yet checked. The source is a general listing page, not the venue's own site.",
+      "sources": ["https://www.wedmegood.com/vendors/trivandrum-thiruvananthapuram-/wedding-venues/all/"]
+    },
+    {
+      "id": "ss-pooja-convention-centre",
+      "name": "SS Pooja Convention Centre",
+      "type": "venue",
+      "area": "Thiruvananthapuram",
+      "city": "Thiruvananthapuram",
+      "website": "",
+      "spaces": [],
+      "verification": "From the team's venue list (added 2026-11-03). Name and area only; star rating, capacity, address and photos not yet checked. The source is a general listing page, not the venue's own site.",
+      "sources": ["https://www.weddingbazaar.com/wedding-venues-in-thiruvananthapuram"]
+    },
+    {
+      "id": "royal-palace-convention-centre",
+      "name": "Royal Palace Convention Centre",
+      "type": "venue",
+      "area": "Thiruvananthapuram",
+      "city": "Thiruvananthapuram",
+      "website": "",
+      "spaces": [],
+      "verification": "From the team's venue list (added 2026-11-03). Name and area only; star rating, capacity, address and photos not yet checked. The source is a general listing page, not the venue's own site.",
+      "sources": ["https://www.weddingbazaar.com/wedding-venues-in-thiruvananthapuram"]
+    },
+    {
+      "id": "chinnus-convention-centre",
+      "name": "Chinnus Convention Centre",
+      "type": "venue",
+      "area": "Thiruvananthapuram",
+      "city": "Thiruvananthapuram",
+      "website": "",
+      "spaces": [],
+      "verification": "From the team's venue list (added 2026-11-03). Name and area only; star rating, capacity, address and photos not yet checked. The source is a general listing page, not the venue's own site.",
+      "sources": ["https://www.weddingbazaar.com/wedding-venues-in-thiruvananthapuram"]
+    },
+    {
+      "id": "diya-gardens-convention-center",
+      "name": "Diya Gardens Convention Center",
+      "type": "venue",
+      "area": "Thiruvananthapuram",
+      "city": "Thiruvananthapuram",
+      "website": "",
+      "spaces": [],
+      "verification": "From the team's venue list (added 2026-11-03). Name and area only; star rating, capacity, address and photos not yet checked. The source is a general listing page, not the venue's own site.",
+      "sources": ["https://www.weddingbazaar.com/wedding-venues-in-thiruvananthapuram"]
+    },
+    {
+      "id": "girideepam-convention-centre",
+      "name": "Girideepam Convention Centre",
+      "type": "venue",
+      "area": "Thiruvananthapuram",
+      "city": "Thiruvananthapuram",
+      "website": "",
+      "spaces": [],
+      "verification": "From the team's venue list (added 2026-11-03). Name and area only; star rating, capacity, address and photos not yet checked. The only source is a Reddit discussion, so confirm the details directly.",
+      "sources": ["https://www.reddit.com/r/Trivandrum/comments/1rfjprd/need_honest_reviews_on_trivandrum_wedding_venues/"]
+    },
+    {
+      "id": "the-leela-kovalam",
+      "name": "The Leela Kovalam, a Raviz Hotel",
+      "type": "resort",
+      "area": "Kovalam",
+      "city": "Thiruvananthapuram",
+      "website": "",
+      "spaces": [],
+      "verification": "From the team's venue list (added 2026-11-03). Name and area only; star rating, capacity, address and photos not yet checked. The source is The Leela's wedding brochure (PDF).",
+      "sources": ["https://www.theleela.com/prod/content/assets/factsheet/Wedding-Brochure-The-Leela-Kovalam_0.pdf?VersionId=6EjjQxNyjtrWTdFqiwA9QqP0LBeNfwCH"]
+    },
+    {
+      "id": "uday-samudra-kovalam",
+      "name": "Uday Samudra Leisure Beach Hotel & Spa",
+      "type": "resort",
+      "area": "Kovalam",
+      "city": "Thiruvananthapuram",
+      "website": "",
+      "spaces": [],
+      "verification": "From the team's venue list (added 2026-11-03). Name and area only; star rating, capacity, address and photos not yet checked. The source is a general listing page, not the venue's own site.",
+      "sources": ["https://www.wedmegood.com/vendors/trivandrum-thiruvananthapuram-/wedding-venues/all/wedding-resorts/"]
+    },
+    {
+      "id": "travancore-heritage-chowara",
+      "name": "The Travancore Heritage Beach Resort",
+      "type": "resort",
+      "area": "Chowara",
+      "city": "Thiruvananthapuram",
+      "website": "https://www.thetravancoreheritage.com/",
+      "spaces": [],
+      "verification": "From the team's venue list (added 2026-11-03). Name and area only; star rating, capacity, address and photos not yet checked.",
+      "sources": ["https://www.thetravancoreheritage.com/banquets-and-meetings.html"]
+    },
+    {
+      "id": "poovar-island-resort",
+      "name": "Poovar Island Resort",
+      "type": "resort",
+      "area": "Poovar",
+      "city": "Thiruvananthapuram",
+      "website": "",
+      "spaces": [],
+      "verification": "From the team's venue list (added 2026-11-03). Name and area only; star rating, capacity, address and photos not yet checked. The source is Kerala Tourism's destination-wedding listing.",
+      "sources": ["https://www.keralatourism.org/destination-wedding/wedding-properties/poovar-island-resort-25"]
+    },
+    {
+      "id": "estuary-sarovar-premiere-poovar",
+      "name": "Estuary Sarovar Premiere",
+      "type": "resort",
+      "area": "Poovar",
+      "city": "Thiruvananthapuram",
+      "website": "https://www.sarovarhotels.com/estuary-sarovar-Premiere-poovar/celebrations.html",
+      "spaces": [],
+      "verification": "From the team's venue list (added 2026-11-03). Name and area only; star rating, capacity, address and photos not yet checked.",
+      "sources": ["https://www.sarovarhotels.com/estuary-sarovar-Premiere-poovar/celebrations.html"]
+    },
+    {
+      "id": "lake-palace",
+      "name": "Lake Palace",
+      "type": "resort",
+      "area": "Thiruvananthapuram",
+      "city": "Thiruvananthapuram",
+      "website": "https://lakepalace.in/",
+      "spaces": [],
+      "verification": "From the team's venue list (added 2026-11-03). Name and area only; star rating, capacity, address and photos not yet checked.",
+      "sources": ["https://lakepalace.in/en/events/view/wedding.html"]
+    },
+    {
+      "id": "sunrise-resort-kovalam",
+      "name": "Sunrise Resort",
+      "type": "resort",
+      "area": "Kovalam",
+      "city": "Thiruvananthapuram",
+      "website": "",
+      "spaces": [],
+      "verification": "From the team's venue list (added 2026-11-03). Name and area only; star rating, capacity, address and photos not yet checked. The source is a general listing page, not the venue's own site.",
+      "sources": ["https://www.wedmegood.com/vendors/trivandrum-thiruvananthapuram-/wedding-venues/all/wedding-resorts/"]
+    },
+    {
+      "id": "swagath-holiday-resort-kovalam",
+      "name": "Swagath Holiday Resort",
+      "type": "resort",
+      "area": "Kovalam",
+      "city": "Thiruvananthapuram",
+      "website": "",
+      "spaces": [],
+      "verification": "From the team's venue list (added 2026-11-03). Name and area only; star rating, capacity, address and photos not yet checked. The source is a general listing page, not the venue's own site.",
+      "sources": ["https://www.wedmegood.com/vendors/trivandrum-thiruvananthapuram-/wedding-venues/all/wedding-resorts/"]
+    },
+    {
+      "id": "havelia-island-resort",
+      "name": "Havelia Island Resort",
+      "type": "resort",
+      "area": "Thiruvananthapuram",
+      "city": "Thiruvananthapuram",
+      "website": "",
+      "spaces": [],
+      "verification": "From the team's venue list (added 2026-11-03). Name and area only; star rating, capacity, address and photos not yet checked. The list gives the location only as \"Thiruvananthapuram area\". The source is a general listing page, not the venue's own site.",
+      "sources": ["https://www.wedmegood.com/vendors/trivandrum-thiruvananthapuram-/wedding-venues/all/wedding-resorts/"]
     }
   ]
 }

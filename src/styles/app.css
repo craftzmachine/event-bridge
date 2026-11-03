@@ -862,3 +862,14 @@ a.btn-gold, a.btn-primary, a.btn-ghost, a.btn-outline-light {
 }
 .login-back:hover { color: var(--ink); border-color: var(--taupe); }
 .login-main { padding-top: 76px; }
+
+/* ---------- Venues without a photo ---------- */
+.venue-photo .img, .vd-photo .img { background: radial-gradient(ellipse at 50% 40%, color-mix(in srgb, var(--gold) 22%, var(--espresso)), var(--espresso)); }
+.venue-photo .img:has(img), .vd-photo .img:has(img) { background: var(--paper-2); }
+.venue-monogram {
+  position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none;
+  font-family: var(--caps); font-size: 54px; letter-spacing: 0.12em; color: var(--gold-light);
+  text-shadow: 0 2px 18px color-mix(in srgb, var(--espresso) 70%, transparent);
+}
+.vd-photo .venue-monogram { font-size: 68px; }
+.venue-tbc { margin: 6px 0 0; font-size: 13px; color: var(--stone); font-style: italic; }
