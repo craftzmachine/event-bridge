@@ -7,7 +7,8 @@ import { formatDate, formatINRShort, safeFilePart, todayISO } from "../lib/forma
 import { proposalTitle } from "../lib/proposal";
 import Img from "../components/Img";
 import Ornament from "../components/Ornament";
-import AppearanceControls from "../components/AppearanceControls";
+import SiteNav from "../components/SiteNav";
+import { SITE } from "../site";
 
 type Store = ReturnType<typeof useProposals>;
 
@@ -54,14 +55,10 @@ export default function Home({
     <div className="home">
       <header className="home-hero">
         <Img src={hero} alt="" className="home-hero-img" />
-        <div className="home-account">
-          <AppearanceControls onDark />
-          <span className="home-account-email" title={account}>{account}</span>
-          <button className="btn-outline-light btn-sm" onClick={onSignOut}>Sign out</button>
-        </div>
+        <SiteNav current="studio" account={account} onSignOut={onSignOut} />
         <div className="home-hero-text">
           <img className="brand-logo" src={`${import.meta.env.BASE_URL}${brand.logo}`} alt={`${brand.company} — ${brand.tagline}`} />
-          <p className="eyebrow">Proposal studio</p>
+          <p className="eyebrow">Proposal Studio · an {SITE.name} app</p>
           <h1>Craft a proposal worth saying <em>yes</em> to.</h1>
           <Ornament />
           <p className="lede">Choose the occasion, curate the elements and hand the client a polished estimate in minutes.</p>
@@ -122,7 +119,7 @@ export default function Home({
       </main>
       <footer className="home-foot">
         <img src={`${import.meta.env.BASE_URL}${brand.logo}`} alt={brand.company} />
-        <span>{brand.legalName} · {brand.phone} · {brand.email}</span>
+        <span>{SITE.name} · {brand.legalName} · {brand.phone} · {brand.email}</span>
       </footer>
     </div>
   );

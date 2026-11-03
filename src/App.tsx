@@ -10,20 +10,25 @@ import Venues from "./pages/Venues";
 import Landing from "./pages/Landing";
 import { endSession, readSession, startSession, type Session } from "./auth/auth";
 
-/** Top-level pages live in the URL hash so they can be linked to directly on any static host: #/ , #/login , #/studio */
-type Route = "landing" | "login" | "studio";
+/**
+ * Event Bridge's top-level pages live in the URL hash so they can be linked to directly on any static host:
+ * #/ (landing), #/login, and the signed-in feature apps #/studio (Proposal Studio) and #/venues (Venue Directory).
+ */
+type Route = "landing" | "login" | "studio" | "venues";
+type AppRoute = "studio" | "venues";
 const readRoute = (): Route => {
   const h = window.location.hash.replace(/^#\/?/, "").toLowerCase();
-  return h === "login" || h === "studio" ? h : "landing";
+  return h === "login" || h === "studio" || h === "venues" ? h : "landing";
 };
 const go = (r: Route) => {
   window.location.hash = r === "landing" ? "/" : `/${r}`;
 };
+// where to land after signing in, when sign-in interrupted the way to a feature app
+let returnTo: AppRoute = "studio";
 
 export default function App() {
   const [config, setConfig] = useState<Loaded | null>(null);
   const [openId, setOpenId] = useState<string | null>(null);
-  const [view, setView] = useState<"home" | "venues">("home");
   const [session, setSession] = useState<Session | null>(readSession);
   const [route, setRoute] = useState<Route>(readRoute);
   const appearance = useAppearanceState();
@@ -31,7 +36,6 @@ export default function App() {
   const signOut = () => {
     endSession();
     setOpenId(null);
-    setView("home");
     setSession(null);
     go("login");
   };
@@ -47,15 +51,19 @@ export default function App() {
   }, []);
 
   // keep the address bar honest: the studio needs a session, and a signed-in visitor has no use for the sign-in page
+  // the reset happens only once the target is reached: the login → app redirect below races onSignedIn
   useEffect(() => {
-    if (route === "studio" && !session) go("login");
-    else if (route === "login" && session) go("studio");
+    if ((route === "studio" || route === "venues") && !session) {
+      returnTo = route;
+      go("login");
+    } else if (route === "login" && session) go(returnTo);
+    else if (session && route === returnTo) returnTo = "studio";
   }, [route, session]);
 
   // braces matter: newer browsers return a Promise from scrollTo, which React would treat as a cleanup
   useEffect(() => {
     window.scrollTo(0, 0);
-  }, [route, view, openId]);
+  }, [route, openId]);
 
   if (!config) return <div className="boot">Loading…</div>;
   if ("errors" in config)
@@ -83,25 +91,25 @@ export default function App() {
     <AppearanceContext.Provider value={appearance}>
       <ConfigContext.Provider value={config}>
         {route === "landing" ? (
-          <Landing signedIn={!!session} />
+          <Landing account={session?.email} onSignOut={signOut} />
         ) : !session ? (
           <Login
             onSignedIn={(email) => {
               setSession(startSession(email));
-              go("studio");
+              go(returnTo);
             }}
           />
         ) : open ? (
           <Builder key={open.id} proposal={open} onChange={store.save} onClose={() => setOpenId(null)} />
-        ) : view === "venues" ? (
-          <Venues onBack={() => setView("home")} onStartProposal={(v) => startProposal({ venue: v.name, location: v.area })} />
+        ) : route === "venues" ? (
+          <Venues onBack={() => go("studio")} onStartProposal={(v) => startProposal({ venue: v.name, location: v.area })} />
         ) : (
           <Home
             store={store}
             account={session.email}
             onSignOut={signOut}
             onOpen={setOpenId}
-            onVenues={() => setView("venues")}
+            onVenues={() => go("venues")}
             onNew={() => startProposal()}
           />
         )}

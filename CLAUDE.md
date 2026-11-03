@@ -4,7 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-A static, server-less proposal builder for the Parinay Weddings (Events IQ) sales team. Salespeople sign in, pick an event type × ceremony style, curate catalogue elements (qty, rate, notes, upgrades, additional options), review a branded preview and export an `.xlsx` or `.pdf`. There is also a TVM venue directory, and themes and fonts can be switched. Vite + React 18 + TypeScript, plain CSS, ExcelJS, pdfmake 0.2, Vitest. No router, no state library, no backend; deployed as a static site on Vercel from `main`.
+**Event Bridge** ("EB"): a static, server-less workspace for the Parinay Weddings (Events IQ) team, branded with the Parinay crest. Its feature apps are **Proposal Studio** and the **Venue Directory**. In Proposal Studio, salespeople pick an event type × ceremony style, curate catalogue elements (qty, rate, notes, upgrades, additional options), review a branded preview and export an `.xlsx` or `.pdf`. Themes and fonts can be switched.
+
+The site name and tagline live in `src/site.ts` (`SITE`). Proposals and exports keep the *company* branding from `brand.json` (Parinay Weddings), so don't put "Event Bridge" into `ProposalPreview`, `exportXlsx` or `exportPdf`. Vite + React 18 + TypeScript, plain CSS, ExcelJS, pdfmake 0.2, Vitest. No router, no state library, no backend; deployed as a static site on Vercel from `main`.
 
 ## Commands
 
@@ -33,9 +35,15 @@ There is no linter configured.
 
 **Element relevance** is tag-based: each element has `eventTypes` / `ceremonyStyles` arrays, `["*"]` meaning all; `elementFits()` in `src/config/context.ts` decides what the Elements step shows. `defaultPrice: null` means "as per actuals".
 
-**Venue facts must stay sourced.** Each venue carries `verification` and `sources`; photos are stock unless `photoIsRepresentative` is false. Don't add or change names, star ratings or capacities without a source.
+**Venue facts must stay sourced.** Each venue carries `verification` and `sources`; photos are stock unless `photoIsRepresentative` is false. Don't add or change names, star ratings or capacities without a source. The 24 venues added from the team's list (2026-11-03) carry only name, area, source and sometimes an address. Without a `photo`, `Venues.tsx` shows a `Monogram` of the name's initials, and with an empty `spaces` it says "Spaces and capacity to be confirmed". `aka` is rendered as "Also known as …", so put landmarks ("opposite Technopark") in `address`, not `aka`. `venues.test.ts` asserts the total count (29) and per-type counts, so update it when adding venues.
 
-**Navigation: three hash routes, then component state.** `App.tsx` reads the top-level page from the URL hash so it can be linked to on any static host with no rewrites: `#/` → `Landing` (public), `#/login` → `Login`, `#/studio` → the signed-in app. An effect redirects `#/studio` without a session to `#/login`, and `#/login` with a session to `#/studio`. Inside the studio, `App` switches between `Home` / `Venues` → `Builder` with a `view` and an `openId`. `Builder` is a 4-step wizard (client, occasion, elements, review); steps are inner components of `src/pages/Builder.tsx`.
+**Navigation: hash routes, then component state.** `App.tsx` reads the top-level page from the URL hash so it can be linked to on any static host with no rewrites:
+- `#/` → `Landing` (public)
+- `#/login` → `Login`
+- `#/studio` → Proposal Studio (`Home`)
+- `#/venues` → `Venues` (the Venue Directory)
+
+The two feature routes need a session. Without one, an effect stores the target in the module-level `returnTo` and goes to `#/login`; after sign-in it goes back to `returnTo`. `returnTo` is reset only once that route is reached, because the login → app redirect races `onSignedIn`. An open proposal (`openId`) shows `Builder` over either feature route, and closing it returns to that route. The main menu is `src/components/SiteNav.tsx` (Home / Proposal Studio / Venue Directory, plus appearance and account controls, folding into a ☰ panel at ≤1023 px). It is laid over the dark heroes of `Landing` and `Home`; `Venues` and `Builder` keep their own light top bars with a back button. `Builder` is a 4-step wizard (client, occasion, elements, review); steps are inner components of `src/pages/Builder.tsx`.
 
 **Persistence** (`src/state/proposals.ts`): all proposals live in `localStorage` under `proposal-builder.proposals.v1`, written on every change via `useProposals()`. JSON export/import is the only way to move them between devices. Changing the `Proposal` shape needs migration-tolerant reads, since old drafts persist.
 
@@ -57,7 +65,8 @@ If you change totals logic, update the preview (`ProposalPreview`, `TotalsPanel`
 
 ## Styling
 
-- **Files:** `src/styles/tokens.css` holds the palette and fonts, taken from the gold crest (`--gold` #B79A68 for rules and fills, `--gold-text` for small text on ivory, `--espresso` for dark surfaces; Cinzel for caps labels, Cormorant for headings, Pinyon Script for accents). `src/styles/app.css` holds everything else, ordered: base → components → brand theme block → motion → breakpoints (≥1600, ≤1180, ≤1023 tablet, ≤760 phone, short landscape) → login → self-contained feature blocks, each with its own media queries (shared bits, export split button, theme/font controls, font-mode overrides, venues).
+- **Files:** `src/styles/tokens.css` holds the palette and fonts, taken from the gold crest (`--gold` #B79A68 for rules and fills, `--gold-text` for small text on ivory, `--espresso` for dark surfaces; Cinzel for caps labels, Cormorant for headings, Pinyon Script for accents). `src/styles/app.css` holds everything else, ordered: base → components → brand theme block → motion → breakpoints (≥1600, ≤1180, ≤1023 tablet, ≤760 phone, short landscape) → login → self-contained feature blocks, each with its own media queries (shared bits, export split button, theme/font controls, font-mode overrides, venues, site background photo, hero fit and centring, landing page, login back link, venues without a photo, Event Bridge main navigation, Event Bridge landing hero and apps). Feature blocks at the end win over the breakpoints, so they carry their own phone rules. The old `.landing-nav` / `.home-account` bars were replaced by `.site-nav`.
+- **Site photo:** `src/assets/_JKN4027.webp` is the site-wide background (a fixed `body::before` layer, tinted with `--paper` so every theme stays readable) and the landing hero (imported in `Landing.tsx`). Both references go through Vite, so the file is hashed into `dist/assets/`. Swapping it means replacing the file or updating both references. Page roots such as `.login` must stay transparent, or they hide the photo.
 - **Cascade:** the breakpoint rules intentionally come after the brand block, so put new base styles above the breakpoints.
 - **Themes and fonts:** `src/state/appearance.ts` sets `data-theme` (`parinay` default, `solarized-light`, `solarized-dark`, `nord`, `dark`, `white`) and `data-font` (`classic`, `sans`, `mono`) on `<html>`. It is applied in `main.tsx` before first paint and shared through `AppearanceContext`. Every theme redefines the same tokens in `tokens.css`, so **never hard-code colours** in `app.css` (the only exceptions are the green XLS and red PDF file-type badges); use the tokens, or `color-mix(in srgb, var(--token) N%, transparent)` for alpha. `--espresso`/`--on-espresso` are the dark hero surfaces (dark in every theme). `--primary`/`--on-primary` are for main buttons, the active tab and step (gold on dark themes). Sans and Mono remap `--serif`/`--caps`/`--script`, so the script and caps accents need the font-mode overrides near the end of `app.css`.
 - **Gotchas found the hard way:**
@@ -66,3 +75,5 @@ If you change totals logic, update the preview (`ProposalPreview`, `TotalsPanel`
   - The mobile drawer sits above the step bar using `--nav-h`, which `Builder` sets with a `ResizeObserver`.
   - Always use braces in `useEffect` bodies: newer Chrome returns a Promise from `window.scrollTo`, and a one-line arrow hands it to React as a cleanup, which crashes the app.
   - The venue `<dialog>` must not call `close()` in effect cleanup: it fires `onClose`, and React's dev double-run of effects would dismiss the dialog straight away.
+  - The home and landing heroes are centred. An old ≥1600 rule that padded `.home-hero-text` from the left pushed it off-centre on wide screens and was removed, so don't reintroduce left offsets there. `.hero-actions` is a 2-column grid of equal-width buttons (one column on phones). Links styled as buttons need the `a.btn-*` inline-flex rule.
+  - `.login-main` has a top padding override (end of `app.css`) so the absolutely positioned "Back to home" link doesn't cover the form's eyebrow on phones.

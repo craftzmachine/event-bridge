@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useConfig } from "../config/context";
 import { checkCredentials } from "../auth/auth";
+import { SITE } from "../site";
 import Img from "../components/Img";
 import Ornament from "../components/Ornament";
 import AppearanceControls from "../components/AppearanceControls";
@@ -57,8 +58,8 @@ export default function Login({ onSignedIn }: { onSignedIn: (email: string) => v
         <div className="login-art-text">
           <img className="login-logo" src={logo} alt={`${brand.company} — ${brand.tagline}`} />
           <Ornament />
-          <p className="eyebrow">Proposal studio</p>
-          <p className="login-art-line">Tailored proposals for every celebration.</p>
+          <p className="eyebrow">{SITE.name}</p>
+          <p className="login-art-line">{SITE.tagline}</p>
         </div>
       </aside>
 
@@ -73,7 +74,7 @@ export default function Login({ onSignedIn }: { onSignedIn: (email: string) => v
           <img className="login-logo-sm" src={logo} alt={brand.company} />
           <p className="eyebrow">Team access</p>
           <h1>Sign in</h1>
-          <p className="login-sub">Use your Parinay Weddings team account to open the proposal studio.</p>
+          <p className="login-sub">Use your {brand.company} team account to open {SITE.name} and its apps, including Proposal Studio.</p>
 
           {error && (
             <div className="login-error" role="alert" id="login-error">
@@ -141,7 +142,7 @@ export default function Login({ onSignedIn }: { onSignedIn: (email: string) => v
             <a href={`mailto:${brand.contact.email}`}>{brand.contact.email}</a>.
           </p>
         </form>
-        <p className="login-foot">© {new Date().getFullYear()} {brand.legalName} · {brand.company}</p>
+        <p className="login-foot">© {new Date().getFullYear()} {SITE.name} · {brand.legalName} · {brand.company}</p>
       </main>
     </div>
   );
