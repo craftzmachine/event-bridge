@@ -69,7 +69,10 @@ export function validateVenues(v: unknown): string[] {
     if (!types.has(x?.type)) errs.push(`${at} has unknown type "${x?.type}".`);
     if (x?.stars !== undefined && (typeof x.stars !== "number" || x.stars < 1 || x.stars > 5)) errs.push(`${at} "stars" must be 1–5.`);
     if (!Array.isArray(x?.spaces)) errs.push(`${at} needs a "spaces" list (can be empty).`);
+    if (x?.photo && !x.photoIsRepresentative && !(x.photoCredit?.author && x.photoCredit?.license && x.photoCredit?.source))
+      errs.push(`${at} has a photo but no "photoCredit" (author, license and source).`);
   });
+  if (dir.venues.filter((x) => x?.featured).length > 1) errs.push(`Only one venue can be "featured".`);
   return errs;
 }
 

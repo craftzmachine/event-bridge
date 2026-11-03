@@ -1,11 +1,53 @@
 {
-  "note": "Details were checked against public listings on 2026-11-03, and the convention centres and resorts added from the team's list carry only a name, area and source link so far. Sources sometimes disagree, so confirm names, addresses, star ratings and capacities with each venue before quoting them to clients. Photos are representative stock images until real venue photos are added.",
+  "note": "Taj Green Cove is featured. Details were researched online on 4 November 2026 and each venue lists its sources; where sources disagree, its note says so. Photos are only shown where a freely licensed photo of the actual venue exists (Wikimedia Commons, credited); other venues show a monogram and, where available, a link to their official gallery. Confirm names, addresses, star ratings and capacities with each venue before quoting them to clients.",
   "venueTypes": [
     { "id": "hotel", "label": "Hotel" },
     { "id": "resort", "label": "Resort" },
     { "id": "venue", "label": "Event venue" }
   ],
   "venues": [
+    {
+      "id": "taj-green-cove-kovalam",
+      "name": "Taj Green Cove Resort & Spa, Kovalam",
+      "type": "resort",
+      "area": "Kovalam",
+      "city": "Thiruvananthapuram",
+      "address": "G.V. Raja Vattapara Road, Kovalam, Thiruvananthapuram, Kerala 695527",
+      "stars": 5,
+      "phone": "+91 471 661 3000",
+      "website": "https://www.tajhotels.com/en-in/hotels/taj-green-cove/meetings-and-event-venues",
+      "featured": true,
+      "description": "A clifftop resort above the Arabian Sea at Kovalam. Its seaside lawns hold the largest weddings in the area, and two pillarless halls suit receptions and pre-wedding functions.",
+      "photo": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/14/Infinitypool.jpg/1280px-Infinitypool.jpg",
+      "photoIsRepresentative": false,
+      "photoCredit": {
+        "author": "Brian Snelson",
+        "license": "CC BY 2.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
+        "source": "https://commons.wikimedia.org/wiki/File:Infinitypool.jpg"
+      },
+      "spaces": [
+        { "name": "Agora Lawns", "size": "1,875 sq m", "capacity": 3000, "note": "Kovalam's largest open-air wedding venue" },
+        { "name": "Seaside Lawn", "capacity": 800, "note": "Cocktail receptions and gala dinners" },
+        { "name": "Agora Hall", "size": "353 sq m", "capacity": 400, "note": "Pillarless; capacity from a third-party listing" },
+        { "name": "Tango", "size": "c. 2,000 sq ft", "capacity": 150, "note": "Pillarless, natural light; capacity from a third-party listing" },
+        { "name": "Cabana Lawns", "note": "Sea and lagoon views; family get-togethers" },
+        { "name": "Agenda", "note": "Boardroom" }
+      ],
+      "features": [
+        "Kovalam's largest open-air wedding lawn, facing the Arabian Sea",
+        "Haldi, mehendi and sangeet ceremonies",
+        "59 rooms and suites for guests"
+      ],
+      "verification": "Checked online on 4 November 2026. The six spaces, the Agora Lawns size and capacity (3,000), the Seaside Lawn (800) and the Agora Hall size are from Taj's events page. Agora Hall and Tango capacities, the room count and the phone number come from third-party listings (WeddingWire, WedMeGood, MIT). Photo: the resort's infinity pool (2005), Wikimedia Commons.",
+      "sources": [
+        "https://www.tajhotels.com/en-in/hotels/taj-green-cove/meetings-and-event-venues",
+        "https://www.weddingwire.in/wedding-resorts/taj-green-cove-resort-&-spa-kovalam--e82184",
+        "https://www.wedmegood.com/wedding-venues/Vivanta-by-Taj-Green-Cove-Kovalam-198988",
+        "https://www.mitmagazine.co.uk/Meeting-Event-Venues/Kovalam-India/Convention-Hotel/Taj-Green-Cove-Resort-and-Spa-p57680381",
+        "https://commons.wikimedia.org/wiki/File:Infinitypool.jpg"
+      ]
+    },
     {
       "id": "hyatt-regency-trivandrum",
       "name": "Hyatt Regency Trivandrum",
@@ -16,14 +58,17 @@
       "stars": 5,
       "phone": "",
       "website": "https://www.hyatt.com/hyatt-regency/en-US/trvrt-hyatt-regency-trivandrum",
-      "photo": "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1000&q=70",
-      "photoIsRepresentative": true,
+      "description": "A city-centre five-star hotel at Thycaud with one of Thiruvananthapuram's largest pillarless halls, The Great Hall, plus a ballroom that divides into four.",
       "spaces": [
         { "name": "The Great Hall", "size": "882 sq m", "capacity": 1000 },
         { "name": "Royal Ballroom", "size": "650 sq m", "capacity": 650, "note": "Divisible into Royal Ballroom 1–4" }
       ],
-      "features": ["Pillared and pillarless banquet halls", "Weddings and receptions", "About 20,000 sq ft of event space"],
-      "verification": "Capacities from Hyatt's meetings page; total event space from Cvent. Some booking sites list the area as Vazhuthacaud.",
+      "features": [
+        "Pillared and pillarless banquet halls",
+        "Weddings and receptions",
+        "About 20,000 sq ft of event space"
+      ],
+      "verification": "Capacities from Hyatt's meetings page; total event space from Cvent. Some booking sites list the area as Vazhuthacaud. Hyatt's site blocks automated checks, so its links couldn't be re-opened on 4 November 2026.",
       "sources": [
         "https://www.hyatt.com/hyatt-regency/en-US/trvrt-hyatt-regency-trivandrum/meetings",
         "https://cvent.com/venues/trivandrum/hotel/hyatt-regency-trivandrum/venue-0b298b76-369c-496a-b30d-36e7025fdd70"
@@ -39,15 +84,20 @@
       "stars": 5,
       "phone": "+91 471 660 0000",
       "website": "https://www.keralatourism.org/hotels/hilton-garden-inn-trivandrum/2282",
-      "photo": "https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?auto=format&fit=crop&w=1000&q=70",
-      "photoIsRepresentative": true,
+      "description": "A five-star business hotel on Punnen Road, near the Secretariat, with a multi-function room and meeting rooms for smaller weddings and receptions.",
       "spaces": [
         { "name": "Multi-function room", "note": "Capacity to be confirmed" },
         { "name": "Meeting rooms", "note": "Count and sizes vary between listings" }
       ],
-      "features": ["Wedding services", "Rooftop pool", "Business centre"],
+      "features": [
+        "Wedding services",
+        "Rooftop pool",
+        "Business centre"
+      ],
       "verification": "5-star classification is from the Kerala Tourism listing, which property owners publish themselves. Event-space figures differ between sources.",
-      "sources": ["https://www.keralatourism.org/hotels/hilton-garden-inn-trivandrum/2282"]
+      "sources": [
+        "https://www.keralatourism.org/hotels/hilton-garden-inn-trivandrum/2282"
+      ]
     },
     {
       "id": "vivanta-thiruvananthapuram",
@@ -58,18 +108,22 @@
       "address": "C V Raman Pillai Road, Thycaud, Thiruvananthapuram 695014",
       "stars": 5,
       "phone": "+91 471 402 2100",
-      "website": "",
-      "photo": "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=1000&q=70",
-      "photoIsRepresentative": true,
+      "website": "https://www.vivantahotels.com/en-in/hotels/vivanta-thiruvananthapuram",
+      "description": "A Taj-group hotel in Thycaud with an open-air rooftop banquet venue, a ballroom and a lawn for weddings.",
       "spaces": [
         { "name": "Rooftop open-air banquet venue", "note": "Capacity to be confirmed" },
         { "name": "Ballroom, lawn and Senate", "note": "Listed for weddings" },
         { "name": "Curia 1 & 2", "capacity": 20, "note": "Boardrooms; capacity shown is Curia 2" }
       ],
-      "features": ["Rooftop banqueting", "Weddings and receptions", "Meeting rooms"],
+      "features": [
+        "Rooftop banqueting",
+        "Weddings and receptions",
+        "Meeting rooms"
+      ],
       "verification": "Most sources give the Thycaud address; some directories list Extra Police Road, Palayam.",
       "sources": [
-        "https://www.fivestaralliance.com/node/21445",
+        "https://www.vivantahotels.com/en-in/hotels/vivanta-thiruvananthapuram",
+        "https://www.fivestaralliance.com/luxury-hotels/kovalam/vivanta-taj-trivandrum",
         "https://www.cvent.com/venues/thiruvananthapuram/hotel/vivanta-thiruvananthapuram/venue-7b6f224a-8843-4d6e-a665-5318442b9ac3"
       ]
     },
@@ -84,43 +138,20 @@
       "stars": 5,
       "phone": "+91 471 666 2999",
       "website": "https://keralatourism.org/hotels/hycinth-by-sparsa/2283",
-      "photo": "https://images.unsplash.com/photo-1564501049412-61c2a3083791?auto=format&fit=crop&w=1000&q=70",
-      "photoIsRepresentative": true,
+      "description": "A five-star hotel on Manorama Road near Thampanoor railway station, with a banquet hall, a rooftop hall and four meeting rooms.",
       "spaces": [
         { "name": "Banquet hall", "note": "Capacity to be confirmed" },
         { "name": "Rooftop hall", "note": "Capacity to be confirmed" },
         { "name": "Meeting rooms (4)", "size": "Largest 1,917 sq ft" }
       ],
-      "features": ["Banquet and conference halls", "Central location near the railway station"],
+      "features": [
+        "Banquet and conference halls",
+        "Central location near the railway station"
+      ],
       "verification": "5-star classification from the Kerala Tourism accreditation listing. Banquet capacities were not published.",
       "sources": [
         "https://keralatourism.org/hotels/hycinth-by-sparsa/2283",
         "https://www.mitmagazine.co.uk/Meeting-Event-Venues/Thiruvananthapuram-India/Convention-Hotel/HYCINTH-by-Sparsa-Trivandrum-p57648841"
-      ]
-    },
-    {
-      "id": "taj-green-cove-kovalam",
-      "name": "Taj Green Cove Resort & Spa, Kovalam",
-      "type": "resort",
-      "area": "Kovalam",
-      "city": "Thiruvananthapuram",
-      "address": "Kovalam, Thiruvananthapuram",
-      "stars": 5,
-      "phone": "",
-      "website": "https://www.tajhotels.com/en-in/hotels/taj-green-cove/meetings-and-event-venues",
-      "photo": "https://images.unsplash.com/photo-1571896349842-33c89424de2d?auto=format&fit=crop&w=1000&q=70",
-      "photoIsRepresentative": true,
-      "spaces": [
-        { "name": "Open-air seaside lawns", "capacity": 150, "note": "Theatre 150 · reception 150 (Taj); larger figures appear on third-party listings" },
-        { "name": "Agora Hall", "size": "353 sq m", "note": "Pillarless" },
-        { "name": "Tango", "capacity": 150, "note": "Third-party listing" }
-      ],
-      "features": ["Seaside weddings facing the Arabian Sea", "In-house catering and décor", "External vendors allowed"],
-      "verification": "Lawn and Agora Hall figures from Taj's events page; Tango capacity and vendor policy from third-party listings.",
-      "sources": [
-        "https://www.tajhotels.com/en-in/hotels/taj-green-cove/meetings-and-event-venues",
-        "https://www.weddingwire.in/wedding-resorts/taj-green-cove-resort-&-spa-kovalam--e82184",
-        "https://www.wedmegood.com/vendors/trivandrum-thiruvananthapuram-/wedding-venues/all/wedding-resorts/"
       ]
     },
     {
@@ -129,34 +160,58 @@
       "type": "venue",
       "area": "Kazhakkoottam",
       "city": "Thiruvananthapuram",
+      "address": "NH 47, Kazhakkoottam, Thiruvananthapuram 695585",
+      "phone": "+91 75111 88233",
       "website": "https://www.alsajconventioncenter.com/",
-      "spaces": [],
-      "verification": "From the team's venue list (added 2026-11-03). Name and area only; star rating, capacity, address and photos not yet checked.",
-      "sources": ["https://www.alsajconventioncenter.com/"]
+      "description": "The Al Saj group's flagship convention centre on the NH bypass at Kazhakkoottam: six halls in 72,500 sq ft, led by the 2,500-seat Milky Way hall.",
+      "spaces": [
+        { "name": "Milky Way", "capacity": 2500 },
+        { "name": "Sun Ray", "capacity": 1000, "note": "Also used as a dining hall" },
+        { "name": "Comet", "capacity": 700 },
+        { "name": "Gravity", "capacity": 600 },
+        { "name": "Treatz", "capacity": 200 }
+      ],
+      "verification": "Checked online on 4 November 2026. Halls and capacities are from Al Saj's website.",
+      "sources": [
+        "https://www.alsajconventioncenter.com/"
+      ]
     },
     {
       "id": "al-saj-arena",
       "name": "Al Saj Arena",
-      "address": "Kulathoor, opposite Infosys",
       "type": "venue",
       "area": "Kulathoor",
       "city": "Thiruvananthapuram",
+      "address": "Opposite Infosys, Kulathoor, NH 47 Bypass, Thiruvananthapuram",
+      "phone": "+91 75111 88533",
       "website": "https://www.alsajconventioncenter.com/",
-      "spaces": [],
-      "verification": "From the team's venue list (added 2026-11-03). Name and area only; star rating, capacity, address and photos not yet checked.",
-      "sources": ["https://www.alsajconventioncenter.com/"]
+      "description": "An Al Saj hall opposite Infosys on the Kulathoor bypass, with a 1,500-seat main hall and a 600-seat dining hall in 35,000 sq ft.",
+      "spaces": [
+        { "name": "Main hall", "size": "35,000 sq ft (venue)", "capacity": 1500 },
+        { "name": "Dining hall", "capacity": 600 }
+      ],
+      "verification": "Checked online on 4 November 2026. Figures are from Al Saj's website.",
+      "sources": [
+        "https://www.alsajconventioncenter.com/"
+      ]
     },
     {
       "id": "al-saj-amaranta",
       "name": "Al Saj Amaranta",
-      "address": "Kazhakkoottam, opposite Technopark",
       "type": "venue",
       "area": "Kazhakkoottam",
       "city": "Thiruvananthapuram",
+      "address": "Opposite Technopark, NH 47 Bypass, Kazhakkoottam, Thiruvananthapuram",
+      "phone": "+91 75111 88433",
       "website": "https://www.alsajconventioncenter.com/",
-      "spaces": [],
-      "verification": "From the team's venue list (added 2026-11-03). Name and area only; star rating, capacity, address and photos not yet checked.",
-      "sources": ["https://www.alsajconventioncenter.com/"]
+      "description": "A mid-sized Al Saj venue opposite Technopark, seating 700 in 12,000 sq ft.",
+      "spaces": [
+        { "name": "Main hall", "size": "12,000 sq ft (venue)", "capacity": 700 }
+      ],
+      "verification": "Checked online on 4 November 2026. Figures are from Al Saj's website.",
+      "sources": [
+        "https://www.alsajconventioncenter.com/"
+      ]
     },
     {
       "id": "al-saj-convention-centre-nemom",
@@ -164,10 +219,17 @@
       "type": "venue",
       "area": "Nemom",
       "city": "Thiruvananthapuram",
-      "website": "",
-      "spaces": [],
-      "verification": "From the team's venue list (added 2026-11-03). Name and area only; star rating, capacity, address and photos not yet checked. The source is a general listing page, not the venue's own site.",
-      "sources": ["https://kazhakuttam.com/listing-category/convention-center/"]
+      "address": "Near Old Karakkamandapam, opposite the petrol pump, Nemom, Thiruvananthapuram",
+      "phone": "+91 75111 88633",
+      "website": "https://www.alsajconventioncenter.com/",
+      "description": "Al Saj's venue on the Nemom side of the city, with 32,000 sq ft of event space.",
+      "spaces": [
+        { "name": "Main hall", "size": "32,000 sq ft (venue)", "capacity": 2300, "note": "Al Saj's page also mentions 500; confirm" }
+      ],
+      "verification": "Checked online on 4 November 2026. Figures are from Al Saj's website, which gives both 2,300 and 500 for this venue.",
+      "sources": [
+        "https://www.alsajconventioncenter.com/"
+      ]
     },
     {
       "id": "al-saj-convention-centre-azhicode",
@@ -175,10 +237,14 @@
       "type": "venue",
       "area": "Azhicode",
       "city": "Thiruvananthapuram",
-      "website": "",
+      "address": "Thiruvananthapuram–Ponmudi Road, Azhicode, Kerala 695564",
+      "phone": "+91 97784 93332",
+      "description": "An Al Saj convention centre on the Ponmudi road at Azhicode, north-east of the city.",
       "spaces": [],
-      "verification": "From the team's venue list (added 2026-11-03). Name and area only; star rating, capacity, address and photos not yet checked. The source is a general listing page, not the venue's own site.",
-      "sources": ["https://kazhakuttam.com/listing/al-saj-convention-centre-azhicode/"]
+      "verification": "Checked online on 4 November 2026. Address and phone are from a local business directory; Al Saj's own website doesn't list this venue yet, and no capacity is published.",
+      "sources": [
+        "https://kazhakuttam.com/listing/al-saj-convention-centre-azhicode/"
+      ]
     },
     {
       "id": "ragam-convention-centre",
@@ -186,10 +252,19 @@
       "type": "venue",
       "area": "Kazhakkoottam",
       "city": "Thiruvananthapuram",
+      "address": "NH 47, opposite Al Uthuman School, Kazhakkoottam, Thiruvananthapuram, Kerala 695582",
+      "phone": "+91 471 241 2361",
       "website": "https://www.ragamconventioncentre.com/",
-      "spaces": [],
-      "verification": "From the team's venue list (added 2026-11-03). Name and area only; star rating, capacity, address and photos not yet checked.",
-      "sources": ["https://www.ragamconventioncentre.com/our-halls"]
+      "description": "A large wedding hall on the NH at Kazhakkoottam with a 2,000-seat main hall, a 600-seat dining hall and a small hall for intimate functions.",
+      "spaces": [
+        { "name": "Main hall", "capacity": 2000 },
+        { "name": "Dining hall", "capacity": 600 },
+        { "name": "Royal Galaxy", "capacity": 75, "note": "Mini hall" }
+      ],
+      "verification": "Checked online on 4 November 2026. Halls and capacities are from Ragam's website.",
+      "sources": [
+        "https://www.ragamconventioncentre.com/our-halls"
+      ]
     },
     {
       "id": "uday-palace-convention-centre",
@@ -197,10 +272,22 @@
       "type": "venue",
       "area": "Kowdiar",
       "city": "Thiruvananthapuram",
+      "address": "Golf Links Road, Kowdiar Gardens, Kowdiar, Thiruvananthapuram, Kerala 695003",
+      "phone": "+91 471 248 3222",
       "website": "https://www.udshotels.com/uday-palace-convention-centre/",
-      "spaces": [],
-      "verification": "From the team's venue list (added 2026-11-03). Name and area only; star rating, capacity, address and photos not yet checked.",
-      "sources": ["https://www.udshotels.com/uday-palace-convention-centre/"]
+      "description": "A convention centre in the Kowdiar residential district, near the Golf Club, with a large main hall and a second hall.",
+      "spaces": [
+        { "name": "Hall 1", "capacity": 1600, "note": "Seated · 2,400 floating" },
+        { "name": "Hall 2", "capacity": 350, "note": "Seated · 525 floating" }
+      ],
+      "features": [
+        "Parking for about 300 vehicles"
+      ],
+      "verification": "Checked online on 4 November 2026. Address and phone are from UDS Hotels; hall capacities and parking are from WeddingBazaar.",
+      "sources": [
+        "https://www.udshotels.com/uday-palace-convention-centre/",
+        "https://www.weddingbazaar.com/wedding-venues/thiruvananthapuram/uday-palace-convention-centre"
+      ]
     },
     {
       "id": "gardenia-convention-center",
@@ -210,8 +297,10 @@
       "city": "Thiruvananthapuram",
       "website": "https://www.gardeniaconventioncenter.in/",
       "spaces": [],
-      "verification": "From the team's venue list (added 2026-11-03). Name and area only; star rating, capacity, address and photos not yet checked.",
-      "sources": ["https://www.gardeniaconventioncenter.in/"]
+      "verification": "Checked online on 4 November 2026. The venue's website loads without any details, and no other listing could be found, so confirm the address and halls with the venue.",
+      "sources": [
+        "https://www.gardeniaconventioncenter.in/"
+      ]
     },
     {
       "id": "veli-international-convention-centre",
@@ -219,10 +308,22 @@
       "type": "venue",
       "area": "Veli",
       "city": "Thiruvananthapuram",
-      "website": "",
-      "spaces": [],
-      "verification": "From the team's venue list (added 2026-11-03). Name and area only; star rating, capacity, address and photos not yet checked. The source is a Kerala Tourism news item.",
-      "sources": ["https://www.keralatourism.org/newsletter/news/2024/veli-international-convention-centre/2219"]
+      "address": "Veli Tourist Village, Veli, Thiruvananthapuram",
+      "description": "A Kerala Tourism convention centre at Veli Tourist Village by the lagoon and sea, opened in March 2024: a 750-seat hall and a 300-seat dining hall in a 27,000 sq ft complex.",
+      "spaces": [
+        { "name": "First-floor hall", "capacity": 750 },
+        { "name": "Dining hall", "capacity": 300 }
+      ],
+      "features": [
+        "Opened March 2024 by Kerala Tourism",
+        "27,000 sq ft complex",
+        "Parking for about 60 vehicles"
+      ],
+      "verification": "Checked online on 4 November 2026. Figures are from Kerala Tourism's announcement and The Hindu's report on the opening.",
+      "sources": [
+        "https://www.keralatourism.org/newsletter/news/2024/veli-international-convention-centre/2219",
+        "https://www.inkl.com/news/convention-centre-at-veli-tourist-village-to-be-opened-on-march-13"
+      ]
     },
     {
       "id": "crystal-convention-centre",
@@ -230,10 +331,15 @@
       "type": "venue",
       "area": "Nagaroor",
       "city": "Thiruvananthapuram",
-      "website": "",
-      "spaces": [],
-      "verification": "From the team's venue list (added 2026-11-03). Name and area only; star rating, capacity, address and photos not yet checked. The source is a general listing page, not the venue's own site.",
-      "sources": ["https://www.wedmegood.com/vendors/trivandrum-thiruvananthapuram-/wedding-venues/all/"]
+      "description": "A large convention hall at Nagaroor, north of the city, for receptions and conferences.",
+      "spaces": [
+        { "name": "Main hall", "size": "30,000 sq ft", "capacity": 2000, "note": "Floating; WeddingBazaar lists 2,100 seated (for a Palode address)" }
+      ],
+      "verification": "Checked online on 4 November 2026. Capacity is from Spalba. A WeddingBazaar listing with the same name gives a Palode address, so confirm the location.",
+      "sources": [
+        "https://spalba.com/properties/crystal-convention-centre--4779",
+        "https://www.weddingbazaar.com/wedding-venues/thiruvananthapuram/crystal-convention-centre"
+      ]
     },
     {
       "id": "ss-pooja-convention-centre",
@@ -241,10 +347,11 @@
       "type": "venue",
       "area": "Thiruvananthapuram",
       "city": "Thiruvananthapuram",
-      "website": "",
       "spaces": [],
-      "verification": "From the team's venue list (added 2026-11-03). Name and area only; star rating, capacity, address and photos not yet checked. The source is a general listing page, not the venue's own site.",
-      "sources": ["https://www.weddingbazaar.com/wedding-venues-in-thiruvananthapuram"]
+      "verification": "No public listing could be found online on 4 November 2026 (searched the name with Thiruvananthapuram). Only the name and area from the team's list are shown; confirm the exact name, address and halls with the venue.",
+      "sources": [
+        "https://www.weddingbazaar.com/wedding-venues-in-thiruvananthapuram"
+      ]
     },
     {
       "id": "royal-palace-convention-centre",
@@ -252,10 +359,11 @@
       "type": "venue",
       "area": "Thiruvananthapuram",
       "city": "Thiruvananthapuram",
-      "website": "",
       "spaces": [],
-      "verification": "From the team's venue list (added 2026-11-03). Name and area only; star rating, capacity, address and photos not yet checked. The source is a general listing page, not the venue's own site.",
-      "sources": ["https://www.weddingbazaar.com/wedding-venues-in-thiruvananthapuram"]
+      "verification": "No public listing could be found online on 4 November 2026 (searched the name with Thiruvananthapuram). Only the name and area from the team's list are shown; confirm the exact name, address and halls with the venue.",
+      "sources": [
+        "https://www.weddingbazaar.com/wedding-venues-in-thiruvananthapuram"
+      ]
     },
     {
       "id": "chinnus-convention-centre",
@@ -263,10 +371,11 @@
       "type": "venue",
       "area": "Thiruvananthapuram",
       "city": "Thiruvananthapuram",
-      "website": "",
       "spaces": [],
-      "verification": "From the team's venue list (added 2026-11-03). Name and area only; star rating, capacity, address and photos not yet checked. The source is a general listing page, not the venue's own site.",
-      "sources": ["https://www.weddingbazaar.com/wedding-venues-in-thiruvananthapuram"]
+      "verification": "No public listing could be found online on 4 November 2026 (searched the name with Thiruvananthapuram). Only the name and area from the team's list are shown; confirm the exact name, address and halls with the venue.",
+      "sources": [
+        "https://www.weddingbazaar.com/wedding-venues-in-thiruvananthapuram"
+      ]
     },
     {
       "id": "diya-gardens-convention-center",
@@ -274,21 +383,29 @@
       "type": "venue",
       "area": "Thiruvananthapuram",
       "city": "Thiruvananthapuram",
-      "website": "",
       "spaces": [],
-      "verification": "From the team's venue list (added 2026-11-03). Name and area only; star rating, capacity, address and photos not yet checked. The source is a general listing page, not the venue's own site.",
-      "sources": ["https://www.weddingbazaar.com/wedding-venues-in-thiruvananthapuram"]
+      "verification": "No public listing could be found online on 4 November 2026 (searched the name with Thiruvananthapuram). Only the name and area from the team's list are shown; confirm the exact name, address and halls with the venue.",
+      "sources": [
+        "https://www.weddingbazaar.com/wedding-venues-in-thiruvananthapuram"
+      ]
     },
     {
       "id": "girideepam-convention-centre",
       "name": "Girideepam Convention Centre",
       "type": "venue",
-      "area": "Thiruvananthapuram",
+      "area": "Nalanchira",
       "city": "Thiruvananthapuram",
-      "website": "",
-      "spaces": [],
-      "verification": "From the team's venue list (added 2026-11-03). Name and area only; star rating, capacity, address and photos not yet checked. The only source is a Reddit discussion, so confirm the details directly.",
-      "sources": ["https://www.reddit.com/r/Trivandrum/comments/1rfjprd/need_honest_reviews_on_trivandrum_wedding_venues/"]
+      "address": "Mar Ivanios Vidya Nagar, Nalanchira, Thiruvananthapuram",
+      "phone": "+91 94960 71643",
+      "description": "A convention centre run by the Syro-Malankara Catholic Church on the Mar Ivanios campus at Nalanchira, opened in 2015, with a main hall for over 2,500.",
+      "spaces": [
+        { "name": "Main hall", "capacity": 2500, "note": "Over 2,500 seated" },
+        { "name": "Banquet hall", "capacity": 1000 }
+      ],
+      "verification": "Checked online on 4 November 2026. Address, capacities, opening date and the booking contact (the centre's director) are from the Syro-Malankara Catholic Church's listing.",
+      "sources": [
+        "https://malankaracatholicchurch.in/Institutions/Institutions_Details/50"
+      ]
     },
     {
       "id": "the-leela-kovalam",
@@ -296,10 +413,35 @@
       "type": "resort",
       "area": "Kovalam",
       "city": "Thiruvananthapuram",
-      "website": "",
-      "spaces": [],
-      "verification": "From the team's venue list (added 2026-11-03). Name and area only; star rating, capacity, address and photos not yet checked. The source is The Leela's wedding brochure (PDF).",
-      "sources": ["https://www.theleela.com/prod/content/assets/factsheet/Wedding-Brochure-The-Leela-Kovalam_0.pdf?VersionId=6EjjQxNyjtrWTdFqiwA9QqP0LBeNfwCH"]
+      "address": "Beach Road, Kovalam, Thiruvananthapuram, Kerala 695527",
+      "website": "https://www.theleela.com/the-leela-kovalam-a-raviz-hotel",
+      "description": "A clifftop resort above Kovalam's beaches, in the landmark Kovalam Beach Resort building by architect Charles Correa, with a ballroom, a beach lawn and nine event spaces.",
+      "photo": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/64/Kovalam_Beach_Resort_Leela_Hotel.jpg/1280px-Kovalam_Beach_Resort_Leela_Hotel.jpg",
+      "photoIsRepresentative": false,
+      "photoCredit": {
+        "author": "Etienne Flahaut",
+        "license": "CC BY-SA 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+        "source": "https://commons.wikimedia.org/wiki/File:Kovalam_Beach_Resort_Leela_Hotel.jpg"
+      },
+      "spaces": [
+        { "name": "Ballroom", "size": "c. 7,400 sq ft", "capacity": 750, "note": "Listings give 360–750 depending on layout" },
+        { "name": "Beach / outdoor lawn", "capacity": 500, "note": "Seated, per WedMeGood" },
+        { "name": "Maya", "capacity": 40, "note": "Small hall" }
+      ],
+      "features": [
+        "Nine banqueting spaces",
+        "In-house catering only",
+        "Decorators from the resort's panel"
+      ],
+      "verification": "Checked online on 4 November 2026. Address and the nine event spaces are from Cvent; ballroom size and the 750 figure are from the resort's brochure on Preferred Hotels. Other listings give smaller ballroom figures (360–400 seated), so confirm the layout. Photo: the Charles Correa building (2017), Wikimedia Commons.",
+      "sources": [
+        "https://www.cvent.com/venues/trivandrum/hotel/the-raviz-kovalam/venue-ac0b85c6-8ceb-4197-9ce1-d919727e92c6",
+        "https://meetings.preferredhotels.com/hotels/india/leela-kovalam-raviz-hotel",
+        "https://www.wedmegood.com/wedding-venues/Leela-Kovalam-167358",
+        "https://www.theleela.com/prod/content/assets/factsheet/Wedding-Brochure-The-Leela-Kovalam_0.pdf?VersionId=6EjjQxNyjtrWTdFqiwA9QqP0LBeNfwCH",
+        "https://commons.wikimedia.org/wiki/File:Kovalam_Beach_Resort_Leela_Hotel.jpg"
+      ]
     },
     {
       "id": "uday-samudra-kovalam",
@@ -307,10 +449,27 @@
       "type": "resort",
       "area": "Kovalam",
       "city": "Thiruvananthapuram",
-      "website": "",
-      "spaces": [],
-      "verification": "From the team's venue list (added 2026-11-03). Name and area only; star rating, capacity, address and photos not yet checked. The source is a general listing page, not the venue's own site.",
-      "sources": ["https://www.wedmegood.com/vendors/trivandrum-thiruvananthapuram-/wedding-venues/all/wedding-resorts/"]
+      "address": "GV Raja Road, Samudra Beach, Kovalam, Thiruvananthapuram, Kerala 695527",
+      "phone": "+91 471 248 3111",
+      "website": "https://www.udshotels.com/mice.html",
+      "description": "A beach hotel at Samudra Beach, Kovalam, with seven halls plus pool-deck, courtyard and beach venues, together hosting up to 1,500 guests.",
+      "spaces": [
+        { "name": "Vizhinjam Hall", "capacity": 550, "note": "Seated; largest hall" },
+        { "name": "Bay Hall", "capacity": 350, "note": "Banquet seating" },
+        { "name": "Courtyard lawn", "capacity": 1000, "note": "Seated, per WeddingBazaar" }
+      ],
+      "features": [
+        "Seven halls, up to 1,500 guests in all",
+        "Beach and pool-deck venues",
+        "250 rooms"
+      ],
+      "verification": "Checked online on 4 November 2026. The 1,500 total and seven halls are from the UDS Hotels events page; hall capacities are from WeddingBazaar, Spalba and Travel Weekly and vary by source.",
+      "sources": [
+        "https://www.udshotels.com/mice.html",
+        "https://www.amimagazine.global/Meeting-Event-Venues/Kovalam-India/Convention-Hotel/Uday-Samudra-Leisure-Beach-Hotel-p58048151",
+        "https://www.weddingbazaar.com/wedding-venues/thiruvananthapuram/uday-samudra-leisure-beach-hotel-vizhinjam",
+        "https://spalba.com/properties/uday-samudra-leisure-beach-hotel-kovalam-1307/bay-hall-5677"
+      ]
     },
     {
       "id": "travancore-heritage-chowara",
@@ -318,10 +477,22 @@
       "type": "resort",
       "area": "Chowara",
       "city": "Thiruvananthapuram",
+      "address": "Chowara, Thiruvananthapuram (south of Kovalam)",
+      "phone": "+91 471 222 9600",
       "website": "https://www.thetravancoreheritage.com/",
+      "gallery": "https://www.thetravancoreheritage.com/banquets-and-meetings.html",
+      "description": "A heritage-style seaside resort in 15 acres of coconut garden at Chowara, offering weddings, banquets and conferences.",
       "spaces": [],
-      "verification": "From the team's venue list (added 2026-11-03). Name and area only; star rating, capacity, address and photos not yet checked.",
-      "sources": ["https://www.thetravancoreheritage.com/banquets-and-meetings.html"]
+      "features": [
+        "Seaside, 15-acre coconut garden",
+        "About 90 rooms",
+        "Weddings, banquets and conferences"
+      ],
+      "verification": "Checked online on 4 November 2026. Setting, services and phone are from the Kerala Tourism listing; no hall capacity is published, so ask the resort.",
+      "sources": [
+        "https://www.thetravancoreheritage.com/banquets-and-meetings.html",
+        "https://www.keralatourism.org/resorts/the-travancore-heritage-beach-resort/2453"
+      ]
     },
     {
       "id": "poovar-island-resort",
@@ -329,10 +500,24 @@
       "type": "resort",
       "area": "Poovar",
       "city": "Thiruvananthapuram",
-      "website": "",
-      "spaces": [],
-      "verification": "From the team's venue list (added 2026-11-03). Name and area only; star rating, capacity, address and photos not yet checked. The source is Kerala Tourism's destination-wedding listing.",
-      "sources": ["https://www.keralatourism.org/destination-wedding/wedding-properties/poovar-island-resort-25"]
+      "address": "K.P. VII/911, Pozhiyoor, Thiruvananthapuram, Kerala 695513",
+      "phone": "+91 471 221 2068",
+      "description": "A backwater resort near Poovar, known for its floating cottages on the estuary, with an indoor hall and an open lawn for weddings.",
+      "spaces": [
+        { "name": "Emerald hall", "capacity": 300, "note": "Seated; listings give 250–300" },
+        { "name": "Open lawn", "capacity": 1500, "note": "Per WeddingBazaar" }
+      ],
+      "features": [
+        "Floating cottages on the estuary",
+        "Reached by boat",
+        "Destination weddings"
+      ],
+      "verification": "Checked online on 4 November 2026. Address and phone are from Kerala Tourism; capacities come from WeddingBazaar and Spalba and conflict (one listing caps weddings at 500), so confirm with the resort.",
+      "sources": [
+        "https://www.keralatourism.org/resorts/poovar-island-resort/3322",
+        "https://www.keralatourism.org/destination-wedding/wedding-properties/poovar-island-resort-25",
+        "https://www.weddingbazaar.com/wedding-venues/thiruvananthapuram/poovar-island-resort"
+      ]
     },
     {
       "id": "estuary-sarovar-premiere-poovar",
@@ -340,21 +525,40 @@
       "type": "resort",
       "area": "Poovar",
       "city": "Thiruvananthapuram",
-      "website": "https://www.sarovarhotels.com/estuary-sarovar-Premiere-poovar/celebrations.html",
-      "spaces": [],
-      "verification": "From the team's venue list (added 2026-11-03). Name and area only; star rating, capacity, address and photos not yet checked.",
-      "sources": ["https://www.sarovarhotels.com/estuary-sarovar-Premiere-poovar/celebrations.html"]
+      "address": "Kulathoor Panchayat (KP 583-647), Poovar, Thiruvananthapuram, Kerala 695525",
+      "phone": "+91 471 222 9222",
+      "website": "https://www.sarovarhotels.com/hotels-in-poovar-island-kerala/estuary-sarovar-premiere-poovar",
+      "description": "An island resort where the Neyyar river meets the sea at Poovar, rebranded from Estuary Sarovar Portico in 2024, with a 5,500 sq ft banquet hall.",
+      "spaces": [
+        { "name": "Banquet hall", "size": "5,500 sq ft", "capacity": 450, "note": "Theatre 450 · banquet 300 · classroom 200" }
+      ],
+      "features": [
+        "Island setting between river, backwater and sea",
+        "Formerly Estuary Sarovar Portico (renamed 2024)"
+      ],
+      "verification": "Checked online on 4 November 2026. Hall figures are from Sarovar's banquet page (as quoted in search results; the page now redirects to the hotel's main page). WeddingWire lists weddings of up to 800 guests, likely including outdoor areas.",
+      "sources": [
+        "https://www.sarovarhotels.com/hotels-in-poovar-island-kerala/estuary-sarovar-premiere-poovar",
+        "https://www.weddingwire.in/wedding-resorts/estuary-sarovar-premiere-poovar-island--e487317",
+        "https://hospibuz.com/estuary-sarovar-portico-poovar-island-is-rebranded-as-estuary-sarovar-premiere-poovar-island"
+      ]
     },
     {
       "id": "lake-palace",
-      "name": "Lake Palace",
+      "name": "Lake Palace Hotel Trivandrum",
+      "aka": "Lake Palace",
       "type": "resort",
-      "area": "Thiruvananthapuram",
+      "area": "Kadinamkulam",
       "city": "Thiruvananthapuram",
+      "address": "Thonikadavu, Puthukurichi, Kadinamkulam, Thiruvananthapuram, Kerala 695303",
       "website": "https://lakepalace.in/",
+      "description": "A backwater-facing hotel and resort at Kadinamkulam, north of the city, with lake views and gardens for weddings and events.",
       "spaces": [],
-      "verification": "From the team's venue list (added 2026-11-03). Name and area only; star rating, capacity, address and photos not yet checked.",
-      "sources": ["https://lakepalace.in/en/events/view/wedding.html"]
+      "verification": "Checked online on 4 November 2026. Location is from several directory and booking listings and the hotel's site; capacities aren't published, so ask the hotel.",
+      "sources": [
+        "https://lakepalace.in/en/events/view/wedding.html",
+        "https://www.successfulmeetings.com/Meeting-Event-Venues/Thiruvananthapuram-India/Convention-Hotel/Lake-Palace-Hotel-Trivandrum-p59695257"
+      ]
     },
     {
       "id": "sunrise-resort-kovalam",
@@ -362,10 +566,11 @@
       "type": "resort",
       "area": "Kovalam",
       "city": "Thiruvananthapuram",
-      "website": "",
       "spaces": [],
-      "verification": "From the team's venue list (added 2026-11-03). Name and area only; star rating, capacity, address and photos not yet checked. The source is a general listing page, not the venue's own site.",
-      "sources": ["https://www.wedmegood.com/vendors/trivandrum-thiruvananthapuram-/wedding-venues/all/wedding-resorts/"]
+      "verification": "No Sunrise Resort in Kovalam could be found online on 4 November 2026; listings with that name are in Alwar, Pushkar and Moga. Confirm the exact name and location with the team before quoting it.",
+      "sources": [
+        "https://www.wedmegood.com/vendors/trivandrum-thiruvananthapuram-/wedding-venues/all/wedding-resorts/"
+      ]
     },
     {
       "id": "swagath-holiday-resort-kovalam",
@@ -373,21 +578,34 @@
       "type": "resort",
       "area": "Kovalam",
       "city": "Thiruvananthapuram",
-      "website": "",
-      "spaces": [],
-      "verification": "From the team's venue list (added 2026-11-03). Name and area only; star rating, capacity, address and photos not yet checked. The source is a general listing page, not the venue's own site.",
-      "sources": ["https://www.wedmegood.com/vendors/trivandrum-thiruvananthapuram-/wedding-venues/all/wedding-resorts/"]
+      "address": "Kovalam Beach Road, Thiruvananthapuram, Kerala 695527",
+      "website": "http://www.swagathresort.com",
+      "description": "A holiday resort on Kovalam Beach Road with an air-conditioned hall and lawns for weddings of up to about 150 guests.",
+      "spaces": [
+        { "name": "Daffodils hall", "capacity": 150, "note": "Air-conditioned" }
+      ],
+      "verification": "Checked online on 4 November 2026. Address and capacity agree across meeting and wedding directories (MIT, WeddingWire, NativePlanet); listings may be dated.",
+      "sources": [
+        "https://www.mitmagazine.co.uk/Meeting-Event-Venues/Thiruvananthapuram-India/Convention-Hotel/Swagath-Holiday-Resort-p57788413",
+        "https://www.weddingwire.in/wedding-resorts/swagath-holiday-resort--e148637"
+      ]
     },
     {
       "id": "havelia-island-resort",
       "name": "Havelia Island Resort",
       "type": "resort",
-      "area": "Thiruvananthapuram",
+      "area": "Poovar",
       "city": "Thiruvananthapuram",
-      "website": "",
-      "spaces": [],
-      "verification": "From the team's venue list (added 2026-11-03). Name and area only; star rating, capacity, address and photos not yet checked. The list gives the location only as \"Thiruvananthapuram area\". The source is a general listing page, not the venue's own site.",
-      "sources": ["https://www.wedmegood.com/vendors/trivandrum-thiruvananthapuram-/wedding-venues/all/wedding-resorts/"]
+      "address": "K.P. Pozhiyoor, near Poovar, Thiruvananthapuram",
+      "description": "An island resort on the Poovar backwaters, reached by boat, with an outdoor lawn for smaller weddings.",
+      "spaces": [
+        { "name": "Lawn", "capacity": 120, "note": "Seated · 200 floating, per WedMeGood" }
+      ],
+      "verification": "Checked online on 4 November 2026. Booking sites place it at Pozhiyoor near Poovar; WedMeGood lists a Palayam (city) office address. Lawn capacity is from WedMeGood.",
+      "sources": [
+        "https://www.wedmegood.com/wedding-venues/Havelia-Island-Resort-700435",
+        "https://tourmyindia.com/hotelsinindia/havelia-island-resort-poovar.html"
+      ]
     }
   ]
 }

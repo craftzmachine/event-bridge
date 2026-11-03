@@ -124,9 +124,17 @@ Company name, logo (`images/parinay-logo-gold.png`, a transparent gold PNG used 
 
 ### `venues.json`
 
-The venue directory. `venueTypes` lists the filter types (`hotel`, `resort`, `venue`). Each venue has `id`, `name`, `type`, `area`, `city`, and optionally `aka`, `address`, `stars` (1–5), `phone`, `website`, `photo`, `photoIsRepresentative`, `features`, `verification` and `sources`. It also has `spaces`: a list of `{ name, size?, capacity?, note? }`.
+The venue directory. `venueTypes` lists the filter types (`hotel`, `resort`, `venue`). Each venue has `id`, `name`, `type`, `area`, `city`, and optionally `aka`, `address`, `stars` (1–5), `phone`, `website`, `gallery` (link to the venue's own photos), `featured`, `description`, `photo`, `photoIsRepresentative`, `photoCredit`, `features`, `verification` and `sources`. It also has `spaces`: a list of `{ name, size?, capacity?, note? }`.
 
-The five starter venues (Hyatt, Hilton Garden Inn, Vivanta, Hycinth, Taj Green Cove) were checked against public listings on 3 November 2026. Where sources disagreed, the venue's `verification` note says so. The 24 convention centres and resorts added from the team's list have only a name, area and source link so far, and their cards show a monogram until a photo is added. **Confirm names, addresses, star ratings and capacities with each venue before quoting them**, and replace the representative stock photos with real venue photos (set `photoIsRepresentative` to `false`).
+**Taj Green Cove, Kovalam** is `featured`: it's listed first and shown as a large card above the grid. Only one venue can be featured.
+
+All 29 venues were researched online on 4 November 2026, using official sites first, then Kerala Tourism and reputable listings. Each one has a short description, its address and phone where published, its event spaces and capacities, and its sources. Where sources disagree, the venue's `verification` note says so. Six names from the team's list (Gardenia, SS Pooja, Royal Palace, Chinnus, Diya Gardens and Sunrise Resort, Kovalam) couldn't be found online, so they carry only the original name and area, marked as unconfirmed. **Confirm names, addresses, star ratings and capacities with each venue before quoting them.**
+
+**Photos:**
+- **Real venues only.** A photo is shown only if it is of the actual venue and freely licensed: Taj Green Cove's infinity pool and The Leela's Charles Correa building, both from Wikimedia Commons.
+- **Credits.** Each photo needs a `photoCredit` with the photographer, licence and source page. The card and the details show the credit, and the app refuses to load a photo without one.
+- **No copying official photos.** Venues' official and listing-site photos are copyrighted, so they aren't copied in. Link them with `gallery` instead, or add one when the venue gives permission.
+- **No photo.** Other venues show a monogram.
 
 ### Logo and look
 

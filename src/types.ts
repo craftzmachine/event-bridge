@@ -75,12 +75,27 @@ export interface Venue {
   stars?: number;
   phone?: string;
   website?: string;
+  /** The venue's own photo gallery, linked rather than copied (official photos are copyrighted). */
+  gallery?: string;
+  /** Shown first, as the large card above the directory grid. */
+  featured?: boolean;
+  description?: string;
   photo?: string;
   photoIsRepresentative?: boolean;
+  /** Required with a real venue photo: who took it, its licence, and the page it came from. */
+  photoCredit?: PhotoCredit;
   spaces: VenueSpace[];
   features?: string[];
   verification?: string;
   sources?: string[];
+}
+
+export interface PhotoCredit {
+  author: string;
+  license: string;
+  licenseUrl?: string;
+  /** e.g. the Wikimedia Commons file page */
+  source: string;
 }
 
 export interface VenueDirectory {

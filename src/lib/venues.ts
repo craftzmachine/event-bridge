@@ -6,14 +6,14 @@ export interface VenueFilter {
   area: string; // "all" or an area name
 }
 
-/** Case-insensitive match on name, alias, area, address, features and space names; every word must match. */
+/** Case-insensitive match on name, alias, area, address, description, features and space names; every word must match. */
 export function filterVenues(venues: Venue[], f: VenueFilter): Venue[] {
   const words = f.q.toLowerCase().split(/\s+/).filter(Boolean);
   return venues.filter((v) => {
     if (f.type !== "all" && v.type !== f.type) return false;
     if (f.area !== "all" && v.area !== f.area) return false;
     if (!words.length) return true;
-    const hay = [v.name, v.aka, v.area, v.city, v.address, ...(v.features ?? []), ...v.spaces.map((s) => s.name)]
+    const hay = [v.name, v.aka, v.area, v.city, v.address, v.description, ...(v.features ?? []), ...v.spaces.map((s) => s.name)]
       .filter(Boolean)
       .join(" ")
       .toLowerCase();

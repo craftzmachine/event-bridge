@@ -22,6 +22,57 @@ const Monogram = ({ name }: { name: string }) => {
   );
 };
 
+/**
+ * Licence credit for a real venue photo, linking to its source page (e.g. Wikimedia Commons).
+ * Inside a grid card (itself a button) it is plain text; the dialog carries the link.
+ */
+const Credit = ({ v, link = true }: { v: Venue; link?: boolean }) => {
+  if (!v.photo || !v.photoCredit) return null;
+  const text = `Photo: ${v.photoCredit.author} · ${v.photoCredit.license}`;
+  return link ? (
+    <a className="venue-credit" href={v.photoCredit.source} target="_blank" rel="noreferrer">{text}</a>
+  ) : (
+    <span className="venue-credit">{text}</span>
+  );
+};
+
+/** The featured venue: a wide card above the grid, with the photo beside the details. */
+function FeaturedVenue({ v, typeLabel, onOpen, onStart }: { v: Venue; typeLabel: string; onOpen: () => void; onStart: () => void }) {
+  const cap = largestCapacity(v);
+  return (
+    <article className="venue-featured" aria-labelledby={`vf-${v.id}`}>
+      <div className="venue-featured-photo">
+        <Img src={v.photo} alt={v.photoIsRepresentative ? "" : v.name} />
+        {!v.photo && <Monogram name={v.name} />}
+        <span className="venue-type">{typeLabel}</span>
+        <Credit v={v} />
+      </div>
+      <div className="venue-featured-body">
+        <p className="venue-featured-badge">Featured venue</p>
+        <Stars n={v.stars} />
+        <h2 id={`vf-${v.id}`}>{v.name}</h2>
+        <p className="venue-area">{v.area}, {v.city}</p>
+        {v.description && <p className="venue-featured-text">{v.description}</p>}
+        {!!v.spaces.length && (
+          <ul className="venue-spaces">
+            {v.spaces.slice(0, 3).map((s) => (
+              <li key={s.name}>
+                <span>{s.name}</span>
+                <em>{s.capacity ? `up to ${s.capacity.toLocaleString("en-IN")}` : s.size ?? "TBC"}</em>
+              </li>
+            ))}
+          </ul>
+        )}
+        {cap && <p className="venue-cap">Largest space · up to {cap.toLocaleString("en-IN")} guests</p>}
+        <div className="venue-featured-actions">
+          <button className="btn-ghost" onClick={onOpen}>Details</button>
+          <button className="btn-primary" onClick={onStart} aria-label={`Start a proposal at ${v.name}`}>Start proposal</button>
+        </div>
+      </div>
+    </article>
+  );
+}
+
 export default function Venues({ onBack, onStartProposal }: { onBack: () => void; onStartProposal: (v: Venue) => void }) {
   const { venues: dir, brand } = useConfig();
   const [q, setQ] = useState("");
@@ -31,6 +82,8 @@ export default function Venues({ onBack, onStartProposal }: { onBack: () => void
 
   const areas = useMemo(() => [...new Set(dir.venues.map((v) => v.area))].sort(), [dir]);
   const shown = filterVenues(dir.venues, { q, type, area });
+  const featured = shown.find((v) => v.featured);
+  const rest = shown.filter((v) => v !== featured);
   const typeLabel = (id: string) => dir.venueTypes.find((t) => t.id === id)?.label ?? id;
   const count = (id: string) => dir.venues.filter((v) => id === "all" || v.type === id).length;
   const filtered = q || type !== "all" || area !== "all";
@@ -88,8 +141,12 @@ export default function Venues({ onBack, onStartProposal }: { onBack: () => void
               : "No venues match. Try a different search or clear the filters."}
           </div>
         ) : (
+          <>
+          {featured && (
+            <FeaturedVenue v={featured} typeLabel={typeLabel(featured.type)} onOpen={() => setOpen(featured)} onStart={() => onStartProposal(featured)} />
+          )}
           <ul className="venue-grid">
-            {shown.map((v) => {
+            {rest.map((v) => {
               const cap = largestCapacity(v);
               return (
                 <li key={v.id} className="venue-card">
@@ -99,11 +156,13 @@ export default function Venues({ onBack, onStartProposal }: { onBack: () => void
                       {!v.photo && <Monogram name={v.name} />}
                       <span className="venue-type">{typeLabel(v.type)}</span>
                       {v.photoIsRepresentative && <span className="venue-photo-note">Representative photo</span>}
+                      <Credit v={v} link={false} />
                     </div>
                     <div className="venue-body">
                       <Stars n={v.stars} />
                       <h3>{v.name}</h3>
                       <p className="venue-area">{v.area}, {v.city}</p>
+                      {v.description && <p className="venue-desc">{v.description}</p>}
                       {!v.spaces.length && <p className="venue-tbc">Spaces and capacity to be confirmed</p>}
                       <ul className="venue-spaces">
                         {v.spaces.slice(0, 3).map((s) => (
@@ -124,6 +183,7 @@ export default function Venues({ onBack, onStartProposal }: { onBack: () => void
               );
             })}
           </ul>
+          </>
         )}
       </main>
       {open && <VenueDialog v={open} typeLabel={typeLabel(open.type)} onClose={() => setOpen(null)} onStart={() => onStartProposal(open)} />}
@@ -145,17 +205,20 @@ function VenueDialog({ v, typeLabel, onClose, onStart }: { v: Venue; typeLabel: 
         <Img src={v.photo} alt={v.photoIsRepresentative ? "" : v.name} />
         {!v.photo && <Monogram name={v.name} />}
         {v.photoIsRepresentative && <span className="venue-photo-note">Representative photo</span>}
+        <Credit v={v} />
         <button className="vd-close" onClick={onClose} aria-label="Close">×</button>
       </div>
       <div className="vd-body">
-        <p className="eyebrow">{typeLabel}{v.stars ? ` · ${v.stars}-star` : ""}</p>
+        <p className="eyebrow">{v.featured ? "Featured · " : ""}{typeLabel}{v.stars ? ` · ${v.stars}-star` : ""}</p>
         <h2 id="venue-dialog-title">{v.name}</h2>
         {v.aka && <p className="vd-aka">Also known as {v.aka}</p>}
+        {v.description && <p className="vd-desc">{v.description}</p>}
         <dl className="vd-facts">
           <div><dt>Area</dt><dd>{v.area}, {v.city}</dd></div>
           {v.address && <div><dt>Address</dt><dd>{v.address}</dd></div>}
           {v.phone && <div><dt>Phone</dt><dd><a href={`tel:${v.phone.replace(/\s/g, "")}`}>{v.phone}</a></dd></div>}
           {v.website && <div><dt>Website</dt><dd><a href={v.website} target="_blank" rel="noreferrer">{new URL(v.website).hostname}</a></dd></div>}
+          {v.gallery && <div><dt>Photos</dt><dd><a href={v.gallery} target="_blank" rel="noreferrer">Official gallery ↗</a></dd></div>}
         </dl>
 
         <h3 className="vd-h">Event spaces</h3>
