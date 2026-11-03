@@ -4,7 +4,7 @@ A browser app for the Parinay Weddings (Events IQ) sales team to build tailored 
 
 ## What it does
 
-1. **Sign in** with an authorised team account.
+1. **Sign in** with an authorised team account. The site opens on a public landing page (`/#/`) with a **Team sign in** button. The sign-in page can also be opened directly at `/#/login`, and the studio is at `/#/studio`.
 2. **Client & event**: client name, event date, contact, venue (with suggestions from the venue directory) and location. The quotation reference is filled in automatically.
 3. **Occasion**: any event type (Wedding, Engagement, Reception) with any ceremony style (Hindu, Christian, Muslim).
 4. **Elements**: browse the catalogue, filtered to the chosen occasion (or show everything), search, and filter by category. For each selected element, set qty, rate (or *as per actuals*), notes for the client, optional upgrades, and whether it is an *additional option*. You can also reorder elements or add a custom one-off line.
@@ -150,7 +150,7 @@ The text stays sharp and searchable. pdfmake's bundled Roboto font includes the 
 |---|---|
 | `public/config/` | `catalog.json`, `brand.json` and `venues.json`: offerings, branding and venue directory, editable without a rebuild |
 | `public/images/` | logo, favicon, your own photos |
-| `src/pages/` | `Login`, `Home` (saved proposals), `Builder` (the four-step wizard), `Venues` (directory) |
+| `src/pages/` | `Landing` (public entry), `Login`, `Home` (saved proposals), `Builder` (the four-step wizard), `Venues` (directory) |
 | `src/components/` | preview, element cards, line editor, totals panel and other UI pieces |
 | `src/lib/` | totals, ₹ formatting, Excel and PDF export, quotation references, venue search |
 | `src/state/` | saved proposals, theme and font preference |

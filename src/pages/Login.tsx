@@ -63,6 +63,9 @@ export default function Login({ onSignedIn }: { onSignedIn: (email: string) => v
       </aside>
 
       <main className="login-main">
+        <a className="login-back" href="#/">
+          <span aria-hidden>←</span> Back to home
+        </a>
         <div className="login-appearance">
           <AppearanceControls />
         </div>

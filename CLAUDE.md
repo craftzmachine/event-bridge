@@ -35,7 +35,7 @@ There is no linter configured.
 
 **Venue facts must stay sourced.** Each venue carries `verification` and `sources`; photos are stock unless `photoIsRepresentative` is false. Don't add or change names, star ratings or capacities without a source.
 
-**Navigation is component state.** `App.tsx` switches between `Login` → `Home` / `Venues` → `Builder` based on the session, a `view` and an `openId`. `Builder` is a 4-step wizard (client, occasion, elements, review); steps are inner components of `src/pages/Builder.tsx`.
+**Navigation: three hash routes, then component state.** `App.tsx` reads the top-level page from the URL hash so it can be linked to on any static host with no rewrites: `#/` → `Landing` (public), `#/login` → `Login`, `#/studio` → the signed-in app. An effect redirects `#/studio` without a session to `#/login`, and `#/login` with a session to `#/studio`. Inside the studio, `App` switches between `Home` / `Venues` → `Builder` with a `view` and an `openId`. `Builder` is a 4-step wizard (client, occasion, elements, review); steps are inner components of `src/pages/Builder.tsx`.
 
 **Persistence** (`src/state/proposals.ts`): all proposals live in `localStorage` under `proposal-builder.proposals.v1`, written on every change via `useProposals()`. JSON export/import is the only way to move them between devices. Changing the `Proposal` shape needs migration-tolerant reads, since old drafts persist.
 
