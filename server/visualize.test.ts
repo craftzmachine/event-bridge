@@ -129,6 +129,15 @@ describe("crypto, passwords and config", () => {
   });
 });
 
+describe("api routes", () => {
+  it("export the shape Vercel runs as a Web handler: default { fetch }", async () => {
+    // a bare default function is treated as the legacy Node (req, res) signature on Vercel and never answers
+    const routes = import.meta.glob<{ default?: { fetch?: unknown } }>("../api/**/*.ts", { eager: true });
+    expect(Object.keys(routes)).toHaveLength(8);
+    for (const [file, mod] of Object.entries(routes)) expect(typeof mod.default?.fetch, file).toBe("function");
+  });
+});
+
 describe("upload validation", () => {
   it("checks type, content and size", () => {
     expect(validateUpload("p.pdf", pdf)).toEqual({ kind: "pdf" });

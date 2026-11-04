@@ -22,6 +22,10 @@ async function parse<T>(res: Response): Promise<T> {
   return body as T;
 }
 
+// a server that never answers shows as "can't reach the sharing service" instead of a page waiting forever
+const TIMEOUT_MS = 20_000;
+const UPLOAD_TIMEOUT_MS = 120_000;
+
 export async function api<T>(path: string, init: { method?: string; json?: unknown } = {}): Promise<T> {
   let res: Response;
   try {
@@ -31,6 +35,7 @@ export async function api<T>(path: string, init: { method?: string; json?: unkno
       cache: "no-store",
       headers: init.json ? { "Content-Type": "application/json" } : undefined,
       body: init.json ? JSON.stringify(init.json) : undefined,
+      signal: AbortSignal.timeout(TIMEOUT_MS),
     });
   } catch {
     throw new ApiError(UNAVAILABLE, 0);
@@ -44,8 +49,10 @@ export function upload<T>(path: string, form: FormData, onProgress: (fraction: n
     const xhr = new XMLHttpRequest();
     xhr.open("POST", `./api/${path}`);
     xhr.withCredentials = true;
+    xhr.timeout = UPLOAD_TIMEOUT_MS;
     xhr.upload.onprogress = (e) => e.lengthComputable && onProgress(e.loaded / e.total);
     xhr.onerror = () => reject(new ApiError(UNAVAILABLE, 0));
+    xhr.ontimeout = () => reject(new ApiError(UNAVAILABLE, 0));
     xhr.onload = () => {
       const res = new Response(xhr.response, { status: xhr.status, headers: { "content-type": xhr.getResponseHeader("content-type") ?? "" } });
       parse<T>(res).then(resolve, reject);
@@ -58,7 +65,7 @@ export function upload<T>(path: string, form: FormData, onProgress: (fraction: n
 export async function pageBitmap(id: string, n: number) {
   let res: Response;
   try {
-    res = await fetch(`./api/view/page?id=${id}&n=${n}`, { credentials: "same-origin", cache: "no-store" });
+    res = await fetch(`./api/view/page?id=${id}&n=${n}`, { credentials: "same-origin", cache: "no-store", signal: AbortSignal.timeout(TIMEOUT_MS) });
   } catch {
     throw new ApiError(UNAVAILABLE, 0);
   }
