@@ -82,6 +82,26 @@ export default function Landing({ account, onSignOut }: { account?: string; onSi
           </div>
         </section>
 
+        <section className="landing-viz" aria-labelledby="landing-viz-title">
+          <div className="landing-viz-text">
+            <span className="landing-app-badge">Private sharing</span>
+            <h2 id="landing-viz-title">Visualize Proposal</h2>
+            <p>
+              Your planner shares the finished proposal as a private link with a separate password. It opens here, view-only and
+              watermarked with your name — nothing to download, and the link expires on its own.
+            </p>
+            <ul className="landing-app-points">
+              <li>Password-protected, one link per client</li>
+              <li>PDF pages and Excel estimates, read in the browser</li>
+              <li>No downloads or printing; links expire and can be revoked</li>
+            </ul>
+          </div>
+          <div className="landing-viz-actions">
+            <a className="btn-gold btn-lg" href="#/view">Open a shared proposal</a>
+            <a className="btn-outline-light btn-lg" href="#/visualize">Share a proposal <small>Team</small></a>
+          </div>
+        </section>
+
         <section className="landing-cta">
           <p className="eyebrow">Team access</p>
           <h2>Part of the {brand.company} team?</h2>

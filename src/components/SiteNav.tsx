@@ -3,12 +3,13 @@ import { useConfig } from "../config/context";
 import { SITE } from "../site";
 import AppearanceControls from "./AppearanceControls";
 
-export type NavItem = "home" | "studio" | "venues";
+export type NavItem = "home" | "studio" | "venues" | "visualize";
 
 const ITEMS: { id: NavItem; label: string; href: string; badge?: string }[] = [
   { id: "home", label: "Home", href: "#/" },
   { id: "studio", label: "Proposal Studio", href: "#/studio", badge: "App" },
   { id: "venues", label: "Venue Directory", href: "#/venues" },
+  { id: "visualize", label: "Visualize Proposal", href: "#/visualize", badge: "Private" },
 ];
 
 /** Event Bridge's main menu, laid over the dark hero of the landing page and the Proposal Studio home. */

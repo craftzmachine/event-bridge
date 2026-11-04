@@ -10,7 +10,11 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@napi-rs/canvas": "^1.1.0",
+    "@upstash/redis": "^1.41.0",
+    "@vercel/blob": "^2.8.2",
     "exceljs": "^4.4.0",
+    "pdfjs-dist": "^6.5.438",
     "pdfmake": "^0.2.23",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"

@@ -8,19 +8,26 @@ import Builder from "./pages/Builder";
 import Login from "./pages/Login";
 import Venues from "./pages/Venues";
 import Landing from "./pages/Landing";
+import Visualize from "./pages/Visualize";
+import ClientView from "./pages/ClientView";
 import { endSession, readSession, startSession, type Session } from "./auth/auth";
+import { api } from "./lib/api";
 
 /**
  * Event Bridge's top-level pages live in the URL hash so they can be linked to directly on any static host:
- * #/ (landing), #/login, and the signed-in feature apps #/studio (Proposal Studio) and #/venues (Venue Directory).
+ * #/ (landing), #/login, the signed-in feature apps #/studio (Proposal Studio), #/venues (Venue Directory) and
+ * #/visualize (Visualize Proposal), and the public #/view/<token> where a client opens a shared proposal.
  */
-type Route = "landing" | "login" | "studio" | "venues";
-type AppRoute = "studio" | "venues";
-const readRoute = (): Route => {
-  const h = window.location.hash.replace(/^#\/?/, "").toLowerCase();
-  return h === "login" || h === "studio" || h === "venues" ? h : "landing";
+type Route = "landing" | "login" | "studio" | "venues" | "visualize" | "view";
+type AppRoute = "studio" | "venues" | "visualize";
+const APP_ROUTES: Route[] = ["studio", "venues", "visualize"];
+const readRoute = (hash: string): Route => {
+  const h = hash.replace(/^#\/?/, "").split("/")[0].toLowerCase();
+  return h === "login" || h === "view" || APP_ROUTES.includes(h as Route) ? (h as Route) : "landing";
 };
-const go = (r: Route) => {
+// the link token stays in the hash, so it never reaches servers or referrers
+const viewToken = (hash: string) => hash.replace(/^#\/?/, "").split("/")[1] || undefined;
+const go = (r: Exclude<Route, "view">) => {
   window.location.hash = r === "landing" ? "/" : `/${r}`;
 };
 // where to land after signing in, when sign-in interrupted the way to a feature app
@@ -30,10 +37,12 @@ export default function App() {
   const [config, setConfig] = useState<Loaded | null>(null);
   const [openId, setOpenId] = useState<string | null>(null);
   const [session, setSession] = useState<Session | null>(readSession);
-  const [route, setRoute] = useState<Route>(readRoute);
+  const [hash, setHash] = useState(() => window.location.hash);
+  const route = readRoute(hash);
   const appearance = useAppearanceState();
   const store = useProposals();
   const signOut = () => {
+    api("staff/logout", { method: "POST" }).catch(() => {});
     endSession();
     setOpenId(null);
     setSession(null);
@@ -45,7 +54,7 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    const onHash = () => setRoute(readRoute());
+    const onHash = () => setHash(window.location.hash);
     window.addEventListener("hashchange", onHash);
     return () => window.removeEventListener("hashchange", onHash);
   }, []);
@@ -53,8 +62,8 @@ export default function App() {
   // keep the address bar honest: the studio needs a session, and a signed-in visitor has no use for the sign-in page
   // the reset happens only once the target is reached: the login → app redirect below races onSignedIn
   useEffect(() => {
-    if ((route === "studio" || route === "venues") && !session) {
-      returnTo = route;
+    if (APP_ROUTES.includes(route) && !session) {
+      returnTo = route as AppRoute;
       go("login");
     } else if (route === "login" && session) go(returnTo);
     else if (session && route === returnTo) returnTo = "studio";
@@ -63,7 +72,7 @@ export default function App() {
   // braces matter: newer browsers return a Promise from scrollTo, which React would treat as a cleanup
   useEffect(() => {
     window.scrollTo(0, 0);
-  }, [route, openId]);
+  }, [hash, openId]);
 
   if (!config) return <div className="boot">Loading…</div>;
   if ("errors" in config)
@@ -90,13 +99,25 @@ export default function App() {
   return (
     <AppearanceContext.Provider value={appearance}>
       <ConfigContext.Provider value={config}>
-        {route === "landing" ? (
+        {route === "view" ? (
+          <ClientView key={viewToken(hash) ?? ""} token={viewToken(hash)} />
+        ) : route === "landing" ? (
           <Landing account={session?.email} onSignOut={signOut} />
         ) : !session ? (
           <Login
             onSignedIn={(email) => {
               setSession(startSession(email));
               go(returnTo);
+            }}
+          />
+        ) : route === "visualize" ? (
+          <Visualize
+            onBack={() => go("studio")}
+            onReauth={() => {
+              endSession();
+              setSession(null);
+              returnTo = "visualize";
+              go("login");
             }}
           />
         ) : open ? (
@@ -110,6 +131,7 @@ export default function App() {
             onSignOut={signOut}
             onOpen={setOpenId}
             onVenues={() => go("venues")}
+            onVisualize={() => go("visualize")}
             onNew={() => startProposal()}
           />
         )}

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useConfig } from "../config/context";
 import { checkCredentials } from "../auth/auth";
+import { ApiError, api } from "../lib/api";
 import { SITE } from "../site";
 import Img from "../components/Img";
 import Ornament from "../components/Ornament";
@@ -17,6 +18,7 @@ export default function Login({ onSignedIn }: { onSignedIn: (email: string) => v
   const [error, setError] = useState("");
   const [fails, setFails] = useState(0);
   const [lockedFor, setLockedFor] = useState(0);
+  const [busy, setBusy] = useState(false);
   const pwRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -25,18 +27,47 @@ export default function Login({ onSignedIn }: { onSignedIn: (email: string) => v
     return () => clearTimeout(t);
   }, [lockedFor]);
 
-  function submit(e: FormEvent) {
+  async function submit(e: FormEvent) {
     e.preventDefault();
-    if (lockedFor > 0) return;
+    if (lockedFor > 0 || busy) return;
     if (!email.trim() || !password) {
       setError("Enter your email address and password.");
       return;
     }
+    // The server check also opens Visualize Proposal. Where the API isn't available (offline, a plain static host,
+    // or before it's set up) Event Bridge falls back to the browser-side allow-list.
     const account = checkCredentials(email, password);
+    setBusy(true);
+    try {
+      const r = await api<{ email: string }>("staff/login", { json: { email, password } });
+      onSignedIn(r.email);
+      return;
+    } catch (ex) {
+      const err = ex as ApiError;
+      if (err.status === 429) {
+        setPassword("");
+        setLockedFor(err.retryAfter ?? LOCK_SECONDS);
+        setError(err.message);
+        return;
+      }
+      if (err.status === 401 && account) {
+        // a valid team login the server doesn't know yet: say why, rather than looking like a wrong password
+        setPassword("");
+        setError(`${account} isn't in the server's staff list yet, so it can't sign in here. Ask the Event Bridge admin to add it to STAFF_ACCOUNTS.`);
+        return;
+      }
+      if (err.status !== 0 && err.status !== 503) return wrong();
+    } finally {
+      setBusy(false);
+    }
     if (account) {
       onSignedIn(account);
       return;
     }
+    wrong();
+  }
+
+  function wrong() {
     const n = fails + 1;
     setFails(n);
     setPassword("");
@@ -133,8 +164,8 @@ export default function Login({ onSignedIn }: { onSignedIn: (email: string) => v
             </div>
           </div>
 
-          <button type="submit" className="btn-primary login-submit" disabled={lockedFor > 0}>
-            {lockedFor > 0 ? `Try again in ${lockedFor}s` : "Sign in"}
+          <button type="submit" className="btn-primary login-submit" disabled={lockedFor > 0 || busy}>
+            {lockedFor > 0 ? `Try again in ${lockedFor}s` : busy ? "Signing in…" : "Sign in"}
           </button>
 
           <p className="login-help">

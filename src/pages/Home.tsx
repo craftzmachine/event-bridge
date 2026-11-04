@@ -18,6 +18,7 @@ export default function Home({
   onSignOut,
   onOpen,
   onVenues,
+  onVisualize,
   onNew,
 }: {
   store: Store;
@@ -25,6 +26,7 @@ export default function Home({
   onSignOut: () => void;
   onOpen: (id: string) => void;
   onVenues: () => void;
+  onVisualize: () => void;
   onNew: () => void;
 }) {
   const { catalog, brand } = useConfig();
@@ -65,6 +67,7 @@ export default function Home({
           <div className="hero-actions">
             <button className="btn-gold btn-lg" onClick={onNew}>Start a new proposal</button>
             <button className="btn-outline-light btn-lg" onClick={onVenues}>Browse venues</button>
+            <button className="btn-outline-light btn-lg" onClick={onVisualize}>Visualize Proposal</button>
           </div>
         </div>
       </header>

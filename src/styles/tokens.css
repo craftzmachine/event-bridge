@@ -25,6 +25,10 @@
   --primary: var(--espresso);
   --on-primary: var(--paper);
   --primary-accent: var(--gold-light);
+  /* shared documents (Visualize Proposal) always look like paper, whatever the theme; not redefined per theme */
+  --doc-paper: #ffffff;
+  --doc-ink: #1f1b17;
+  --doc-line: #dcd6cc;
 
   --serif: "Cormorant Garamond", Georgia, "Times New Roman", serif;
   --caps: Cinzel, "Trajan Pro", Georgia, serif;

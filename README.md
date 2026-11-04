@@ -4,12 +4,13 @@
 
 - **Proposal Studio**: build tailored event proposals and export them as a branded Excel workbook or a client-ready PDF.
 - **Venue Directory**: a searchable list of venues in and around Thiruvananthapuram.
+- **Visualize Proposal**: share a finished PDF or Excel proposal with a client as a private, password-protected, view-only page.
 
 Proposals and their exports are branded **Parinay Weddings**, because that's what clients receive. Event Bridge is the name of the app the team uses.
 
 ## Navigation
 
-The main menu sits on the landing page and the Proposal Studio home: **Home**, **Proposal Studio** and **Venue Directory**, plus the theme and font buttons and **Team sign in** / **Sign out**. On phones and tablets it folds into a ☰ menu.
+The main menu sits on the landing page and the Proposal Studio home: **Home**, **Proposal Studio**, **Venue Directory** and **Visualize Proposal**, plus the theme and font buttons and **Team sign in** / **Sign out**. Below 1280 px wide it folds into a ☰ menu.
 
 | Address | Page |
 |---|---|
@@ -17,6 +18,8 @@ The main menu sits on the landing page and the Proposal Studio home: **Home**, *
 | `/#/login` | sign-in, with a **Back to home** link |
 | `/#/studio` | Proposal Studio (needs sign-in) |
 | `/#/venues` | Venue Directory (needs sign-in) |
+| `/#/visualize` | Visualize Proposal: upload and share (needs sign-in) |
+| `/#/view/<code>` | a client's private proposal link (password-protected; `/#/view` lets them paste a link) |
 
 Opening a feature app while signed out goes to sign-in first, then straight back to that app.
 
@@ -46,14 +49,14 @@ Requires Node 18+.
 ```bash
 npm install
 npm run dev        # http://localhost:5173
-npm test           # totals, config, sign-in, Excel and PDF export, references, venues
+npm test           # totals, config, sign-in, exports, references, venues, Visualize Proposal security
 npm run build      # static site in dist/
 npm run preview    # serve the production build locally (http://localhost:4173)
 ```
 
 ## Deploy
 
-`npm run build` produces a static site in `dist/` with relative paths. Upload it to any static host (Netlify, Vercel, Cloudflare Pages, GitHub Pages, an internal web server). There is no server or database. Config files in `dist/config/` can be edited on the host afterwards.
+`npm run build` produces a static site in `dist/` with relative paths. Upload it to any static host (Netlify, Vercel, Cloudflare Pages, GitHub Pages, an internal web server). Config files in `dist/config/` can be edited on the host afterwards. **Visualize Proposal** also needs the small server API in `api/`, which runs as Vercel Functions. On other hosts everything else works, and Visualize says it can't reach the sharing service. `vercel.json` also sets the site's security headers.
 
 **Vercel:** import the GitHub repository with the **Vite** framework preset, build command `npm run build` and output directory `dist`. Every push to `main` then redeploys automatically. Check under **Deployments** that the latest commit is live before testing.
 
@@ -79,7 +82,9 @@ To add or change an account, compute the value and edit the list, then rebuild:
 node -e "console.log(require('crypto').createHash('sha256').update('parinay-proposals:' + process.argv[1].toLowerCase() + ':' + process.argv[2]).digest('hex'))" name@example.com 'the-password'
 ```
 
-**Limits:** this check runs in the browser, so it keeps casual visitors out but is not real security. Short passwords can be guessed offline from the published code. For anything sensitive, put the site behind hosting-level authentication (for example Cloudflare Access or Netlify password protection).
+**Server sign-in:** once Visualize Proposal is set up, the sign-in form checks the email and password **on the server** against `STAFF_ACCOUNTS`, and locks an account for 15 minutes after 5 wrong passwords. The browser list above is used only where the server isn't available. **Keep both lists in step:** an account must be in `STAFF_ACCOUNTS` to sign in, and in `src/auth/auth.ts` to stay signed in after a reload. If a team account is missing from the server list, sign-in says so.
+
+**Limits:** the browser check keeps casual visitors out but is not real security. Short passwords can be guessed offline from the published code. For anything sensitive, put the site behind hosting-level authentication (for example Cloudflare Access or Netlify password protection).
 
 ## Updating offerings — no code changes
 
@@ -172,6 +177,58 @@ An A4, client-ready PDF:
 
 The text stays sharp and searchable. pdfmake's bundled Roboto font includes the ₹ sign.
 
+## Visualize Proposal
+
+Share a finished proposal with a client as a private page instead of an attachment.
+
+**For the team:** choose **Visualize Proposal** in the menu.
+1. Drop in a PDF or `.xlsx` file (up to 4 MB; PDFs up to 30 pages).
+2. Enter the client's name and a title.
+3. Choose a password (or tap **Generate**) and how long the link lasts: 7, 30 or 90 days.
+4. **Create private link** gives you the link and the password. Send them **separately**, for example the link by email and the password by WhatsApp.
+
+The list shows each share's status, views and when it was last opened. **Copy link** copies it again; **Revoke** ends access immediately and deletes the file.
+
+**For the client:** they open the link (or **Open a shared proposal** on the landing page), enter the password, and read it in the browser.
+- **PDF:** watermarked page images.
+- **Excel:** a read-only table with sheet tabs.
+- **Session:** lasts up to 2 hours, or 30 minutes idle. **Sign out** ends it.
+
+### How it's protected
+
+| | |
+|---|---|
+| **Links** | A 256-bit random code after `#/view/`. It can't be guessed, and browsers don't send it to servers or in referrers. Only a keyed hash of it is stored. |
+| **Passwords** | Stored as scrypt hashes. A link locks for 15 minutes after 5 wrong passwords, each network gets 30 attempts an hour, and failures are slowed down. Unknown, wrong, expired and revoked links all get the same message, so nothing can be probed. |
+| **Server checks** | Every request for a proposal or page image checks, on the server, a valid HttpOnly viewer session for *that* share, and that the share isn't expired or revoked. Staff actions need a server-side staff session. Requests that change anything must come from the site itself. |
+| **Files** | Kept in a **private** Vercel Blob store and **encrypted with AES-256-GCM** with a key only the server has. The original file is never sent to a client. PDFs become watermarked page images on the server; Excel files become a values-only grid with no formulas. |
+| **Browser** | No-store caching, a strict Content-Security-Policy, and the site can't be framed by others. |
+| **Viewer** | No download links or `<img>` elements (pages are drawn on a canvas). Right-click, dragging, selection and copy are blocked. Ctrl/⌘+P and Ctrl/⌘+S are intercepted, and printing produces a blank page. |
+
+### What can't be prevented
+
+These are limits of every website, not of this app:
+- **Screenshots, screen recording and phone cameras** can't be blocked or reliably detected by a web page. The watermark with the client's name is the deterrent.
+- Someone using the browser's **developer tools** can save the page images or Excel values while they're displayed. Nothing beyond what's on screen is ever sent.
+- **Print blocking is best effort:** shortcuts are intercepted and print output is blanked, but browser menus and extensions can't be fully controlled.
+- **A client can pass on the link and password.** Expiry, revocation, view counts and the watermark limit the damage.
+
+### Setting up Visualize Proposal
+
+It runs on Vercel's free Hobby plan at a sales team's volume: Blob 1 GB, with 10,000 reads and 2,000 writes a month; Upstash Redis 500K commands a month. Vercel's terms limit Hobby to non-commercial use, so a business should use Pro.
+
+1. **Private file store.** In Vercel → your project → **Storage** → **Create** → **Blob**, set access to **Private**, and connect it to the project (Production).
+2. **Redis.** In **Storage** → **Create** → **Upstash for Redis**, choose the Free plan and the Mumbai region. When connecting it, set the **environment variable prefix to `VIZ`**. This avoids the "REDIS_URL already exists" error if the project already has a Redis variable. Then add the variable `VISUALIZE_REDIS_PREFIX` = `VIZ`. (Without a prefix, the standard `KV_REST_API_*` / `UPSTASH_REDIS_REST_*` names work too.)
+3. **Secrets and staff accounts.** Run the setup script, type each staff email and password at the hidden prompt, and add the three printed values (`SESSION_SECRET`, `FILE_ENCRYPTION_KEY`, `STAFF_ACCOUNTS`) under **Settings → Environment Variables** (Production). Add **all** team accounts. **Keep `FILE_ENCRYPTION_KEY` safe:** changing it makes every shared file unreadable.
+   ```bash
+   node scripts/visualize-setup.mjs
+   ```
+4. **Redeploy** (Deployments → ⋯ → Redeploy), then sign in, upload a test file, and open the link in a private window.
+
+Until step 3 is done, Visualize says it isn't set up, and sign-in keeps using the browser list.
+
+**Trying it locally:** run `node scripts/visualize-setup.mjs --dev`. It writes a gitignored `.env.local` that keeps files and sessions in memory. Then `npm run dev` serves the API too.
+
 ## Project layout
 
 | Path | What's there |
@@ -180,7 +237,10 @@ The text stays sharp and searchable. pdfmake's bundled Roboto font includes the 
 | `public/images/` | logo, favicon, your own photos |
 | `src/assets/` | the site background and landing photo, bundled into the build |
 | `src/site.ts` | the site's name (Event Bridge) and tagline |
-| `src/pages/` | `Landing` (Event Bridge's public entry), `Login`, `Home` (Proposal Studio's saved proposals), `Builder` (the four-step wizard), `Venues` (Venue Directory) |
+| `src/pages/` | `Landing` (Event Bridge's public entry), `Login`, `Home` (Proposal Studio's saved proposals), `Builder` (the four-step wizard), `Venues` (Venue Directory), `Visualize` (staff sharing), `ClientView` (the client's password gate and viewer) |
+| `api/` | Vercel Functions for Visualize Proposal: staff sign-in, shares, client viewing |
+| `server/` | the code behind them: sessions, rate limits, encryption, storage, PDF and Excel rendering, and their tests |
+| `scripts/` | `visualize-setup.mjs`: generates the secrets and hashes staff passwords |
 | `src/components/` | the main menu (`SiteNav`), preview, element cards, line editor, totals panel and other UI pieces |
 | `src/lib/` | totals, ₹ formatting, Excel and PDF export, quotation references, venue search |
 | `src/state/` | saved proposals, theme and font preference |
@@ -188,4 +248,4 @@ The text stays sharp and searchable. pdfmake's bundled Roboto font includes the 
 | `src/config/` | loading and validating the JSON config |
 | `src/styles/` | design tokens and all styles |
 
-Built with Vite, React 18, TypeScript, ExcelJS, pdfmake and Vitest. Guidance for AI coding assistants is in `CLAUDE.md`.
+Built with Vite, React 18, TypeScript, ExcelJS, pdfmake and Vitest; Visualize Proposal adds Vercel Functions, a private Vercel Blob store, Upstash Redis, pdf.js and @napi-rs/canvas. Guidance for AI coding assistants is in `CLAUDE.md`.

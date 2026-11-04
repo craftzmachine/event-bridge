@@ -4,8 +4,20 @@
 export async function logoToPng(url: string, width = 600, height = 408): Promise<string | undefined> {
   try {
     const img = new Image();
-    img.src = url;
-    await img.decode();
+    // onload rather than img.decode(): decode() can stay pending in a tab that isn't painting, which would leave
+    // the export stuck on "Preparing…"; without a logo after 5 s the file is still produced
+    await new Promise<void>((resolve, reject) => {
+      const t = setTimeout(() => reject(new Error("logo timeout")), 5000);
+      img.onload = () => {
+        clearTimeout(t);
+        resolve();
+      };
+      img.onerror = () => {
+        clearTimeout(t);
+        reject(new Error("logo failed"));
+      };
+      img.src = url;
+    });
     const canvas = document.createElement("canvas");
     canvas.width = width;
     canvas.height = height;
