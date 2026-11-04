@@ -2,7 +2,7 @@ import type { Line, Proposal } from "../types";
 import { useConfig } from "../config/context";
 import { computeTotals, lineAmount } from "../lib/totals";
 import { formatDate, formatINR, todayISO } from "../lib/format";
-import { groupLines, proposalTitle } from "../lib/proposal";
+import { eventDatesLine, groupLines, proposalTitle } from "../lib/proposal";
 import Img from "./Img";
 import TotalsPanel from "./TotalsPanel";
 import Ornament from "./Ornament";
@@ -53,7 +53,7 @@ export default function ProposalPreview({ p }: { p: Proposal }) {
       </header>
       <section className="pv-card">
         <div><span>Client</span><strong>{p.client.name || "—"}</strong><small>{p.client.contact || "Contact: To Be Confirmed"}</small></div>
-        <div><span>Event date</span><strong>{formatDate(p.client.date)}</strong></div>
+        <div><span>{eventDatesLine(p).label}</span><strong>{eventDatesLine(p).text}</strong></div>
         <div><span>Venue</span><strong>{p.client.venue || "To Be Confirmed"}</strong><small>{p.client.location}</small></div>
       </section>
       <p className="pv-ref">Quotation ref: {p.ref || "To Be Assigned"} · Dated {formatDate(todayISO())}</p>

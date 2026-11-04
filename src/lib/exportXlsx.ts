@@ -2,7 +2,7 @@ import ExcelJS from "exceljs";
 import type { Brand, Catalog, Line, Proposal } from "../types";
 import { computeTotals } from "./totals";
 import { formatDate, todayISO } from "./format";
-import { exportFileName, groupLines, proposalTitle, venueLine } from "./proposal";
+import { eventDatesLine, exportFileName, groupLines, proposalTitle, venueLine } from "./proposal";
 import { logoToPng, saveBlob } from "./files";
 
 export { logoToPng };
@@ -74,7 +74,7 @@ export function buildWorkbook(p: Proposal, catalog: Catalog, brand: Brand, logoP
     ["Client", p.client.name || "—"],
     ["Contact", p.client.contact || "To Be Confirmed"],
     ["Event", title],
-    ["Event date", formatDate(p.client.date)],
+    [eventDatesLine(p).label, eventDatesLine(p).text],
     ["Venue", venueLine(p) || "To Be Confirmed"],
     ["Quotation ref", p.ref || "To Be Assigned"],
     ["Dated", formatDate(todayISO())],

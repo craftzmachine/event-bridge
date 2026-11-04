@@ -24,7 +24,8 @@ export interface Appearance {
 }
 
 const KEY = "proposal-builder.appearance.v1";
-const DEFAULT: Appearance = { theme: "parinay", font: "classic" };
+// first visit opens in the Dark theme; once someone picks a theme, their saved choice wins
+const DEFAULT: Appearance = { theme: "dark", font: "classic" };
 
 export function readAppearance(): Appearance {
   try {

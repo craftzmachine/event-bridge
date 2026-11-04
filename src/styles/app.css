@@ -1210,3 +1210,18 @@ html.pb-printing .cv-stage { visibility: hidden; }
 @media (prefers-reduced-motion: reduce) {
   .cv-capture { animation: none; }
 }
+
+/* ---------- Builder: multiple event dates ---------- */
+.event-dates { gap: 8px; }
+.date-chips { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.date-chips li {
+  display: inline-flex; align-items: center; gap: 4px; min-height: 36px; padding: 0 4px 0 14px; border-radius: 999px;
+  background: var(--gold-soft); border: 1px solid color-mix(in srgb, var(--gold) 45%, transparent); color: var(--ink); font-size: 13.5px;
+}
+.date-chips button {
+  width: 28px; height: 28px; border-radius: 50%; border: 0; background: transparent; color: var(--ink-2); font-size: 17px; line-height: 1;
+}
+.date-chips button:hover { background: color-mix(in srgb, var(--ink) 10%, transparent); color: var(--ink); }
+.date-add { display: flex; gap: 8px; align-items: center; }
+.date-add input { flex: 1; min-width: 0; }
+.event-dates .hint { margin: 0; }

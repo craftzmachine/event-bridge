@@ -32,6 +32,31 @@ export function formatDate(iso: string): string {
   return `${day}${suf} ${d.toLocaleString("en-GB", { month: "long" })} ${d.getFullYear()}`;
 }
 
+/**
+ * Several event dates in one line: dates in the same month share it ("14th & 15th February 2027"),
+ * otherwise each is written in full and joined with "·".
+ */
+export function formatDates(isos: string[]): string {
+  const valid = isos.filter((iso) => !isNaN(new Date(`${iso}T00:00:00`).getTime()));
+  if (!valid.length) return formatDate("");
+  if (valid.length === 1) return formatDate(valid[0]);
+  const monthKey = (iso: string) => iso.slice(0, 7);
+  const groups: string[][] = [];
+  for (const iso of valid) {
+    const last = groups[groups.length - 1];
+    if (last && monthKey(last[0]) === monthKey(iso)) last.push(iso);
+    else groups.push([iso]);
+  }
+  return groups
+    .map((g) => {
+      if (g.length === 1) return formatDate(g[0]);
+      const days = g.map((iso) => formatDate(iso).split(" ")[0]);
+      const tail = formatDate(g[0]).split(" ").slice(1).join(" ");
+      return `${days.slice(0, -1).join(", ")} & ${days[days.length - 1]} ${tail}`;
+    })
+    .join(" · ");
+}
+
 export function safeFilePart(s: string): string {
   return s.trim().replace(/[^\p{L}\p{N}]+/gu, "_").replace(/^_|_$/g, "") || "Client";
 }

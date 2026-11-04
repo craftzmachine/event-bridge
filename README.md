@@ -26,7 +26,7 @@ Opening a feature app while signed out goes to sign-in first, then straight back
 ## Proposal Studio
 
 1. **Sign in** with an authorised team account, then choose **Proposal Studio** from the menu.
-2. **Client & event**: client name, event date, contact, venue (with suggestions from the venue directory) and location. The quotation reference is filled in automatically.
+2. **Client & event**: client name, one or more event dates (pick a date, then **+ Add date** for multi-day celebrations; each shows as a removable chip), contact, venue (with suggestions from the venue directory) and location. The quotation reference is filled in automatically.
 3. **Occasion**: any event type (Wedding, Engagement, Reception) with any ceremony style (Hindu, Christian, Muslim).
 4. **Elements**: browse the catalogue, filtered to the chosen occasion (or show everything), search, and filter by category. For each selected element, set qty, rate (or *as per actuals*), notes for the client, optional upgrades, and whether it is an *additional option*. You can also reorder elements or add a custom one-off line.
 5. **Review**: a branded preview of the proposal as the client will see it. Adjust co-ordination %, round off the Grand Total (one-click suggestions) and edit notes and terms.
@@ -36,7 +36,7 @@ Opening a feature app while signed out goes to sign-in first, then straight back
 
 **Quotation references** are generated automatically when a proposal is created or duplicated, in the form `YYYYDDMM-ABC`: year, day, month, then three random capital letters (3 Nov 2026 → `20260311-KQZ`). They are unique among the proposals on that device and cannot be edited. Drafts saved before this feature were given one dated from when they were created.
 
-**Themes and fonts**: the theme button switches between Parinay (default), Solarized Light, Solarized Dark, Nord, Dark and White. The **Aa** button cycles the font between Classic, Sans Serif and Mono. Both apply across the whole app and are remembered on each device.
+**Themes and fonts**: the theme button switches between Parinay, Solarized Light, Solarized Dark, Nord, Dark and White. **Dark** is used the first time someone opens Event Bridge; once they pick a theme, their choice is kept. The **Aa** button cycles the font between Classic, Sans Serif and Mono. Both apply across the whole app and are remembered on each device.
 
 Drafts save automatically in the browser on each device. Use **Save file** / **Back up all** on the home page to move proposals between devices, and **Import** to load them. Clearing the browser's site data deletes that device's drafts, so back up regularly.
 
@@ -139,7 +139,17 @@ All 29 venues were researched online on 4 November 2026, using official sites fi
 - **Real venues only.** A photo is shown only if it is of the actual venue and freely licensed: Taj Green Cove's infinity pool and The Leela's Charles Correa building, both from Wikimedia Commons.
 - **Credits.** Each photo needs a `photoCredit` with the photographer, licence and source page. The card and the details show the credit, and the app refuses to load a photo without one.
 - **No copying official photos.** Venues' official and listing-site photos are copyrighted, so they aren't copied in. Link them with `gallery` instead, or add one when the venue gives permission.
-- **No photo.** Other venues show a monogram.
+- **No photo.** Other venues show a monogram in the same size and style as a photo.
+- **Alt text.** `photoAlt` describes what the photo shows, for screen readers.
+- **Search, 4 November 2026.** Every venue was searched for on Openverse (Creative Commons photos from Flickr, Wikimedia and others) and Wikimedia Commons, under its name and common variants. Only photos that show the actual venue and allow commercial use were accepted: CC BY, CC BY-SA, CC0 or public domain, not "NonCommercial" or "NoDerivatives". Only Taj Green Cove and The Leela had one. Rejected along the way:
+  - two Poovar sunset photos with no evidence they were taken at the resort
+  - Poovar Island Resort photos licensed for non-commercial use only
+  - a Hotel Hycinth photo of a plate of food
+  - a Veli "Tourist Facilitation Centre" that isn't the 2024 convention centre
+  - photos of same-named places elsewhere: the Lake Palace in Udaipur, Sunrise and Crystal venues abroad
+- **Adding the team's own photos** (the quickest way to fill the gaps):
+  1. Save a landscape photo the team took, or one a venue has given written permission for, as `public/images/venues/<venue id>.jpg`, about 1280 px wide.
+  2. Set `"photo": "images/venues/<venue id>.jpg"`, `"photoIsRepresentative": false`, a `photoAlt`, and a `photoCredit` (for example `{ "author": "Parinay Weddings", "license": "Own photo", "source": "<the venue's website>" }`).
 
 ### Logo and look
 

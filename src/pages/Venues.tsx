@@ -22,6 +22,9 @@ const Monogram = ({ name }: { name: string }) => {
   );
 };
 
+/** Alt text: what the photo shows; stock photos are decorative, so they get none. */
+const photoAlt = (v: Venue) => (v.photoIsRepresentative ? "" : v.photoAlt || `Photo of ${v.name}`);
+
 /**
  * Licence credit for a real venue photo, linking to its source page (e.g. Wikimedia Commons).
  * Inside a grid card (itself a button) it is plain text; the dialog carries the link.
@@ -42,7 +45,7 @@ function FeaturedVenue({ v, typeLabel, onOpen, onStart }: { v: Venue; typeLabel:
   return (
     <article className="venue-featured" aria-labelledby={`vf-${v.id}`}>
       <div className="venue-featured-photo">
-        <Img src={v.photo} alt={v.photoIsRepresentative ? "" : v.name} />
+        <Img src={v.photo} alt={photoAlt(v)} />
         {!v.photo && <Monogram name={v.name} />}
         <span className="venue-type">{typeLabel}</span>
         <Credit v={v} />
@@ -152,7 +155,7 @@ export default function Venues({ onBack, onStartProposal }: { onBack: () => void
                 <li key={v.id} className="venue-card">
                   <button className="venue-open" onClick={() => setOpen(v)} aria-label={`Details for ${v.name}`}>
                     <div className="venue-photo">
-                      <Img src={v.photo} alt={v.photoIsRepresentative ? "" : v.name} />
+                      <Img src={v.photo} alt={photoAlt(v)} />
                       {!v.photo && <Monogram name={v.name} />}
                       <span className="venue-type">{typeLabel(v.type)}</span>
                       {v.photoIsRepresentative && <span className="venue-photo-note">Representative photo</span>}
@@ -202,7 +205,7 @@ function VenueDialog({ v, typeLabel, onClose, onStart }: { v: Venue; typeLabel: 
   return (
     <dialog ref={ref} className="venue-dialog" onClose={onClose} onClick={(e) => e.target === ref.current && onClose()} aria-labelledby="venue-dialog-title">
       <div className="vd-photo">
-        <Img src={v.photo} alt={v.photoIsRepresentative ? "" : v.name} />
+        <Img src={v.photo} alt={photoAlt(v)} />
         {!v.photo && <Monogram name={v.name} />}
         {v.photoIsRepresentative && <span className="venue-photo-note">Representative photo</span>}
         <Credit v={v} />

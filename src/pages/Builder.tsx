@@ -4,7 +4,7 @@ import { elementFits, useConfig } from "../config/context";
 import { customLine, lineFromElement } from "../state/proposals";
 import { computeTotals, roundOffSuggestions } from "../lib/totals";
 import { formatINR, formatINRShort } from "../lib/format";
-import { proposalTitle } from "../lib/proposal";
+import { eventDates, proposalTitle } from "../lib/proposal";
 import StepRail, { STEPS } from "../components/StepRail";
 import ImageChoiceCard from "../components/ImageChoiceCard";
 import ElementCard from "../components/ElementCard";
@@ -13,6 +13,7 @@ import TotalsPanel from "../components/TotalsPanel";
 import ProposalPreview from "../components/ProposalPreview";
 import MoneyInput from "../components/MoneyInput";
 import AppearanceControls from "../components/AppearanceControls";
+import EventDatesField from "../components/EventDatesField";
 
 export default function Builder({ proposal: p, onChange, onClose }: { proposal: Proposal; onChange: (p: Proposal) => void; onClose: () => void }) {
   const { catalog, brand } = useConfig();
@@ -106,10 +107,7 @@ function ClientStep({ p, setClient }: { p: Proposal; setClient: (c: Partial<Prop
           <span>Client name</span>
           <input autoFocus value={p.client.name} placeholder="e.g. Ms. Ananya Menon" onChange={(e) => setClient({ name: e.target.value })} />
         </label>
-        <label className="field">
-          <span>Event date</span>
-          <input type="date" value={p.client.date} onChange={(e) => setClient({ date: e.target.value })} />
-        </label>
+        <EventDatesField dates={eventDates(p)} onChange={(dates) => setClient({ dates, date: dates[0] ?? "" })} />
         <label className="field">
           <span>Contact number</span>
           <input type="tel" value={p.client.contact} placeholder="To be confirmed" onChange={(e) => setClient({ contact: e.target.value })} />

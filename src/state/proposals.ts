@@ -13,7 +13,7 @@ export function newProposal(brand: Brand, takenRefs: Iterable<string> = [], venu
     id: uid(),
     createdAt: now.toISOString(),
     updatedAt: now.toISOString(),
-    client: { name: "", contact: "", date: "", venue: venue?.venue ?? "", location: venue?.location ?? "" },
+    client: { name: "", contact: "", date: "", dates: [], venue: venue?.venue ?? "", location: venue?.location ?? "" },
     ref: generateQuoteRef(takenRefs, now),
     eventType: null,
     style: null,

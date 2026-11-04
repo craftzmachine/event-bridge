@@ -84,6 +84,8 @@ export interface Venue {
   photoIsRepresentative?: boolean;
   /** Required with a real venue photo: who took it, its licence, and the page it came from. */
   photoCredit?: PhotoCredit;
+  /** What the photo shows, for screen readers (e.g. "Infinity pool above the sea at …"); falls back to the name */
+  photoAlt?: string;
   spaces: VenueSpace[];
   features?: string[];
   verification?: string;
@@ -136,7 +138,10 @@ export interface Proposal {
   client: {
     name: string;
     contact: string;
+    /** first (earliest) event date, YYYY-MM-DD; kept for drafts saved before multi-date support */
     date: string;
+    /** every event date, sorted; older drafts don't have it, so read through eventDates() */
+    dates?: string[];
     venue: string;
     location: string;
   };

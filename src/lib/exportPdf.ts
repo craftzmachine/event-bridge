@@ -2,7 +2,7 @@ import type { Content, TableCell, TDocumentDefinitions } from "pdfmake/interface
 import type { Brand, Catalog, Line, Proposal } from "../types";
 import { computeTotals, lineAmount } from "./totals";
 import { formatDate, formatINR, todayISO } from "./format";
-import { exportFileName, groupLines, proposalTitle, venueLine } from "./proposal";
+import { eventDatesLine, exportFileName, groupLines, proposalTitle, venueLine } from "./proposal";
 import { logoToPng, saveBlob } from "./files";
 
 /**
@@ -93,7 +93,7 @@ export function buildPdfDoc(p: Proposal, catalog: Catalog, brand: Brand, logoPng
   const info: [string, string][] = [
     ["Client", p.client.name || "—"],
     ["Contact", p.client.contact || "To Be Confirmed"],
-    ["Event date", formatDate(p.client.date)],
+    [eventDatesLine(p).label, eventDatesLine(p).text],
     ["Venue", venueLine(p) || "To Be Confirmed"],
     ["Quotation ref", p.ref || "To Be Assigned"],
     ["Dated", formatDate(todayISO())],

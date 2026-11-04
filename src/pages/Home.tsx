@@ -3,8 +3,8 @@ import type { Proposal } from "../types";
 import { useConfig } from "../config/context";
 import { downloadJson, isProposal, type useProposals } from "../state/proposals";
 import { computeTotals } from "../lib/totals";
-import { formatDate, formatINRShort, safeFilePart, todayISO } from "../lib/format";
-import { proposalTitle } from "../lib/proposal";
+import { formatDates, formatINRShort, safeFilePart, todayISO } from "../lib/format";
+import { eventDates, proposalTitle } from "../lib/proposal";
 import Img from "../components/Img";
 import Ornament from "../components/Ornament";
 import SiteNav from "../components/SiteNav";
@@ -102,7 +102,7 @@ export default function Home({
                       <span className="eyebrow">{p.eventType ? proposalTitle(p, catalog) : "Occasion not chosen"}</span>
                       <span className="pcard-name">{p.client.name || "Untitled client"}</span>
                       <span className="pcard-ref">{p.ref}</span>
-                      <span className="pcard-meta">{formatDate(p.client.date)}{p.client.venue && ` · ${p.client.venue}`}</span>
+                      <span className="pcard-meta">{formatDates(eventDates(p))}{p.client.venue && ` · ${p.client.venue}`}</span>
                       <span className="pcard-total">{formatINRShort(t.grandTotal)} <small>· {p.lines.length} element{p.lines.length === 1 ? "" : "s"}</small></span>
                     </span>
                   </button>
