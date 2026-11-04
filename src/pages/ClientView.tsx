@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { useConfig } from "../config/context";
 import { SITE } from "../site";
 import { ApiError, api, formatRetry, pageBitmap } from "../lib/api";
+import { capturePlatform, isCaptureShortcut } from "../lib/capture";
 import PasswordField from "../components/PasswordField";
 import AppearanceControls from "../components/AppearanceControls";
 
@@ -231,17 +232,25 @@ function Gate({ token, notice, onUnlocked }: { token: string; notice: string; on
 
 /**
  * Best-effort view-only mode: blocks the context menu, dragging, selection/copy and the print and save
- * shortcuts, and blanks the page in print. None of this can stop screenshots or a phone camera.
+ * shortcuts, and blanks the page in print. Screenshot shortcuts the page can see (Print Screen, ⌘⇧3/4/5)
+ * show the "Screen capture blocked" popup; when the window loses focus or the app is switched away — which
+ * is what Snipping Tool and mobile app switching cause — the proposal is hidden until the client returns.
+ * None of this can stop every screenshot or a phone camera (see src/lib/capture.ts).
  */
-function useViewOnly(root: React.RefObject<HTMLElement>, onBlocked: (msg: string) => void) {
+function useViewOnly(root: React.RefObject<HTMLElement>, onBlocked: (msg: string) => void, onCapture: () => void, onAway: (away: boolean) => void) {
   useEffect(() => {
     const html = document.documentElement;
     html.classList.add("pb-view-only");
     const el = root.current;
     const stop = (e: Event) => e.preventDefault();
     const keys = (e: KeyboardEvent) => {
+      if (isCaptureShortcut(e)) {
+        e.preventDefault();
+        onCapture();
+        return;
+      }
       const k = e.key.toLowerCase();
-      if ((e.ctrlKey || e.metaKey) && (k === "p" || k === "s")) {
+      if (e.type === "keydown" && (e.ctrlKey || e.metaKey) && (k === "p" || k === "s")) {
         e.preventDefault();
         e.stopPropagation();
         onBlocked(k === "p" ? "Printing is turned off for this proposal." : "Saving is turned off for this proposal.");
@@ -249,22 +258,34 @@ function useViewOnly(root: React.RefObject<HTMLElement>, onBlocked: (msg: string
     };
     const beforePrint = () => html.classList.add("pb-printing");
     const afterPrint = () => html.classList.remove("pb-printing");
+    const away = () => onAway(true);
+    const back = () => onAway(false);
+    const visibility = () => onAway(document.visibilityState === "hidden");
     el?.addEventListener("contextmenu", stop);
     el?.addEventListener("dragstart", stop);
     el?.addEventListener("copy", stop);
+    // Chrome and Edge on Windows only deliver Print Screen as a keyup
     window.addEventListener("keydown", keys, true);
+    window.addEventListener("keyup", keys, true);
     window.addEventListener("beforeprint", beforePrint);
     window.addEventListener("afterprint", afterPrint);
+    window.addEventListener("blur", away);
+    window.addEventListener("focus", back);
+    document.addEventListener("visibilitychange", visibility);
     return () => {
       html.classList.remove("pb-view-only", "pb-printing");
       el?.removeEventListener("contextmenu", stop);
       el?.removeEventListener("dragstart", stop);
       el?.removeEventListener("copy", stop);
       window.removeEventListener("keydown", keys, true);
+      window.removeEventListener("keyup", keys, true);
       window.removeEventListener("beforeprint", beforePrint);
       window.removeEventListener("afterprint", afterPrint);
+      window.removeEventListener("blur", away);
+      window.removeEventListener("focus", back);
+      document.removeEventListener("visibilitychange", visibility);
     };
-  }, [root, onBlocked]);
+  }, [root, onBlocked, onCapture, onAway]);
 }
 
 function Viewer({ doc, id, logo, company, onSignOut, onFail }: { doc: Doc; id: string; logo: string; company: string; onSignOut: () => void; onFail: (e: unknown) => void }) {
@@ -272,15 +293,24 @@ function Viewer({ doc, id, logo, company, onSignOut, onFail }: { doc: Doc; id: s
   const [toast, setToast] = useState("");
   const [zoom, setZoom] = useState(1);
   const [sheet, setSheet] = useState(0);
+  const [captured, setCaptured] = useState(false);
+  const [away, setAway] = useState(false);
+  const mobile = useMemo(() => ["android", "ios"].includes(capturePlatform()), []);
   const blocked = useCallback((msg: string) => {
     setToast(msg);
     setTimeout(() => setToast(""), 2600);
   }, []);
-  useViewOnly(root, blocked);
+  const onCapture = useCallback(() => {
+    // blank the page briefly and replace what Print Screen copied, then say so, WhatsApp-style
+    setCaptured(true);
+    setTimeout(() => setCaptured(false), 2200);
+    navigator.clipboard?.writeText("Screen capture is blocked for this proposal.").catch(() => {});
+  }, []);
+  useViewOnly(root, blocked, onCapture, setAway);
 
   const endsAt = new Date(doc.sessionEndsAt).toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit" });
   return (
-    <div className="cv-viewer" ref={root}>
+    <div className={`cv-viewer ${captured || away ? "is-shielded" : ""}`} ref={root}>
       <header className="cv-bar">
         <img className="cv-bar-logo" src={logo} alt={company} />
         <div className="cv-bar-title">
@@ -322,6 +352,25 @@ function Viewer({ doc, id, logo, company, onSignOut, onFail }: { doc: Doc; id: s
         <Watermark text={`${doc.client} · Confidential`} />
       </main>
       {toast && <p className="cv-toast" role="status">{toast}</p>}
+      {captured && (
+        <div className="cv-capture" role="alert">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <path d="M4 8.5A1.5 1.5 0 0 1 5.5 7H8l1.5-2h5L16 7h2.5A1.5 1.5 0 0 1 20 8.5v9a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 17.5z" />
+            <circle cx="12" cy="13" r="3.2" />
+            <path d="M3 3l18 18" />
+          </svg>
+          <span>
+            <strong>Screen capture blocked</strong>
+            <small>Screenshots aren't allowed for this proposal.</small>
+          </span>
+        </div>
+      )}
+      {away && !captured && (
+        <div className="cv-away" aria-live="polite">
+          <strong>Proposal hidden</strong>
+          <span>{mobile ? "It reappears when you return to this page." : "It reappears when this window is active again — click here to continue."}</span>
+        </div>
+      )}
       <div className="cv-print-block" aria-hidden>Printing is turned off for this proposal.</div>
     </div>
   );

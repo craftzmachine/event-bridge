@@ -204,11 +204,21 @@ The list shows each share's status, views and when it was last opened. **Copy li
 | **Files** | Kept in a **private** Vercel Blob store and **encrypted with AES-256-GCM** with a key only the server has. The original file is never sent to a client. PDFs become watermarked page images on the server; Excel files become a values-only grid with no formulas. |
 | **Browser** | No-store caching, a strict Content-Security-Policy, and the site can't be framed by others. |
 | **Viewer** | No download links or `<img>` elements (pages are drawn on a canvas). Right-click, dragging, selection and copy are blocked. Ctrl/⌘+P and Ctrl/⌘+S are intercepted, and printing produces a blank page. |
+| **Screen capture** | When a screenshot shortcut reaches the page, a **"Screen capture blocked"** popup appears (like WhatsApp's), the proposal blanks for about 2 seconds, and the clipboard copy is replaced. When the window loses focus or the client switches apps, the proposal is hidden until they come back. See the table below for what each platform allows. |
 
 ### What can't be prevented
 
 These are limits of every website, not of this app:
-- **Screenshots, screen recording and phone cameras** can't be blocked or reliably detected by a web page. The watermark with the client's name is the deterrent.
+- **Screenshots and screen recording.** Browsers give web pages no screenshot event on any platform; only installed apps get one. What Event Bridge does on each:
+
+  | Platform | What a web page can do | What Event Bridge does |
+  |---|---|---|
+  | **Windows** | Sees the **Print Screen** key; can't see Win+Shift+S, the Snipping Tool, the Game Bar or other capture apps, but notices the window losing focus | Print Screen → popup, page blanked, clipboard copy replaced. Snipping Tool and similar → proposal hidden while the window isn't active |
+  | **macOS** | Sometimes sees ⌘⇧3 / ⌘⇧4 / ⌘⇧5 before the system takes over | When seen → popup and page blanked. Otherwise the proposal is hidden when focus moves away |
+  | **Android** | Nothing: the browser isn't told about screenshots, and pages can't use Android's "secure window" flag | Proposal hidden when the client switches apps; no popup is possible |
+  | **iOS / iPadOS** | Nothing: Safari doesn't pass on iOS's screenshot or screen-recording notices | Same as Android |
+
+  Real blocking or detection needs installed apps: Android's secure-window flag blocks screenshots outright, iOS can detect screenshots and recording (but not block screenshots), and a Windows desktop app can exclude its window from captures. A phone camera can't be stopped by anything. The watermark with the client's name stays the main deterrent.
 - Someone using the browser's **developer tools** can save the page images or Excel values while they're displayed. Nothing beyond what's on screen is ever sent.
 - **Print blocking is best effort:** shortcuts are intercepted and print output is blanked, but browser menus and extensions can't be fully controlled.
 - **A client can pass on the link and password.** Expiry, revocation, view counts and the watermark limit the damage.

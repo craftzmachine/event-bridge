@@ -79,6 +79,11 @@ If you change totals logic, update the preview (`ProposalPreview`, `TotalsPanel`
   - state-changing requests pass `assertSameOrigin`
   - stored files are AES-GCM encrypted
   - clients only ever receive watermarked WebP page images or a values-only Excel grid, never the original or formulas
+- **Screen capture (client viewer):** browsers expose no screenshot event, so `src/lib/capture.ts` handles only what a page can see.
+  - **Shortcuts:** `isCaptureShortcut` catches Print Screen (Chrome/Edge on Windows deliver it only on keyup, so `useViewOnly` listens to keyup too) and ⌘⇧3/4/5 when macOS lets them through. A hit shows the "Screen capture blocked" popup, blanks `.cv-stage` for ~2 s (`.is-shielded`) and overwrites the clipboard.
+  - **Focus:** window `blur` and `visibilitychange` (the Snipping Tool, app switching on phones) hide the proposal until focus returns, without signing the client out.
+  - **Platforms:** `capturePlatform` only picks the wording. Android/iOS browsers get no screenshot signal at all; real blocking needs native apps (FLAG_SECURE, `UIScreen.isCaptured`, `SetWindowDisplayAffinity`), which this site is not.
+  - Tests are in `capture.test.ts`.
 - **Free-tier sizing:** each share is two blobs (`original.bin` and the `view.bin` bundle; see `server/bundle.ts`).
 - **Front end:** `src/lib/api.ts` treats a non-JSON answer as "API unavailable" (status 0).
   - **Sign-in (`Login.tsx`):** it tries `/api/staff/login` first and falls back to the browser allow-list only on status 0 or 503. A 401 for an account the browser list accepts explains that it's missing from `STAFF_ACCOUNTS`.
