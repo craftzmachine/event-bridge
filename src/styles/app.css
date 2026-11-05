@@ -872,11 +872,6 @@ a.btn-gold, a.btn-primary, a.btn-ghost, a.btn-outline-light {
 }
 .site-menu a:hover { color: var(--on-espresso); background: color-mix(in srgb, var(--on-espresso) 9%, transparent); }
 .site-menu a[aria-current="page"] { background: var(--gold-light); color: var(--espresso); }
-.site-menu-badge {
-  font: 600 9px/1 var(--sans); letter-spacing: 0.12em; text-transform: uppercase; padding: 3px 6px; border-radius: 999px;
-  background: color-mix(in srgb, var(--gold) 30%, transparent); color: var(--gold-light);
-}
-.site-menu a[aria-current="page"] .site-menu-badge { background: color-mix(in srgb, var(--espresso) 14%, transparent); color: var(--espresso); }
 .site-nav-actions { justify-self: end; display: flex; align-items: center; gap: 10px; }
 .site-access { display: flex; align-items: center; gap: 10px; }
 .site-account { font-size: 12.5px; color: color-mix(in srgb, var(--on-espresso) 72%, transparent); max-width: 210px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -926,16 +921,6 @@ a.btn-gold, a.btn-primary, a.btn-ghost, a.btn-outline-light {
 
 /* ---------- Event Bridge: landing hero and apps ---------- */
 .landing-hero .lede { margin-bottom: 22px; }
-.landing-feature-pill {
-  display: inline-flex; align-items: center; gap: 10px; margin: 0 auto 28px; padding: 5px 16px 5px 5px; border-radius: 999px;
-  border: 1px solid color-mix(in srgb, var(--gold-light) 40%, transparent); background: color-mix(in srgb, var(--espresso) 45%, transparent);
-  color: var(--on-espresso); text-decoration: none; font-size: 13.5px; -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
-  transition: border-color 0.15s, background 0.15s;
-}
-.landing-feature-pill:hover { border-color: var(--gold-light); background: color-mix(in srgb, var(--espresso) 60%, transparent); }
-.landing-feature-pill span { padding: 6px 10px; border-radius: 999px; background: var(--gold-light); color: var(--espresso); font: 600 9.5px/1 var(--sans); letter-spacing: 0.14em; text-transform: uppercase; }
-.landing-feature-pill strong { font-weight: 600; }
-.landing-feature-pill em { font-style: normal; color: color-mix(in srgb, var(--on-espresso) 70%, transparent); }
 .landing-hero-text { padding-top: 112px; }
 
 .landing-apps { scroll-margin-top: 24px; }
@@ -971,8 +956,6 @@ a.btn-gold, a.btn-primary, a.btn-ghost, a.btn-outline-light {
 }
 @media (max-width: 760px) {
   .landing-hero-text { padding-top: 84px; }
-  .landing-feature-pill { flex-wrap: wrap; justify-content: center; padding: 5px 14px 5px 5px; font-size: 13px; }
-  .landing-feature-pill em { display: none; }
   .landing-app { padding: 24px 20px; }
   .landing-app > .btn-lg { width: 100%; min-width: 0; }
 }
@@ -1225,3 +1208,69 @@ html.pb-printing .cv-stage { visibility: hidden; }
 .date-add { display: flex; gap: 8px; align-items: center; }
 .date-add input { flex: 1; min-width: 0; }
 .event-dates .hint { margin: 0; }
+
+/* ---------- Refinement: quieter chrome, one gold accent, flatter surfaces ---------- */
+/* Main menu: plain text links; the current page is marked by a thin gold rule, not a filled pill */
+.site-menu { gap: 2px; padding: 0; border: 0; background: none; -webkit-backdrop-filter: none; backdrop-filter: none; }
+.site-menu a {
+  position: relative; min-height: 40px; padding: 0 16px; border-radius: 0; background: none;
+  font-size: 13.5px; font-weight: 400; letter-spacing: 0.02em; color: color-mix(in srgb, var(--on-espresso) 72%, transparent);
+}
+.site-menu a::after {
+  content: ""; position: absolute; left: 16px; right: 16px; bottom: 6px; height: 1px; background: var(--gold-light);
+  transform: scaleX(0); transition: transform 0.25s ease;
+}
+.site-menu a:hover { background: none; color: var(--on-espresso); }
+.site-menu a:hover::after { transform: scaleX(0.4); }
+.site-menu a[aria-current="page"] { background: none; color: var(--on-espresso); }
+.site-menu a[aria-current="page"]::after { transform: scaleX(1); }
+.site-nav { background: linear-gradient(180deg, color-mix(in srgb, var(--espresso) 70%, transparent), transparent); }
+
+/* Buttons: no glow under the gold button; a plain fill reads as more confident */
+.btn-gold { background: var(--gold); box-shadow: none; letter-spacing: 0.03em; }
+.btn-gold:hover:not(:disabled) { background: var(--gold-light); box-shadow: none; }
+
+/* Heroes: more air around a shorter message */
+.landing-hero .lede, .home-hero .lede { max-width: 46ch; font-size: 16.5px; line-height: 1.65; }
+.landing-hero .lede { margin: 6px auto 34px; }
+.home-hero .ornament, .landing-hero .ornament { opacity: 0.8; }
+
+/* Landing apps: flat surfaces with a hairline, no drop shadows */
+.landing-apps-head { margin-bottom: 40px; }
+.landing-apps-head h2 { margin-top: 0; }
+.landing-app { box-shadow: none; background: color-mix(in srgb, var(--card) 86%, transparent); gap: 16px; padding: 36px 34px; }
+.landing-app.is-featured {
+  box-shadow: none; border: 1px solid color-mix(in srgb, var(--gold) 30%, transparent);
+  background: linear-gradient(160deg, color-mix(in srgb, var(--gold) 12%, var(--espresso)), var(--espresso) 60%);
+}
+.landing-app-points li { color: inherit; opacity: 0.88; }
+.landing-app:not(.is-featured) .landing-app-points li { color: var(--ink-2); opacity: 1; }
+.landing-viz {
+  margin-top: 20px; box-shadow: none; border: 1px solid color-mix(in srgb, var(--gold) 30%, transparent);
+  background: linear-gradient(200deg, color-mix(in srgb, var(--gold) 12%, var(--espresso)), var(--espresso) 60%);
+}
+.landing-viz h2 { margin-top: 0; }
+.landing-cta { border: 0; margin-top: 88px; padding-top: 0; }
+.landing-cta h2 { margin-top: 0; }
+
+/* Footer: one line on wide screens, stacked on phones; contact details are links */
+.home-foot-line { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 22px; }
+.home-foot-line a { color: inherit; text-decoration: none; border-bottom: 1px solid transparent; }
+.home-foot-line a:hover { color: var(--gold-light); border-bottom-color: currentColor; }
+
+/* Proposal cards: a hairline instead of a shadow; lift only on hover */
+.pcard { box-shadow: none; }
+.pcard:hover { box-shadow: var(--shadow); transform: translateY(-2px); }
+
+/* Content pages: the site photo stays a faint texture so forms and tables read cleanly */
+body::before {
+  background:
+    linear-gradient(color-mix(in srgb, var(--paper) 86%, transparent), color-mix(in srgb, var(--paper) 93%, transparent)),
+    url("../assets/_JKN4027.webp") center 35% / cover no-repeat;
+}
+@media (max-width: 760px) {
+  .landing-app { padding: 26px 22px; }
+  .landing-cta { margin-top: 56px; }
+  .home-foot-line { flex-direction: column; align-items: center; }
+  body::before { background-position: center, 28% 35%; }
+}

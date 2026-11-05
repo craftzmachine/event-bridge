@@ -1,5 +1,5 @@
 {
-  "note": "Taj Green Cove is featured. Details were researched online on 4 November 2026 and each venue lists its sources; where sources disagree, its note says so. Photos are only shown where a freely licensed photo of the actual venue exists (Wikimedia Commons, credited); other venues show a monogram and, where available, a link to their official gallery. Confirm names, addresses, star ratings and capacities with each venue before quoting them to clients.",
+  "note": "Researched on 4 November 2026; each venue lists its sources. Confirm names, star ratings and capacities with the venue before quoting them to a client.",
   "venueTypes": [
     { "id": "hotel", "label": "Hotel" },
     { "id": "resort", "label": "Resort" },

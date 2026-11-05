@@ -60,7 +60,6 @@ export default function Home({
         <SiteNav current="studio" account={account} onSignOut={onSignOut} />
         <div className="home-hero-text">
           <img className="brand-logo" src={`${import.meta.env.BASE_URL}${brand.logo}`} alt={`${brand.company} — ${brand.tagline}`} />
-          <p className="eyebrow">Proposal Studio · an {SITE.name} app</p>
           <h1>Craft a proposal worth saying <em>yes</em> to.</h1>
           <Ornament />
           <p className="lede">Choose the occasion, curate the elements and hand the client a polished estimate in minutes.</p>
@@ -122,7 +121,11 @@ export default function Home({
       </main>
       <footer className="home-foot">
         <img src={`${import.meta.env.BASE_URL}${brand.logo}`} alt={brand.company} />
-        <span>{SITE.name} · {brand.legalName} · {brand.phone} · {brand.email}</span>
+        <span className="home-foot-line">
+          <span>{SITE.name}, {brand.legalName}</span>
+          <a href={`tel:${brand.phone.replace(/[^+0-9]/g, "")}`}>{brand.phone}</a>
+          <a href={`mailto:${brand.email}`}>{brand.email}</a>
+        </span>
       </footer>
     </div>
   );

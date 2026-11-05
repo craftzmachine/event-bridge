@@ -27,18 +27,11 @@ export default function Landing({ account, onSignOut }: { account?: string; onSi
       <section className="landing-hero">
         <img className="landing-hero-img" src={heroPhoto} alt="" />
         <div className="landing-hero-text">
-          <p className="eyebrow">{SITE.name} · by {brand.company}</p>
           <h1>Where every celebration <em>comes together</em>.</h1>
           <Ornament />
           <p className="lede">
-            {SITE.name} is the {brand.company} team's workspace for planning weddings and celebrations — client briefs, venues and
-            polished estimates in one elegant place, on any device.
+            The {brand.company} team's workspace for client briefs, venues and polished estimates, on any device.
           </p>
-          <a className="landing-feature-pill" href="#/studio">
-            <span>Featured app</span>
-            <strong>Proposal Studio</strong>
-            <em>Branded estimates in minutes →</em>
-          </a>
           <div className="hero-actions">
             <a className="btn-gold btn-lg" href="#/studio">Open Proposal Studio</a>
             <button type="button" className="btn-outline-light btn-lg" onClick={toApps}>Explore {SITE.name}</button>
@@ -49,14 +42,12 @@ export default function Landing({ account, onSignOut }: { account?: string; onSi
       <main className="landing-main">
         <section id="landing-apps" className="landing-apps" aria-labelledby="landing-apps-title">
           <header className="landing-apps-head">
-            <p className="eyebrow">Inside {SITE.name}</p>
             <h2 id="landing-apps-title">Apps for every step of the plan</h2>
             <p className="lede">Sign in once with your team account and move between them from the menu.</p>
           </header>
 
           <div className="landing-apps-grid">
             <article className="landing-app is-featured">
-              <span className="landing-app-badge">Feature app</span>
               <h3>Proposal Studio</h3>
               <p className="landing-app-text">
                 Turn a client's wishes into a polished, itemised proposal: pick the occasion, curate the elements, review it as the
@@ -71,7 +62,6 @@ export default function Landing({ account, onSignOut }: { account?: string; onSi
             </article>
 
             <article className="landing-app">
-              <span className="landing-app-badge">Directory</span>
               <h3>Venue Directory</h3>
               <p className="landing-app-text">
                 {venues.venues.length} hotels, resorts, convention centres and wedding halls in and around Thiruvananthapuram —
@@ -84,7 +74,6 @@ export default function Landing({ account, onSignOut }: { account?: string; onSi
 
         <section className="landing-viz" aria-labelledby="landing-viz-title">
           <div className="landing-viz-text">
-            <span className="landing-app-badge">Private sharing</span>
             <h2 id="landing-viz-title">Visualize Proposal</h2>
             <p>
               Your planner shares the finished proposal as a private link with a separate password. It opens here, view-only and
@@ -98,12 +87,11 @@ export default function Landing({ account, onSignOut }: { account?: string; onSi
           </div>
           <div className="landing-viz-actions">
             <a className="btn-gold btn-lg" href="#/view">Open a shared proposal</a>
-            <a className="btn-outline-light btn-lg" href="#/visualize">Share a proposal <small>Team</small></a>
+            <a className="btn-outline-light btn-lg" href="#/visualize">Share a proposal</a>
           </div>
         </section>
 
         <section className="landing-cta">
-          <p className="eyebrow">Team access</p>
           <h2>Part of the {brand.company} team?</h2>
           <p className="lede">Sign in to {SITE.name} to start a new proposal or pick up where you left off.</p>
           <a className="btn-primary btn-lg" href={account ? "#/studio" : "#/login"}>{account ? "Open Proposal Studio" : `Sign in to ${SITE.name}`}</a>
@@ -112,7 +100,11 @@ export default function Landing({ account, onSignOut }: { account?: string; onSi
 
       <footer className="home-foot">
         <img src={logo} alt={brand.company} />
-        <span>{SITE.name} · {brand.legalName} · {brand.phone} · {brand.email}</span>
+        <span className="home-foot-line">
+          <span>{SITE.name}, {brand.legalName}</span>
+          <a href={`tel:${brand.phone.replace(/[^+0-9]/g, "")}`}>{brand.phone}</a>
+          <a href={`mailto:${brand.email}`}>{brand.email}</a>
+        </span>
       </footer>
     </div>
   );

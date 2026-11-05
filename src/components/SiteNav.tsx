@@ -5,11 +5,11 @@ import AppearanceControls from "./AppearanceControls";
 
 export type NavItem = "home" | "studio" | "venues" | "visualize";
 
-const ITEMS: { id: NavItem; label: string; href: string; badge?: string }[] = [
+const ITEMS: { id: NavItem; label: string; href: string }[] = [
   { id: "home", label: "Home", href: "#/" },
-  { id: "studio", label: "Proposal Studio", href: "#/studio", badge: "App" },
+  { id: "studio", label: "Proposal Studio", href: "#/studio" },
   { id: "venues", label: "Venue Directory", href: "#/venues" },
-  { id: "visualize", label: "Visualize Proposal", href: "#/visualize", badge: "Private" },
+  { id: "visualize", label: "Visualize Proposal", href: "#/visualize" },
 ];
 
 /** Event Bridge's main menu, laid over the dark hero of the landing page and the Proposal Studio home. */
@@ -33,7 +33,6 @@ export default function SiteNav({ current, account, onSignOut }: { current: NavI
   const links = ITEMS.map((it) => (
     <a key={it.id} href={it.href} aria-current={it.id === current ? "page" : undefined} onClick={() => setOpen(false)}>
       {it.label}
-      {it.badge && <span className="site-menu-badge">{it.badge}</span>}
     </a>
   ));
   const access = account ? (

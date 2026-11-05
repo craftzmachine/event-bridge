@@ -5,7 +5,7 @@ export const THEMES = [
   { id: "solarized-light", label: "Solarized Light", swatch: ["#fdf6e3", "#b58900", "#073642"] },
   { id: "solarized-dark", label: "Solarized Dark", swatch: ["#002b36", "#b58900", "#eee8d5"] },
   { id: "nord", label: "Nord", swatch: ["#2e3440", "#88c0d0", "#eceff4"] },
-  { id: "dark", label: "Dark", swatch: ["#121212", "#c9a96e", "#ededed"] },
+  { id: "dark", label: "Dark", swatch: ["#16110d", "#c9a96e", "#f0e7d9"] },
   { id: "white", label: "White", swatch: ["#ffffff", "#9a7b45", "#111111"] },
 ] as const;
 
