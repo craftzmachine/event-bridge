@@ -3,6 +3,7 @@ import { SITE } from "../site";
 import Ornament from "../components/Ornament";
 import SiteNav from "../components/SiteNav";
 import heroPhoto from "../assets/_JKN4027.webp";
+import letterPhoto from "../assets/J_J09260.webp";
 
 /**
  * Public entry point of Event Bridge: what the app is, and its feature apps — Proposal Studio first.
@@ -73,6 +74,9 @@ export default function Landing({ account, onSignOut }: { account?: string; onSi
         </section>
 
         <section className="landing-viz" aria-labelledby="landing-viz-title">
+          <figure className="landing-viz-photo">
+            <img src={letterPhoto} alt="A hand holding a printed photo of a couple in front of a red post box marked Letters" loading="lazy" />
+          </figure>
           <div className="landing-viz-text">
             <h2 id="landing-viz-title">Visualize Proposal</h2>
             <p>

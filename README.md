@@ -36,7 +36,7 @@ Opening a feature app while signed out goes to sign-in first, then straight back
 
 **Quotation references** are generated automatically when a proposal is created or duplicated, in the form `YYYYDDMM-ABC`: year, day, month, then three random capital letters (3 Nov 2026 → `20260311-KQZ`). They are unique among the proposals on that device and cannot be edited. Drafts saved before this feature were given one dated from when they were created.
 
-**Themes and fonts**: the theme button switches between Parinay, Solarized Light, Solarized Dark, Nord, Dark and White. **Dark** is used the first time someone opens Event Bridge; once they pick a theme, their choice is kept. The **Aa** button cycles the font between Classic, Sans Serif and Mono. Both apply across the whole app and are remembered on each device.
+**Themes and fonts**: the theme button switches between Parinay, Solarized Light, Solarized Dark, Nord, Dark and White. **Dark** is the default for everyone (themes picked before this change were reset to Dark once); after that, a theme someone picks is kept. The **Aa** button cycles the font between Classic, Sans Serif and Mono. Both apply across the whole app and are remembered on each device.
 
 Drafts save automatically in the browser on each device. Use **Save file** / **Back up all** on the home page to move proposals between devices, and **Import** to load them. Clearing the browser's site data deletes that device's drafts, so back up regularly.
 

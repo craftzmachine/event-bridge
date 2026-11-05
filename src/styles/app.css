@@ -1274,3 +1274,25 @@ body::before {
   .home-foot-line { flex-direction: column; align-items: center; }
   body::before { background-position: center, 28% 35%; }
 }
+
+/* ---------- Team photos (src/assets): Studio hero, sign-in panel, Visualize band ---------- */
+.home-hero-img img { object-position: center 42%; }
+.login-art-img img { object-position: 46% 30%; }
+.landing-viz { grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.2fr); grid-template-areas: "photo text" "photo actions"; column-gap: clamp(24px, 4vw, 48px); row-gap: 22px; align-items: start; }
+.landing-viz-photo { grid-area: photo; margin: 0; align-self: stretch; min-height: 280px; border-radius: var(--r); overflow: hidden; border: 1px solid color-mix(in srgb, var(--gold) 30%, transparent); }
+.landing-viz-photo img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: 50% 60%; }
+.landing-viz-text { grid-area: text; align-self: end; }
+.landing-viz-actions { grid-area: actions; grid-template-columns: repeat(2, minmax(0, 1fr)); align-self: start; }
+@media (max-width: 1023px) {
+  .landing-viz { grid-template-columns: minmax(0, 1fr); grid-template-areas: "photo" "text" "actions"; }
+  .landing-viz-photo { min-height: 0; aspect-ratio: 3 / 2; }
+}
+@media (max-width: 760px) {
+  .landing-viz-actions { grid-template-columns: minmax(0, 1fr); }
+}
+/* the seaside photos are bright, so their veils are a little deeper than the base rules */
+.login-art::after { background: radial-gradient(ellipse at center, color-mix(in srgb, var(--espresso) 76%, transparent), color-mix(in srgb, var(--espresso) 94%, transparent)); }
+.home-hero::after { background: radial-gradient(ellipse at center, color-mix(in srgb, var(--espresso) 78%, transparent) 0%, color-mix(in srgb, var(--espresso) 88%, transparent) 60%, color-mix(in srgb, var(--espresso) 96%, transparent) 100%); }
+@media (max-width: 760px) {
+  .home-hero::after { background: linear-gradient(180deg, color-mix(in srgb, var(--espresso) 70%, transparent), color-mix(in srgb, var(--espresso) 92%, transparent)); }
+}

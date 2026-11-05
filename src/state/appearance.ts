@@ -23,13 +23,17 @@ export interface Appearance {
   font: FontId;
 }
 
-const KEY = "proposal-builder.appearance.v1";
-// first visit opens in the Dark theme; once someone picks a theme, their saved choice wins
+// v2 made Dark the default for everyone: themes saved under v1 are dropped once, fonts carry over
+const KEY = "proposal-builder.appearance.v2";
+const OLD_KEY = "proposal-builder.appearance.v1";
+// everyone opens in the Dark theme; once someone picks a theme, their saved choice wins
 const DEFAULT: Appearance = { theme: "dark", font: "classic" };
 
 export function readAppearance(): Appearance {
   try {
-    const a = JSON.parse(localStorage.getItem(KEY) ?? "null") as Partial<Appearance> | null;
+    const saved = localStorage.getItem(KEY);
+    const old = saved === null ? (JSON.parse(localStorage.getItem(OLD_KEY) ?? "null") as Partial<Appearance> | null) : null;
+    const a = saved !== null ? (JSON.parse(saved) as Partial<Appearance> | null) : { font: old?.font };
     return {
       theme: THEMES.some((t) => t.id === a?.theme) ? (a!.theme as ThemeId) : DEFAULT.theme,
       font: FONTS.some((f) => f.id === a?.font) ? (a!.font as FontId) : DEFAULT.font,
@@ -45,7 +49,7 @@ export function applyAppearance(a: Appearance) {
   el.dataset.theme = a.theme;
   el.dataset.font = a.font;
   const bg = getComputedStyle(el).getPropertyValue("--paper").trim();
-  document.querySelector('meta[name="theme-color"]')?.setAttribute("content", bg || "#241d18");
+  document.querySelector('meta[name="theme-color"]')?.setAttribute("content", bg || "#16110d");
 }
 
 /** Owned once by App and shared through AppearanceContext, so every control stays in sync. */

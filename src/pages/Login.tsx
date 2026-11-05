@@ -4,6 +4,7 @@ import { checkCredentials } from "../auth/auth";
 import { ApiError, api } from "../lib/api";
 import { SITE } from "../site";
 import Img from "../components/Img";
+import loginPhoto from "../assets/AMU02965.webp";
 import Ornament from "../components/Ornament";
 import AppearanceControls from "../components/AppearanceControls";
 
@@ -11,7 +12,7 @@ const MAX_TRIES = 5;
 const LOCK_SECONDS = 30;
 
 export default function Login({ onSignedIn }: { onSignedIn: (email: string) => void }) {
-  const { brand, catalog } = useConfig();
+  const { brand } = useConfig();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [show, setShow] = useState(false);
@@ -85,7 +86,7 @@ export default function Login({ onSignedIn }: { onSignedIn: (email: string) => v
   return (
     <div className="login">
       <aside className="login-art">
-        <Img src={catalog.eventTypes[0]?.image} alt="" className="login-art-img" />
+        <Img src={loginPhoto} alt="" className="login-art-img" />
         <div className="login-art-text">
           <img className="login-logo" src={logo} alt={`${brand.company} — ${brand.tagline}`} />
           <Ornament />
@@ -169,8 +170,7 @@ export default function Login({ onSignedIn }: { onSignedIn: (email: string) => v
           </button>
 
           <p className="login-help">
-            {/* Access is limited to authorised team members. Need help? Contact {brand.contact.name} at{" "} */}
-            <a href={`mailto:${brand.contact.email}`}>{brand.contact.email}</a>.
+            Need access? Write to <a href={`mailto:${brand.contact.email}`}>{brand.contact.email}</a>.
           </p>
         </form>
         <p className="login-foot">© {new Date().getFullYear()} {SITE.name} · {brand.legalName} · {brand.company}</p>

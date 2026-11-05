@@ -9,6 +9,7 @@ import Img from "../components/Img";
 import Ornament from "../components/Ornament";
 import SiteNav from "../components/SiteNav";
 import { SITE } from "../site";
+import heroPhoto from "../assets/AMU02986.webp";
 
 type Store = ReturnType<typeof useProposals>;
 
@@ -32,7 +33,6 @@ export default function Home({
   const { catalog, brand } = useConfig();
   const fileRef = useRef<HTMLInputElement>(null);
   const [msg, setMsg] = useState("");
-  const hero = catalog.eventTypes[0]?.image;
 
   async function onImport(files: FileList | null) {
     if (!files?.length) return;
@@ -56,7 +56,7 @@ export default function Home({
   return (
     <div className="home">
       <header className="home-hero">
-        <Img src={hero} alt="" className="home-hero-img" />
+        <Img src={heroPhoto} alt="" className="home-hero-img" />
         <SiteNav current="studio" account={account} onSignOut={onSignOut} />
         <div className="home-hero-text">
           <img className="brand-logo" src={`${import.meta.env.BASE_URL}${brand.logo}`} alt={`${brand.company} — ${brand.tagline}`} />
