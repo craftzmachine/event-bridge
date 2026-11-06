@@ -20,6 +20,8 @@ import PagePreview from "../components/PagePreview";
 import ThemePicker from "../components/ThemePicker";
 import BudgetMeter from "../components/BudgetMeter";
 import FunctionsField from "../components/FunctionsField";
+import MarginCard from "../components/MarginCard";
+import { readCosts } from "../state/costs";
 import { byFunction, fnOf, functionHeading, functionsOf } from "../lib/functions";
 import { functionTotals } from "../lib/totals";
 import { packageFromProposal, usePackages } from "../state/packages";
@@ -206,6 +208,8 @@ function ElementsStep({ p, set }: StepProps) {
   const [sheet, setSheet] = useState(false);
   const fns = functionsOf(p);
   const [target, setTarget] = useState<string | null>(null);
+  // the cost sheet loaded on this device fills in each new element's internal cost
+  const [costs] = useState(readCosts);
   const adding = fns.some((f) => f.id === target) ? target : fns[0]?.id ?? null;
   const cats = useMemo(() => [...catalog.categories].sort((a, b) => a.order - b.order), [catalog]);
   const t = computeTotals(p, brand.gstPct);
@@ -223,7 +227,8 @@ function ElementsStep({ p, set }: StepProps) {
   const setLines = (fn: (lines: Line[]) => Line[]) => set((cur) => ({ lines: fn(cur.lines) }));
   const add = (l: Line) => {
     const g = latestGuests(p);
-    const sized = l.perGuest && g ? { ...l, qty: guestQty(g, l.perGuest) } : l;
+    const costed = l.elementId && costs[l.elementId] !== undefined ? { ...l, cost: costs[l.elementId] } : l;
+    const sized = costed.perGuest && g ? { ...costed, qty: guestQty(g, costed.perGuest) } : costed;
     const placed = adding ? { ...sized, fn: adding } : sized;
     setLines((ls) => [...ls, placed]);
     setOpen(l.uid);
@@ -517,6 +522,7 @@ function ReviewStep({ p, set, onReauth }: StepProps & { onReauth: () => void }) 
         <Deliver p={p} set={set} onReauth={onReauth} />
         <ExportButton p={p} wide />
         <SavePackage p={p} />
+        <MarginCard p={p} setLines={(fn) => set((cur) => ({ lines: fn(cur.lines) }))} />
       </div>
       <ProposalPreview p={p} />
     </section>

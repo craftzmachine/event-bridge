@@ -489,7 +489,7 @@ function matchCategory(label: string, catalog: Catalog): string | null {
   const hit = catalog.categories.find((c) => norm(c.label) === n || c.id === n);
   return hit?.id ?? null;
 }
-function matchElement(name: string, catalog: Catalog): CatalogElement | undefined {
+export function matchElement(name: string, catalog: Catalog): CatalogElement | undefined {
   const n = norm(name);
   return catalog.elements.find((e) => norm(e.name) === n);
 }

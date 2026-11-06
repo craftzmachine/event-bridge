@@ -139,7 +139,7 @@ export interface Line {
   fn?: string;
   /** while set, qty follows the guest count: ⌈guests × perGuest⌉ */
   perGuest?: number;
-  /** internal cost of the whole line (qty included); never shown to clients or exported */
+  /** internal cost per unit (like rate); never shown to clients or exported */
   cost?: number | null;
 }
 

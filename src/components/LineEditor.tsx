@@ -111,6 +111,10 @@ export default function LineEditor({
               </select>
             </label>
           )}
+          <div className="field line-cost">
+            <span>Cost per {line.unit || "unit"} <small>· internal, never shown to the client</small></span>
+            <MoneyInput label="Internal cost" placeholder="Not entered" value={line.cost ?? null} onChange={(n) => set({ cost: n })} />
+          </div>
           <label className="field">
             <span>Notes for the client</span>
             <textarea rows={2} value={line.notes} placeholder="e.g. jasmine and marigold, ivory drapes"

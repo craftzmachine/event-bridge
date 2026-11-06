@@ -1591,3 +1591,21 @@ body::before {
   /* the phone rule gives every table a 20px left margin; inside a function the section has it already */
   .preview .pv-fn .pv-table { width: 100%; margin-left: 0 !important; margin-right: 0; }
 }
+
+/* ---------- Margin (Review step, team only) ---------- */
+.margin h3 small { font-family: var(--sans); font-size: 11px; letter-spacing: 0; text-transform: none; font-weight: 400; color: var(--stone); }
+.margin-figs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 0; }
+.margin-figs div { display: flex; flex-direction: column; gap: 2px; }
+.margin-figs dt { font-size: 12px; color: var(--ink-2); }
+.margin-figs dd { margin: 0; font-variant-numeric: tabular-nums; font-weight: 600; font-size: 14px; }
+.margin-figs dd small { display: block; font-weight: 400; color: var(--ink-2); }
+.margin.is-low .margin-figs div:last-child dd { color: var(--danger-ink); }
+.margin-lines { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.margin-lines th, .margin-lines td { padding: 5px 4px; border-bottom: 1px solid var(--line); text-align: right; font-variant-numeric: tabular-nums; }
+.margin-lines th:first-child, .margin-lines td:first-child { text-align: left; font-variant-numeric: normal; }
+.margin-lines th { font-weight: 500; color: var(--ink-2); }
+.margin-lines tr.is-low td:last-child { color: var(--danger-ink); font-weight: 600; }
+.margin-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.margin-min { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--ink-2); margin-right: auto; }
+.margin-min input { width: 64px; min-height: 32px; }
+.line-cost small { font-weight: 400; color: var(--stone); }
