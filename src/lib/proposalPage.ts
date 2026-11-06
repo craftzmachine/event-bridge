@@ -4,6 +4,7 @@ import type { Catalog, Choice, Line, Proposal } from "../types";
 import type { ThemeId } from "../state/appearance";
 import { eventDates } from "./proposal";
 import { todayISO } from "./format";
+import { fnOf, functionsOf } from "./functions";
 
 /** The server's limit; checked here first so the planner gets a clear message before uploading. */
 export const PAGE_MAX_BYTES = 256 * 1024;
@@ -13,16 +14,22 @@ export interface PageSnapshot {
   theme: ThemeId;
   /** the date printed as "Dated …" on the page: the day it was shared, not the day it's viewed */
   dated: string;
-  proposal: Pick<Proposal, "client" | "ref" | "eventType" | "style" | "lines" | "coordinationPct" | "grandTotal" | "terms" | "notes">;
+  proposal: Pick<Proposal, "client" | "ref" | "eventType" | "style" | "lines" | "coordinationPct" | "grandTotal" | "terms" | "notes" | "functions">;
   catalog: Pick<Catalog, "eventTypes" | "ceremonyStyles" | "categories">;
 }
 
-const onlyShown = (l: Line): Line => ({
-  ...l,
-  elementId: null,
-  // upgrades the planner didn't include or offer are internal, so they stay out of the page
-  upgrades: l.upgrades.filter((u) => u.mode !== "off"),
-});
+/** Only what the client sees: internal cost, the per-guest factor and catalogue ids stay behind. */
+function onlyShown(p: Proposal, l: Line): Line {
+  const { cost: _cost, perGuest: _perGuest, fn: _fn, ...shown } = l;
+  const fn = fnOf(p, l);
+  return {
+    ...shown,
+    elementId: null,
+    // upgrades the planner didn't include or offer are internal, so they stay out of the page
+    upgrades: l.upgrades.filter((u) => u.mode !== "off"),
+    ...(fn ? { fn } : {}),
+  };
+}
 const pick = (list: Choice[], id: string | null) => list.filter((c) => c.id === id).map(({ id, label, image }) => ({ id, label, blurb: "", image }));
 
 export function pageSnapshot(p: Proposal, catalog: Catalog, theme: ThemeId, dated = todayISO()): PageSnapshot {
@@ -32,15 +39,17 @@ export function pageSnapshot(p: Proposal, catalog: Catalog, theme: ThemeId, date
     theme,
     dated,
     proposal: {
-      client: { ...p.client, dates, date: dates[0] ?? "" },
+      // the budget and guest count are the planner's working figures, not part of the page
+      client: { name: p.client.name, contact: p.client.contact, venue: p.client.venue, location: p.client.location, dates, date: dates[0] ?? "" },
       ref: p.ref,
       eventType: p.eventType,
       style: p.style,
-      lines: p.lines.map(onlyShown),
+      lines: p.lines.map((l) => onlyShown(p, l)),
       coordinationPct: p.coordinationPct,
       grandTotal: p.grandTotal,
       terms: p.terms.filter((t) => t.trim()),
       notes: p.notes,
+      ...(functionsOf(p).length ? { functions: functionsOf(p).map(({ id, label, date }) => ({ id, label, date })) } : {}),
     },
     catalog: {
       eventTypes: pick(catalog.eventTypes, p.eventType),

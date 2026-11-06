@@ -1,4 +1,5 @@
-import type { Line, Proposal } from "../types";
+import type { EventFunction, Line, Proposal } from "../types";
+import { byFunction } from "./functions";
 
 const r2 = (n: number) => Math.round(n * 100) / 100;
 
@@ -49,4 +50,14 @@ export function computeTotals(p: Pick<Proposal, "lines" | "coordinationPct" | "g
 export function roundOffSuggestions(beforeRound: number): number[] {
   const s = [Math.floor(beforeRound / 10000) * 10000, Math.floor(beforeRound / 1000) * 1000];
   return [...new Set(s)].filter((v) => v > 0 && v !== beforeRound);
+}
+
+/**
+ * Each function's subtotal: its included lines, before co-ordination (which applies to the whole proposal).
+ * They add up to the Sub Total. Empty for a proposal without functions.
+ */
+export function functionTotals(p: Pick<Proposal, "lines" | "functions">): { fn: EventFunction; subTotal: number }[] {
+  return byFunction(p, p.lines.filter((l) => !l.optional))
+    .filter((g): g is { fn: EventFunction; lines: Line[] } => g.fn !== null)
+    .map((g) => ({ fn: g.fn, subTotal: r2(g.lines.reduce((s, l) => s + lineAmount(l), 0)) }));
 }

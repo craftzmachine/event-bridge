@@ -7,7 +7,7 @@
  * Call `convertWorkbook(book, ctx, answers)` again after each round of answers; it returns the
  * questions still open (some only appear once an earlier one is answered) or the finished proposal.
  */
-import type { Brand, Catalog, CatalogElement, Line, LineUpgrade, Proposal } from "../types";
+import type { Brand, Catalog, CatalogElement, EventFunction, Line, LineUpgrade, Proposal } from "../types";
 import { computeTotals } from "./totals";
 import { formatINR } from "./format";
 import { QUOTE_REF_PATTERN, generateQuoteRef } from "./quoteRef";
@@ -250,6 +250,8 @@ interface RawLine {
   section: string;
   optional: boolean;
   upgrades: { name: string; price: Cell; where: string }[];
+  /** the function heading it sits under ("FUNCTION: Haldi — …"), if any */
+  fn?: string;
 }
 interface ItemsTable {
   sheet: string;
@@ -259,6 +261,8 @@ interface ItemsTable {
   nameless: { text: string; line: RawLine }[];
   /** rows that looked like a heading but had nothing under them, e.g. "No additional options in this proposal." */
   emptyHeadings: { where: string; text: string }[];
+  /** "FUNCTION: Haldi — 12th February 2027" rows, as the app's export writes them */
+  functions: { label: string; dateText: string; where: string }[];
 }
 interface Parsed {
   fields: Partial<Record<FieldKey, Found>>;
@@ -339,7 +343,8 @@ const no = (c: Cell | undefined) => c === false || /^(n|no|false|0)$/i.test(text
 function readTable(sheet: SheetGrid, header: { row: number; cols: Partial<Record<Col, number>> }, parsed: Parsed, optionsSheet: boolean): ItemsTable {
   const { cols } = header;
   const get = (row: Cell[], col: Col) => (cols[col] === undefined ? null : row[cols[col]!] ?? null);
-  const table: ItemsTable = { sheet: sheet.name, headerRow: header.row, lines: [], nameless: [], emptyHeadings: [] };
+  const table: ItemsTable = { sheet: sheet.name, headerRow: header.row, lines: [], nameless: [], emptyHeadings: [], functions: [] };
+  let fn = "";
   let section = "";
   let sectionStart: RawLine | null = null; // a "section" row that may turn out to be an unpriced item
   let sectionHadItems = false;
@@ -358,6 +363,18 @@ function readTable(sheet: SheetGrid, header: { row: number; cols: Partial<Record
     const name = text(get(row, "name"));
     const rowText = row.map(text).filter(Boolean);
     if (!rowText.length) continue;
+    // a function heading: the items below belong to it until the next one
+    const fnHead = rowText.find((t) => /^function\s*:/i.test(t));
+    if (fnHead) {
+      flushSection();
+      const [label, ...date] = fnHead.replace(/^function\s*:\s*/i, "").split(/\s+[—–]\s+/);
+      fn = label.trim();
+      table.functions.push({ label: fn, dateText: date.join(" ").trim(), where: at(sheet.name, r) });
+      section = "";
+      continue;
+    }
+    // "Haldi subtotal": the export's own sum of that function, worked out again from the items
+    if (/\S\s+sub ?total$/.test(norm(name))) continue;
     if (TOTAL_ROW.test(norm(name)) || (!name && rowText.some((t) => TOTAL_ROW.test(norm(t))))) break;
     const numbers = [get(row, "qty"), get(row, "rate"), get(row, "amount")].some((c) => !isBlank(c));
     const key = `${sheet.name}!${r + 1}`;
@@ -376,6 +393,7 @@ function readTable(sheet: SheetGrid, header: { row: number; cols: Partial<Record
       section: category || section,
       optional: optionsSheet || /^(additional options?|optional|add ons?)$/.test(norm(section)) || yes(get(row, "optional")) || no(get(row, "included")),
       upgrades: [],
+      ...(fn ? { fn } : {}),
     };
     if (!name) {
       if (numbers) table.nameless.push({ text: rowText.join(" · "), line });
@@ -638,6 +656,21 @@ export function convertWorkbook(book: WorkbookGrid, ctx: ConvertContext, answers
     else if (a) rawLines.push({ ...n.line, name: a });
   }
 
+  // ---- functions ("FUNCTION: Haldi — 12th February 2027" rows, as the app's export writes them)
+  const functions: EventFunction[] = [];
+  const fnIds = new Map<string, string>();
+  for (const t of tables)
+    for (const f of t.functions) {
+      if (fnIds.has(norm(f.label))) continue;
+      // a date that can't be read for certain is left to be set in the app, never guessed
+      const d = parseDateText(f.dateText);
+      const date = d.dates.length === 1 && !d.ambiguous.length && !d.unclear ? d.dates[0] : "";
+      const id = `f-${uid()}`;
+      fnIds.set(norm(f.label), id);
+      functions.push({ id, label: f.label, date });
+      source(`Function: ${f.label}`, f.dateText || "date to be confirmed", null, f.where);
+    }
+
   // ---- lines
   const lines: Line[] = [];
   const categoryAsked = new Map<string, string[]>(); // section → item names, for one question per section
@@ -766,6 +799,7 @@ export function convertWorkbook(book: WorkbookGrid, ctx: ConvertContext, answers
       notes: raw.notes,
       optional: raw.optional,
       upgrades,
+      ...(raw.fn && fnIds.has(norm(raw.fn)) ? { fn: fnIds.get(norm(raw.fn)) } : {}),
     });
   }
 
@@ -886,6 +920,7 @@ export function convertWorkbook(book: WorkbookGrid, ctx: ConvertContext, answers
     grandTotal,
     terms,
     notes,
+    ...(functions.length ? { functions } : {}),
   };
   return { status: "ready", proposal, report };
 }

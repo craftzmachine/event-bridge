@@ -1,4 +1,4 @@
-import type { Line, UpgradeMode } from "../types";
+import type { EventFunction, Line, UpgradeMode } from "../types";
 import { lineAmount } from "../lib/totals";
 import { formatINR } from "../lib/format";
 import MoneyInput from "./MoneyInput";
@@ -19,7 +19,12 @@ export default function LineEditor({
   onRemove,
   onMove,
   guests = null,
+  functions = [],
+  fn = null,
 }: {
+  /** the proposal's functions, to move the line between them */
+  functions?: EventFunction[];
+  fn?: string | null;
   /** the proposal's guest count, for lines priced per guest */
   guests?: number | null;
   line: Line;
@@ -96,6 +101,16 @@ export default function LineEditor({
               </label>
             ) : null}
           </div>
+          {functions.length > 1 && (
+            <label className="field">
+              <span>Function</span>
+              <select value={fn ?? functions[0].id} onChange={(e) => set({ fn: e.target.value })}>
+                {functions.map((f) => (
+                  <option key={f.id} value={f.id}>{f.label}</option>
+                ))}
+              </select>
+            </label>
+          )}
           <label className="field">
             <span>Notes for the client</span>
             <textarea rows={2} value={line.notes} placeholder="e.g. jasmine and marigold, ivory drapes"

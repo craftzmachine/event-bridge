@@ -7,6 +7,7 @@ export const PAGE_MAX_BYTES = 256 * 1024;
 export const PAGE_THEMES = ["parinay", "solarized-light", "solarized-dark", "nord", "dark", "white"] as const;
 const MAX_LINES = 400;
 const MAX_TERMS = 60;
+const MAX_FUNCTIONS = 12;
 
 type Obj = Record<string, unknown>;
 const isObj = (x: unknown): x is Obj => !!x && typeof x === "object" && !Array.isArray(x);
@@ -44,6 +45,7 @@ export function validatePage(text: string): { page: Obj; client: string } | { er
     rate: numOrNull(l.rate),
     notes: str(l.notes, 2000),
     optional: l.optional === true,
+    ...(typeof l.fn === "string" && /^[A-Za-z0-9_-]{1,40}$/.test(l.fn) ? { fn: l.fn } : {}),
     upgrades: (Array.isArray(l.upgrades) ? l.upgrades : []).filter(isObj).slice(0, 20)
       // only what the client may see: included and offered upgrades
       .filter((u) => u.mode === "include" || u.mode === "offer")
@@ -55,6 +57,9 @@ export function validatePage(text: string): { page: Obj; client: string } | { er
     .map((x) => ({ id: str(x.id, 80), label: str(x.label, 120), order: num(x.order) }));
 
   const client = str(c.name, 120);
+  const functions = (Array.isArray(p.functions) ? p.functions : []).filter(isObj).slice(0, MAX_FUNCTIONS)
+    .map((f) => ({ id: str(f.id, 40), label: str(f.label, 60), date: /^\d{4}-\d{2}-\d{2}$/.test(str(f.date, 10)) ? str(f.date, 10) : "" }))
+    .filter((f) => /^[A-Za-z0-9_-]{1,40}$/.test(f.id) && f.label);
   const page = {
     v: 1,
     theme,
@@ -76,6 +81,7 @@ export function validatePage(text: string): { page: Obj; client: string } | { er
       grandTotal: numOrNull(p.grandTotal ?? null),
       terms: (Array.isArray(p.terms) ? p.terms : []).map((t) => str(t, 2000)).filter(Boolean).slice(0, MAX_TERMS),
       notes: str(p.notes, 4000),
+      ...(functions.length ? { functions } : {}),
     },
     catalog: { eventTypes: choice(raw.catalog.eventTypes), ceremonyStyles: choice(raw.catalog.ceremonyStyles), categories },
   };

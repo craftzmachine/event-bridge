@@ -1,6 +1,7 @@
 import type { Content, TableCell, TDocumentDefinitions } from "pdfmake/interfaces";
 import type { Brand, Catalog, Line, Proposal } from "../types";
-import { computeTotals, lineAmount } from "./totals";
+import { computeTotals, functionTotals, lineAmount } from "./totals";
+import { byFunction, functionHeading } from "./functions";
 import { formatDate, formatINR, todayISO } from "./format";
 import { eventDatesLine, exportFileName, groupLines, proposalTitle, venueLine } from "./proposal";
 import { logoToPng, saveBlob } from "./files";
@@ -46,23 +47,42 @@ export function buildPdfDoc(p: Proposal, catalog: Catalog, brand: Brand, logoPng
   };
 
   // ---- items ---------------------------------------------------------------
-  const groups = groupLines(p.lines.filter((l) => !l.optional), catalog);
+  const included = p.lines.filter((l) => !l.optional);
+  const groups = groupLines(included, catalog);
+  const subtotals = new Map(functionTotals(p).map((x) => [x.fn.id, x.subTotal]));
   const itemRows: TableCell[][] = [head(["SL", "ELEMENT", "QTY", "AMOUNT"])];
-  groups.forEach((g, gi) => {
-    itemRows.push([
-      { text: letters[gi], bold: true, color: c.accent, fillColor: c.soft },
-      { text: g.label, colSpan: 3, bold: true, color: c.ink, fillColor: c.soft, fontSize: 10 },
-      {},
-      {},
-    ]);
-    g.lines.forEach((l, i) => {
+  // with functions: a heading row per function, its categories, then its subtotal
+  byFunction(p, included, true).forEach((sec) => {
+    if (sec.fn)
       itemRows.push([
-        { text: String(i + 1).padStart(2, "0"), color: muted, fontSize: 8 },
-        itemCell(l),
-        { text: `${l.qty} ${l.unit}`, color: muted, fontSize: 8.5, alignment: "center" },
-        amountCell(l),
+        { text: functionHeading(sec.fn), colSpan: 4, bold: true, color: "#ffffff", fillColor: c.accent, fontSize: 10.5, margin: [0, 2, 0, 2] },
+        {},
+        {},
+        {},
       ]);
+    groupLines(sec.lines, catalog).forEach((g, gi) => {
+      itemRows.push([
+        { text: letters[gi], bold: true, color: c.accent, fillColor: c.soft },
+        { text: g.label, colSpan: 3, bold: true, color: c.ink, fillColor: c.soft, fontSize: 10 },
+        {},
+        {},
+      ]);
+      g.lines.forEach((l, i) => {
+        itemRows.push([
+          { text: String(i + 1).padStart(2, "0"), color: muted, fontSize: 8 },
+          itemCell(l),
+          { text: `${l.qty} ${l.unit}`, color: muted, fontSize: 8.5, alignment: "center" },
+          amountCell(l),
+        ]);
+      });
     });
+    if (sec.fn)
+      itemRows.push([
+        { text: "" },
+        { text: `${sec.fn.label} subtotal`, colSpan: 2, bold: true, color: c.ink, alignment: "right" },
+        {},
+        { text: formatINR(subtotals.get(sec.fn.id) ?? 0), bold: true, alignment: "right", noWrap: true },
+      ]);
   });
   if (!groups.length) itemRows.push([{ text: "No elements selected yet.", colSpan: 4, italics: true, color: muted }, {}, {}, {}]);
 

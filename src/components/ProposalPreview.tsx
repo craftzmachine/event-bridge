@@ -1,6 +1,8 @@
+import { Fragment } from "react";
 import type { Line, Proposal } from "../types";
 import { useConfig } from "../config/context";
-import { computeTotals, lineAmount } from "../lib/totals";
+import { computeTotals, functionTotals, lineAmount } from "../lib/totals";
+import { byFunction, functionHeading } from "../lib/functions";
 import { formatDate, formatINR, todayISO } from "../lib/format";
 import { eventDatesLine, groupLines, proposalTitle } from "../lib/proposal";
 import Img from "./Img";
@@ -33,12 +35,16 @@ export default function ProposalPreview({ p, dated }: { p: Proposal; dated?: str
   const t = computeTotals(p, brand.gstPct);
   const type = catalog.eventTypes.find((x) => x.id === p.eventType);
   const style = catalog.ceremonyStyles.find((x) => x.id === p.style);
-  const groups = groupLines(p.lines.filter((l) => !l.optional), catalog);
+  const included = p.lines.filter((l) => !l.optional);
+  const groups = groupLines(included, catalog);
+  // with functions: each function's own category tables and subtotal
+  const sections = byFunction(p, included, true).map((s) => ({ ...s, groups: groupLines(s.lines, catalog) }));
+  const subtotals = new Map(functionTotals(p).map((x) => [x.fn.id, x.subTotal]));
   const options = [
     ...p.lines.filter((l) => l.optional).map((l) => ({ key: l.uid, name: l.name, note: l.notes, amount: l.rate === null ? null : lineAmount(l) })),
     ...p.lines.flatMap((l) => l.upgrades.filter((u) => u.mode === "offer").map((u) => ({ key: l.uid + u.id, name: `Upgrade: ${u.name}`, note: `For “${l.name}”`, amount: u.price }))),
   ];
-  const letters = "ABCDEFGHIJ";
+  const letters = "ABCDEFGHIJKLMNOP";
 
   return (
     <article className="preview" aria-label="Proposal preview">
@@ -62,14 +68,28 @@ export default function ProposalPreview({ p, dated }: { p: Proposal; dated?: str
       <p className="eyebrow">Scope of work</p>
       <h3 className="pv-h">Elements &amp; Investment</h3>
       {groups.length === 0 && <p className="empty">No elements selected yet.</p>}
-      {groups.map((g, gi) => (
-        <table className="pv-table" key={g.id}>
-          <thead>
-            <tr><th className="pv-sl">{letters[gi]}</th><th colSpan={3}>{g.label}</th></tr>
-          </thead>
-          <tbody>{g.lines.map((l, i) => <Row key={l.uid} l={l} i={i} />)}</tbody>
-        </table>
-      ))}
+      {sections.map((sec) => {
+        const tables = sec.groups.map((g, gi) => (
+            <table className="pv-table" key={g.id}>
+              <thead>
+                <tr><th className="pv-sl">{letters[gi]}</th><th colSpan={3}>{g.label}</th></tr>
+              </thead>
+              <tbody>{g.lines.map((l, i) => <Row key={l.uid} l={l} i={i} />)}</tbody>
+            </table>
+        ));
+        // a proposal without functions renders exactly as before: the tables straight in the page
+        if (!sec.fn) return <Fragment key="all">{tables}</Fragment>;
+        return (
+          <section className="pv-fn" key={sec.fn.id}>
+            <h4 className="pv-fn-h">{functionHeading(sec.fn)}</h4>
+            {tables}
+            <p className="pv-fn-total">
+              <span>{sec.fn.label} subtotal</span>
+              <strong>{formatINR(subtotals.get(sec.fn.id) ?? 0)}</strong>
+            </p>
+          </section>
+        );
+      })}
       <TotalsPanel t={t} pct={p.coordinationPct} />
       {t.asPerActuals.length > 0 && (
         <p className="pv-small">{t.asPerActuals.map((l) => l.name).join("; ")} will be billed as per actuals and {t.asPerActuals.length > 1 ? "are" : "is"} not included in the Grand Total.</p>

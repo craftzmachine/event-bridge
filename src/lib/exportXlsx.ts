@@ -1,6 +1,7 @@
 import ExcelJS from "exceljs";
 import type { Brand, Catalog, Line, Proposal } from "../types";
-import { computeTotals } from "./totals";
+import { computeTotals, functionTotals } from "./totals";
+import { byFunction, functionHeading } from "./functions";
 import { formatDate, todayISO } from "./format";
 import { eventDatesLine, exportFileName, groupLines, proposalTitle, venueLine } from "./proposal";
 import { logoToPng, saveBlob } from "./files";
@@ -106,22 +107,52 @@ export function buildWorkbook(p: Proposal, catalog: Catalog, brand: Brand, logoP
   const included = p.lines.filter((l) => !l.optional);
   const groups = groupLines(included, catalog);
   const letters = "ABCDEFGHIJKLMNOP";
-  groups.forEach((g, gi) => {
-    const sr = ws.getRow(r);
-    sr.getCell(1).value = letters[gi];
-    sr.getCell(2).value = g.label;
-    sr.height = 22;
-    for (let col = 1; col <= 7; col++) {
-      const cell = sr.getCell(col);
-      cell.fill = fill(c.soft);
-      cell.font = { name: SERIF, size: 11, bold: col === 1, color: { argb: argb(c.ink) } };
-      cell.alignment = { vertical: "middle" };
+  const fnSubtotals = new Map(functionTotals(p).map((x) => [x.fn.id, x.subTotal]));
+  // rows holding each function's subtotal; with functions the Sub Total adds these, so nothing counts twice
+  const fnTotalRows: number[] = [];
+  byFunction(p, included, true).forEach((sec) => {
+    if (sec.fn) {
+      // "FUNCTION: Haldi — 12th February 2027"; the Excel import reads this row back as the function
+      const fr = ws.getRow(r);
+      ws.mergeCells(`A${r}:G${r}`);
+      fr.getCell(1).value = `FUNCTION: ${functionHeading(sec.fn)}`;
+      fr.getCell(1).fill = fill(c.accent);
+      fr.getCell(1).font = { name: SERIF, size: 12, bold: true, color: { argb: "FFFFFFFF" } };
+      fr.getCell(1).alignment = { vertical: "middle" };
+      fr.height = 24;
+      r++;
     }
-    sr.getCell(1).border = { left: { style: "thick", color: { argb: argb(c.accent) } } };
-    r++;
-    g.lines.forEach((l, i) => {
-      r = writeItem(ws, r, String(i + 1).padStart(2, "0"), l, thin, c);
+    const first = r;
+    groupLines(sec.lines, catalog).forEach((g, gi) => {
+      const sr = ws.getRow(r);
+      sr.getCell(1).value = letters[gi];
+      sr.getCell(2).value = g.label;
+      sr.height = 22;
+      for (let col = 1; col <= 7; col++) {
+        const cell = sr.getCell(col);
+        cell.fill = fill(c.soft);
+        cell.font = { name: SERIF, size: 11, bold: col === 1, color: { argb: argb(c.ink) } };
+        cell.alignment = { vertical: "middle" };
+      }
+      sr.getCell(1).border = { left: { style: "thick", color: { argb: argb(c.accent) } } };
+      r++;
+      g.lines.forEach((l, i) => {
+        r = writeItem(ws, r, String(i + 1).padStart(2, "0"), l, thin, c);
+      });
     });
+    if (sec.fn) {
+      const tr = ws.getRow(r);
+      ws.mergeCells(`B${r}:F${r}`);
+      tr.getCell(2).value = `${sec.fn.label} subtotal`;
+      tr.getCell(2).alignment = { horizontal: "right" };
+      tr.getCell(2).font = { name: SANS, size: 10, bold: true, color: { argb: argb(c.ink) } };
+      tr.getCell(7).value = { formula: `SUM(G${first}:G${r - 1})`, result: fnSubtotals.get(sec.fn.id) ?? 0 };
+      tr.getCell(7).numFmt = INR_FMT;
+      tr.getCell(7).font = { name: SANS, size: 10, bold: true, color: { argb: argb(c.ink) } };
+      for (let col = 1; col <= 7; col++) tr.getCell(col).border = { top: { style: "thin", color: { argb: argb(c.accent) } } };
+      fnTotalRows.push(r);
+      r += 2;
+    }
   });
   const lastItemRow = r - 1;
   if (!groups.length) {
@@ -132,7 +163,7 @@ export function buildWorkbook(p: Proposal, catalog: Catalog, brand: Brand, logoP
   r++;
 
   // ---- totals -------------------------------------------------------------
-  const sumRange = groups.length ? `SUM(G${firstItemRow}:G${lastItemRow})` : "0";
+  const sumRange = fnTotalRows.length ? fnTotalRows.map((x) => `G${x}`).join("+") : groups.length ? `SUM(G${firstItemRow}:G${lastItemRow})` : "0";
   const totalRow = (label: string, value: ExcelJS.CellValue, opts: { bold?: boolean; big?: boolean; pct?: number; input?: boolean } = {}) => {
     const row = ws.getRow(r);
     ws.mergeCells(`B${r}:E${r}`);

@@ -19,6 +19,9 @@ import ShareDialog, { type ShareFormat } from "../components/ShareDialog";
 import PagePreview from "../components/PagePreview";
 import ThemePicker from "../components/ThemePicker";
 import BudgetMeter from "../components/BudgetMeter";
+import FunctionsField from "../components/FunctionsField";
+import { byFunction, fnOf, functionHeading, functionsOf } from "../lib/functions";
+import { functionTotals } from "../lib/totals";
 import { packageFromProposal, usePackages } from "../state/packages";
 import { applyGuests, capacityWarning, guestQty } from "../lib/guests";
 import { THEMES, useAppearance, type ThemeId } from "../state/appearance";
@@ -160,6 +163,7 @@ function ClientStep({ p, set, setClient }: StepProps & { setClient: (c: Partial<
           <small className="hint">The quote is measured against it as you add elements.</small>
         </div>
         {capacity && <p className="notice field-wide" role="status">{capacity}</p>}
+        <FunctionsField p={p} set={set} />
         <div className="field">
           <span>Quotation reference</span>
           <output className="ref-badge" aria-live="polite">{p.ref || "Assigning…"}</output>
@@ -200,6 +204,9 @@ function ElementsStep({ p, set }: StepProps) {
   const [showAll, setShowAll] = useState(false);
   const [open, setOpen] = useState<string | null>(null);
   const [sheet, setSheet] = useState(false);
+  const fns = functionsOf(p);
+  const [target, setTarget] = useState<string | null>(null);
+  const adding = fns.some((f) => f.id === target) ? target : fns[0]?.id ?? null;
   const cats = useMemo(() => [...catalog.categories].sort((a, b) => a.order - b.order), [catalog]);
   const t = computeTotals(p, brand.gstPct);
 
@@ -216,26 +223,43 @@ function ElementsStep({ p, set }: StepProps) {
   const setLines = (fn: (lines: Line[]) => Line[]) => set((cur) => ({ lines: fn(cur.lines) }));
   const add = (l: Line) => {
     const g = latestGuests(p);
-    const placed = l.perGuest && g ? { ...l, qty: guestQty(g, l.perGuest) } : l;
+    const sized = l.perGuest && g ? { ...l, qty: guestQty(g, l.perGuest) } : l;
+    const placed = adding ? { ...sized, fn: adding } : sized;
     setLines((ls) => [...ls, placed]);
     setOpen(l.uid);
   };
   const swap = (uid: string, next: Line) => setLines((ls) => ls.map((x) => (x.uid === uid ? next : x)));
+  // moves within the line's own function, so the order the client sees changes
   const move = (uid: string, dir: -1 | 1) =>
-    setLines((ls) => {
+    set((cur) => {
+      const ls = cur.lines;
       const i = ls.findIndex((x) => x.uid === uid);
-      const j = i + dir;
-      if (i < 0 || j < 0 || j >= ls.length) return ls;
+      if (i < 0) return {};
+      const fn = fnOf(cur, ls[i]);
+      let j = i + dir;
+      while (j >= 0 && j < ls.length && fnOf(cur, ls[j]) !== fn) j += dir;
+      if (j < 0 || j >= ls.length) return {};
       const next = [...ls];
       [next[i], next[j]] = [next[j], next[i]];
-      return next;
+      return { lines: next };
     });
+  const subtotals = new Map(functionTotals(p).map((x) => [x.fn.id, x.subTotal]));
 
   return (
     <section className="elements">
       <div className="catalogue">
         <p className="eyebrow">Step three · {proposalTitle(p, catalog)}</p>
         <h1>Curate the elements</h1>
+        {fns.length > 0 && (
+          <div className="fn-target">
+            <span id="fn-target-label">Adding to</span>
+            <div className="seg" role="group" aria-labelledby="fn-target-label">
+              {fns.map((f) => (
+                <button key={f.id} type="button" className={adding === f.id ? "is-on" : ""} aria-pressed={adding === f.id} onClick={() => setTarget(f.id)}>{f.label}</button>
+              ))}
+            </div>
+          </div>
+        )}
         <div className="filters">
           <input className="search" type="search" placeholder="Search elements…" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search elements" />
           <label className="check">
@@ -281,15 +305,27 @@ function ElementsStep({ p, set }: StepProps) {
         <div className="basket-inner">
           <h2>Your selection</h2>
           {!p.lines.length && <p className="empty">Add elements from the list. Tap a selected element to set quantity, price, notes and upgrades.</p>}
-          <ol className="lines">
-            {p.lines.map((l, i) => (
-              <LineEditor key={l.uid} line={l} index={i} expanded={open === l.uid} guests={p.client.guests ?? null}
-                onToggle={() => setOpen(open === l.uid ? null : l.uid)}
-                onChange={(nl) => setLines((ls) => ls.map((x) => (x.uid === l.uid ? nl : x)))}
-                onRemove={() => setLines((ls) => ls.filter((x) => x.uid !== l.uid))}
-                onMove={(d) => move(l.uid, d)} />
-            ))}
-          </ol>
+          {byFunction(p, p.lines).map((g) => (
+            <div key={g.fn?.id ?? "all"} className={g.fn ? "fn-group" : undefined}>
+              {g.fn && (
+                <h3 className="fn-group-h">
+                  <span>{functionHeading(g.fn)}</span>
+                  <small>{formatINRShort(subtotals.get(g.fn.id) ?? 0)}</small>
+                </h3>
+              )}
+              {g.fn && !g.lines.length && <p className="hint">Nothing added to {g.fn.label} yet.</p>}
+              <ol className="lines">
+                {g.lines.map((l, i) => (
+                  <LineEditor key={l.uid} line={l} index={i} expanded={open === l.uid} guests={p.client.guests ?? null}
+                    functions={fns} fn={fnOf(p, l)}
+                    onToggle={() => setOpen(open === l.uid ? null : l.uid)}
+                    onChange={(nl) => setLines((ls) => ls.map((x) => (x.uid === l.uid ? nl : x)))}
+                    onRemove={() => setLines((ls) => ls.filter((x) => x.uid !== l.uid))}
+                    onMove={(d) => move(l.uid, d)} />
+                ))}
+              </ol>
+            </div>
+          ))}
           {p.lines.length > 0 && <TotalsPanel t={t} pct={p.coordinationPct} compact />}
           {p.lines.length > 0 && <BudgetMeter p={p} onSwap={swap} compact />}
         </div>
