@@ -12,7 +12,7 @@ import { memoryFiles, memoryKv, redisCredentials } from "./store";
 import { run, type Deps, type Handler } from "./deps";
 import { validateUpload } from "./files";
 import { renderXlsx } from "./render/xlsx";
-import { shares, staffLogin, staffMe, unlock, viewDoc, viewLock, viewPage } from "./visualize";
+import { shares, staffLogin, staffMe, unlock, viewDoc, viewLock, viewPage, viewRespond } from "./visualize";
 
 const require = createRequire(import.meta.url);
 const catalog: Catalog = JSON.parse(readFileSync("public/config/catalog.json", "utf8"));
@@ -91,12 +91,13 @@ async function signIn() {
   return staffCookie();
 }
 
-async function upload(file: Buffer, name: string, client = "Ms. Priya Nair", password = "client-secret-77", expiryDays = "30") {
+async function upload(file: Buffer, name: string, client = "Ms. Priya Nair", password = "client-secret-77", expiryDays = "30", extra: Record<string, string> = {}) {
   const form = new FormData();
   form.set("file", new File([new Uint8Array(file)], name));
   form.set("client", client);
   form.set("password", password);
   form.set("expiryDays", expiryDays);
+  for (const [k, v] of Object.entries(extra)) form.set(k, v);
   return call(shares, "/api/shares", { method: "POST", form, cookie: await signIn() });
 }
 
@@ -133,7 +134,7 @@ describe("api routes", () => {
   it("export the shape Vercel runs as a Web handler: default { fetch }", async () => {
     // a bare default function is treated as the legacy Node (req, res) signature on Vercel and never answers
     const routes = import.meta.glob<{ default?: { fetch?: unknown } }>("../api/**/*.ts", { eager: true });
-    expect(Object.keys(routes)).toHaveLength(8);
+    expect(Object.keys(routes)).toHaveLength(9);
     for (const [file, mod] of Object.entries(routes)) expect(typeof mod.default?.fetch, file).toBe("function");
   });
 });
@@ -247,6 +248,66 @@ describe("sharing and viewing", () => {
     expect((await call(unlock, "/x", { method: "POST", json: { token: e.token, password: "expired-pass-1" } })).status).toBe(401);
     const list = await call(shares, "/api/shares", { cookie: await signIn() });
     expect(list.body.shares.find((x: { id: string }) => x.id === e.id).expired).toBe(true);
+  }, 30_000);
+});
+
+describe("share with client and the client's answer", () => {
+  const respond = (id: string, json: unknown, init: { cookie?: string; origin?: string | null } = {}) =>
+    call(viewRespond, `/api/view/respond?id=${id}`, { method: "POST", json, cookie: init.cookie ?? viewCookie(), origin: init.origin });
+  const listed = async (id: string) => (await call(shares, "/api/shares", { cookie: await signIn() })).body.shares.find((x: { id: string }) => x.id === id);
+
+  it("keeps the proposal it came from, and ignores anything that isn't an id", async () => {
+    const a = (await upload(pdf, "A.pdf", "Client A", "password-a-1", "30", { proposalId: "mk3x9q2a1b" })).body.share;
+    expect(a.proposalId).toBe("mk3x9q2a1b");
+    const b = (await upload(pdf, "B.pdf", "Client B", "password-b-1", "30", { proposalId: "<script>" })).body.share;
+    expect(b).not.toHaveProperty("proposalId");
+  }, 30_000);
+
+  it("lets the client approve or ask for changes, and shows it to staff", async () => {
+    const s = (await upload(pdf, "Ok.pdf", "Client R", "respond-pass-1")).body.share;
+    await call(unlock, "/x", { method: "POST", json: { token: s.token, password: "respond-pass-1" } });
+
+    expect((await respond(s.id, { kind: "maybe" })).status).toBe(400);
+    expect((await respond(s.id, { kind: "changes", comment: "   " })).status).toBe(400);
+
+    const ok = await respond(s.id, { kind: "approved" });
+    expect(ok.status).toBe(200);
+    expect((await listed(s.id)).decision).toMatchObject({ kind: "approved", at: clock });
+    expect((await call(viewDoc, `/api/view/doc?id=${s.id}`, { cookie: viewCookie() })).body.decision.kind).toBe("approved");
+
+    // a later answer replaces it; the comment is plain text, capped, and the view count survives
+    const long = `Move the haldi to the morning\u0007 ${"x".repeat(2000)}`;
+    expect((await respond(s.id, { kind: "changes", comment: long })).status).toBe(200);
+    const after = await listed(s.id);
+    expect(after.decision.kind).toBe("changes");
+    expect(after.decision.comment).toHaveLength(1000);
+    expect(after.decision.comment).not.toContain("\u0007");
+    expect(after.views).toBe(1);
+  }, 30_000);
+
+  it("only answers for that share, from this site, while the link is live", async () => {
+    const a = (await upload(pdf, "A2.pdf", "Client A", "password-a-2")).body.share;
+    const b = (await upload(pdf, "B2.pdf", "Client B", "password-b-2")).body.share;
+    expect((await respond(a.id, { kind: "approved" }, { cookie: "pb_view=nope" })).status).toBe(401);
+    await call(unlock, "/x", { method: "POST", json: { token: a.token, password: "password-a-2" } });
+    // a session for share A can't answer for share B
+    expect((await respond(b.id, { kind: "approved" })).status).toBe(401);
+    expect((await respond(a.id, { kind: "approved" }, { origin: "https://evil.test" })).status).toBe(403);
+    expect((await listed(b.id)).decision).toBeUndefined();
+
+    // revoked
+    const cookie = viewCookie();
+    await call(shares, `/api/shares?id=${a.id}`, { method: "DELETE", cookie: await signIn() });
+    expect((await respond(a.id, { kind: "approved" }, { cookie })).status).toBe(410);
+
+    // expired
+    const e = (await upload(pdf, "E2.pdf", "Client E", "expired-pass-2", "7")).body.share;
+    await call(unlock, "/x", { method: "POST", json: { token: e.token, password: "expired-pass-2" } });
+    const eCookie = viewCookie();
+    clock += 8 * 86400 * 1000;
+    const late = await respond(e.id, { kind: "approved" }, { cookie: eCookie });
+    expect([401, 410]).toContain(late.status);
+    expect((await listed(e.id)).decision).toBeUndefined();
   }, 30_000);
 });
 

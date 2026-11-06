@@ -96,6 +96,13 @@ export default function App() {
   };
 
   const open = store.list.find((p) => p.id === openId);
+  // the server's sharing session ended: sign in again, then come back here
+  const reauth = (back: AppRoute) => {
+    endSession();
+    setSession(null);
+    returnTo = back;
+    go("login");
+  };
   return (
     <AppearanceContext.Provider value={appearance}>
       <ConfigContext.Provider value={config}>
@@ -113,15 +120,11 @@ export default function App() {
         ) : route === "visualize" ? (
           <Visualize
             onBack={() => go("studio")}
-            onReauth={() => {
-              endSession();
-              setSession(null);
-              returnTo = "visualize";
-              go("login");
-            }}
+            onReauth={() => reauth("visualize")}
           />
         ) : open ? (
-          <Builder key={open.id} proposal={open} onChange={store.save} onClose={() => setOpenId(null)} />
+          // the open proposal survives the sign-in, so it reopens afterwards
+          <Builder key={open.id} proposal={open} onChange={store.save} onClose={() => setOpenId(null)} onReauth={() => reauth(route === "venues" ? "venues" : "studio")} />
         ) : route === "venues" ? (
           <Venues onBack={() => go("studio")} onStartProposal={(v) => startProposal({ venue: v.name, location: v.area })} />
         ) : (

@@ -160,6 +160,8 @@ export interface Proposal {
   statusAt?: string;
   /** when it was first marked sent (ISO); kept when it later becomes accepted or lost */
   sentAt?: string;
+  /** the latest Visualize Proposal share made from it with "Share with client" */
+  shareId?: string;
 }
 
 export type ProposalStatus = "draft" | "sent" | "accepted" | "lost";

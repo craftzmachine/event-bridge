@@ -35,7 +35,20 @@ export interface ShareRecord {
   createdBy: string;
   views: number;
   lastViewedAt?: number;
+  /** the Proposal Studio proposal it was shared from ("Share with client"); lets the Studio show the client's answer */
+  proposalId?: string;
+  /** the client's answer on the shared page; a later answer replaces an earlier one */
+  decision?: Decision;
 }
+
+export interface Decision {
+  kind: "approved" | "changes";
+  /** plain text, at most COMMENT_MAX characters */
+  comment?: string;
+  at: number;
+}
+
+export const COMMENT_MAX = 1000;
 
 const shareKey = (id: string) => `share:${id}`;
 const tokenKey = (d: Deps, token: string) => `share:tok:${keyedHash(d.env.sessionSecret, token)}`;
@@ -162,6 +175,9 @@ export async function shares(req: Request, d: Deps) {
   const check = validateUpload(file.name, data);
   if ("error" in check) throw new HttpError(415, check.error);
   const title = (String(form.get("title") ?? "").trim() || file.name.replace(/\.[^.]+$/, "")).slice(0, 160);
+  // an opaque id from the browser's proposal list; anything unexpected is simply not stored
+  const proposalId = String(form.get("proposalId") ?? "");
+  const linked = /^[A-Za-z0-9_-]{1,64}$/.test(proposalId) ? { proposalId } : {};
 
   let bundle: Buffer;
   let counts: Pick<ShareRecord, "pages" | "sheets">;
@@ -196,6 +212,7 @@ export async function shares(req: Request, d: Deps) {
     expiresAt: now + ttl * 1000,
     createdBy: email,
     views: 0,
+    ...linked,
   };
   await d.kv.set(shareKey(id), record);
   await d.kv.set(tokenKey(d, token), id, ttl);
@@ -237,13 +254,19 @@ export async function unlock(req: Request, d: Deps) {
 // decrypted bundles are reused while the same function instance stays warm
 const bundleCache = new Map<string, Buffer>();
 
-async function viewable(req: Request, d: Deps) {
+/** The share this viewer session may see right now: bound to that share, not expired, not revoked. */
+async function liveShare(req: Request, d: Deps) {
   const id = new URL(req.url).searchParams.get("id");
   if (!isId(id)) throw new HttpError(404, "This proposal link isn't valid.");
   const session = await requireViewer(req, d, id);
   const r = await d.kv.get<ShareRecord>(shareKey(id));
   if (!r) throw new HttpError(410, "This proposal is no longer available.", { reason: "gone" });
   if (r.expiresAt <= d.now()) throw new HttpError(410, "This proposal link has expired. Ask your planner for a new one.", { reason: "expired" });
+  return { id, r, session };
+}
+
+async function viewable(req: Request, d: Deps) {
+  const { id, r, session } = await liveShare(req, d);
   let data = bundleCache.get(id);
   if (!data) {
     const enc = await d.files.get(filePath(id, "view"));
@@ -265,6 +288,7 @@ export async function viewDoc(req: Request, d: Deps) {
     kind: r.kind,
     expiresAt: r.expiresAt,
     sessionEndsAt: Math.min(session.endsAt, r.expiresAt),
+    decision: r.decision ?? null,
     ...(h.kind === "pdf" ? { pages: h.pages.map(({ w, h: ht }) => ({ w, h: ht })) } : { grid: h.grid }),
   });
 }
@@ -276,6 +300,24 @@ export async function viewPage(req: Request, d: Deps) {
   const img = Number.isInteger(n) ? bundle.page(n) : null;
   if (!img) throw new HttpError(404, "That page doesn't exist.");
   return bytes(Buffer.from(img), "image/webp");
+}
+
+/** The client approves the proposal or asks for changes, from the shared page. Their planner sees it in the share list. */
+export async function viewRespond(req: Request, d: Deps) {
+  assertMethod(req, "POST");
+  assertSameOrigin(req);
+  await ipLimit(d, req, "respond");
+  const { id, r } = await liveShare(req, d);
+  const body = await readJson<{ kind: string; comment?: string }>(req);
+  if (body.kind !== "approved" && body.kind !== "changes") throw new HttpError(400, "Choose whether to approve the proposal or ask for changes.");
+  // plain text only: control characters (other than line breaks) are dropped, then it's trimmed and capped
+  const comment = String(body.comment ?? "").replace(/[\u0000-\u0009\u000b-\u001f\u007f]/g, "").trim().slice(0, COMMENT_MAX);
+  if (body.kind === "changes" && !comment) throw new HttpError(400, "Tell your planner what you'd like changed.");
+  const decision: Decision = { kind: body.kind, at: d.now(), ...(comment ? { comment } : {}) };
+  // re-read just before writing, so a view counted in between isn't lost
+  const latest = (await d.kv.get<ShareRecord>(shareKey(id))) ?? r;
+  await d.kv.set(shareKey(id), { ...latest, decision });
+  return json(200, { decision });
 }
 
 export async function viewLock(req: Request, d: Deps) {

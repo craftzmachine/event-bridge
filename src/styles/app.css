@@ -1409,3 +1409,32 @@ body::before {
 @media (max-width: 760px) {
   .backup-note-actions { width: 100%; justify-content: space-between; }
 }
+
+/* ---------- Visualize Proposal: the client's answer at the end of the shared proposal ---------- */
+.cv-respond {
+  position: relative; z-index: 3; width: min(720px, 100%); margin: 36px auto 0; padding: 26px 28px;
+  border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--card); text-align: center;
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+}
+.cv-respond h2 { margin: 0; font-size: clamp(24px, 3vw, 30px); }
+.cv-respond p { margin: 0; color: var(--ink-2); max-width: 52ch; }
+.cv-respond-comment { width: 100%; text-align: left; }
+/* the view-only mode turns selection off; typing a comment needs it back */
+.cv-respond textarea { width: 100%; -webkit-user-select: text; user-select: text; }
+.cv-respond-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 6px; }
+.cv-respond-done blockquote {
+  margin: 6px 0 0; padding: 10px 16px; border-left: 2px solid var(--gold); text-align: left;
+  color: var(--ink); white-space: pre-wrap; overflow-wrap: anywhere;
+}
+.cv-respond-done { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+@media (max-width: 760px) {
+  .cv-respond { padding: 20px 16px; margin-top: 24px; }
+  .cv-respond-actions { width: 100%; }
+  .cv-respond-actions > * { flex: 1 1 100%; }
+}
+
+/* ---------- The client's answer, on Visualize share rows and Studio cards ---------- */
+.client-answer { display: flex; flex-direction: column; gap: 2px; margin-top: 4px; font-size: 13px; color: var(--ink-2); }
+.client-answer.is-approved .client-answer-line { color: var(--gold-text); }
+.client-answer-comment { color: var(--ink); font-style: italic; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.share-btn { width: 100%; margin-top: 10px; }

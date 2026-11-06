@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Proposal, ProposalStatus } from "../types";
 import { useConfig } from "../config/context";
 import { downloadJson, isProposal, readBackupState, writeBackupState, type useProposals } from "../state/proposals";
@@ -6,7 +6,10 @@ import { backedUp, backupAge, backupDue, snoozed, type BackupState } from "../li
 import { computeTotals } from "../lib/totals";
 import { formatDate, formatDates, formatINRShort, safeFilePart, todayISO } from "../lib/format";
 import { eventDates, proposalTitle } from "../lib/proposal";
-import { matchesSearch, pipelineSummary, proposalStatus, statusLabel, STATUSES } from "../lib/status";
+import { matchesSearch, pipelineSummary, proposalStatus, statusLabel, statusPatch, STATUSES } from "../lib/status";
+import { clientAnswers, type Share } from "../lib/shares";
+import { api } from "../lib/api";
+import ClientAnswer from "../components/ClientAnswer";
 import Img from "../components/Img";
 import Ornament from "../components/Ornament";
 import SiteNav from "../components/SiteNav";
@@ -83,6 +86,19 @@ export default function Home({
     updateBackup(backedUp(Date.now()));
   };
   const remind = backupDue(backup, store.list.length, now.getTime());
+
+  // clients' answers on links made with "Share with client"; without the sharing service the cards just don't show them
+  const [shares, setShares] = useState<Share[]>([]);
+  const linked = store.list.some((p) => p.shareId);
+  useEffect(() => {
+    if (!linked) {
+      return;
+    }
+    api<{ shares: Share[] }>("shares")
+      .then((r) => setShares(r.shares))
+      .catch(() => {});
+  }, [linked]);
+  const answers = clientAnswers(store.list, shares);
 
   return (
     <div className="home">
@@ -200,9 +216,13 @@ export default function Home({
                         {statusLabel(proposalStatus(p))}
                         {p.statusAt && proposalStatus(p) !== "draft" && ` ${formatDate(todayISO(new Date(p.statusAt)))}`}
                       </span>
+                      {answers.get(p.id) && <ClientAnswer d={answers.get(p.id)!} />}
                     </span>
                   </button>
                   <div className="pcard-tools">
+                    {answers.get(p.id)?.kind === "approved" && proposalStatus(p) === "sent" && (
+                      <button className="link-btn" onClick={() => store.save({ ...p, ...statusPatch(p, "accepted") })}>Mark accepted</button>
+                    )}
                     <button className="link-btn" onClick={() => onOpen(store.duplicate(p).id)}>Duplicate</button>
                     <button className="link-btn" onClick={() => downloadJson(`Proposal_${safeFilePart(p.client.name)}.json`, p)}>Save file</button>
                     <button className="link-btn link-danger"

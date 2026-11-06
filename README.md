@@ -234,12 +234,15 @@ Share a finished proposal with a client as a private page instead of an attachme
 3. Choose a password (or tap **Generate**) and how long the link lasts: 7, 30 or 90 days.
 4. **Create private link** gives you the link and the password. Send them **separately**, for example the link by email and the password by WhatsApp.
 
-The list shows each share's status, views and when it was last opened. **Copy link** copies it again; **Revoke** ends access immediately and deletes the file.
+**Straight from Proposal Studio:** on the Review step, **Share with client** makes the PDF and the private link in one go, with the client's name, a title and a strong password filled in. The proposal is then marked **Sent** (unless it's already accepted or lost).
+
+The list shows each share's status, views and when it was last opened, and the client's answer. **Copy link** copies it again; **Revoke** ends access immediately and deletes the file.
 
 **For the client:** they open the link (or **Open a shared proposal** on the landing page), enter the password, and read it in the browser.
 - **PDF:** watermarked page images.
 - **Excel:** a read-only table with sheet tabs.
 - **Session:** lasts up to 2 hours, or 30 minutes idle. **Sign out** ends it.
+- **Their answer:** at the end of the proposal (or **Respond** in the top bar) they can **Approve proposal** or **Request changes** with a short note (up to 1,000 characters). A later answer replaces the earlier one. The team sees it in the Visualize list, and on the proposal's card in Proposal Studio when it was shared from there, which then offers **Mark accepted**.
 
 ### How it's protected
 

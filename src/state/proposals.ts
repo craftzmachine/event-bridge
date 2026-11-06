@@ -115,6 +115,7 @@ export function useProposals() {
         status: "draft",
         statusAt: undefined,
         sentAt: undefined,
+        shareId: undefined,
       };
       setList((l) => [copy, ...l]);
       return copy;

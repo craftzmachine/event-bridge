@@ -3,32 +3,9 @@ import { useConfig } from "../config/context";
 import { ApiError, api, upload } from "../lib/api";
 import AppearanceControls from "../components/AppearanceControls";
 import PasswordField from "../components/PasswordField";
-
-/** Mirrors server/visualize.ts: what staff may see of a share. */
-export interface Share {
-  id: string;
-  token: string;
-  client: string;
-  title: string;
-  kind: "pdf" | "xlsx";
-  fileName: string;
-  size: number;
-  pages?: number;
-  sheets?: number;
-  createdAt: number;
-  expiresAt: number;
-  createdBy: string;
-  views: number;
-  lastViewedAt?: number;
-  expired: boolean;
-}
-
-const MAX_BYTES = 4 * 1024 * 1024;
-const EXPIRY = [7, 30, 90];
-
-const shareLink = (token: string) => `${location.origin}${location.pathname}#/view/${token}`;
-const when = (t: number) => new Date(t).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
-const mb = (n: number) => (n < 1024 * 1024 ? `${Math.max(1, Math.round(n / 1024))} KB` : `${(n / 1024 / 1024).toFixed(1)} MB`);
+import ShareResult, { useCopy } from "../components/ShareResult";
+import { EXPIRY_DAYS as EXPIRY, fileSize as mb, generatePassword, MAX_SHARE_BYTES as MAX_BYTES, shareLink, shortDate as when, type Share } from "../lib/shares";
+import ClientAnswer from "../components/ClientAnswer";
 
 function checkFile(f: File): string {
   const ext = f.name.toLowerCase().split(".").pop();
@@ -37,13 +14,6 @@ function checkFile(f: File): string {
   if (!f.size) return "That file is empty.";
   if (f.size > MAX_BYTES) return `That file is ${mb(f.size)}; the limit is 4 MB. Try exporting a smaller PDF or removing large images.`;
   return "";
-}
-
-/** Easy to read aloud or type on a phone: no 0/O or 1/l/I. */
-function generatePassword() {
-  const abc = "ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
-  const s = Array.from(crypto.getRandomValues(new Uint32Array(12)), (n) => abc[n % abc.length]).join("");
-  return `${s.slice(0, 4)}-${s.slice(4, 8)}-${s.slice(8)}`;
 }
 
 type Access = "checking" | "ok" | "signin" | "setup" | "offline";
@@ -212,7 +182,7 @@ function UploadCard({ onCreated, onAuthError }: { onCreated: (s: Share) => void;
     if (fileRef.current) fileRef.current.value = "";
   }
 
-  if (done) return <ShareResult share={done.share} password={done.password} onAnother={reset} />;
+  if (done) return <ShareResult share={done.share} password={done.password} actions={<button className="btn-primary" onClick={reset}>Share another proposal</button>} />;
 
   const busy = progress !== null;
   const isPdf = file?.name.toLowerCase().endsWith(".pdf");
@@ -294,47 +264,6 @@ function UploadCard({ onCreated, onAuthError }: { onCreated: (s: Share) => void;
   );
 }
 
-function useCopy() {
-  const [copied, setCopied] = useState("");
-  const copy = async (what: string, text: string) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopied(what);
-      setTimeout(() => setCopied(""), 1800);
-    } catch {
-      setCopied("");
-    }
-  };
-  return { copied, copy };
-}
-
-function ShareResult({ share, password, onAnother }: { share: Share; password: string; onAnother: () => void }) {
-  const { copied, copy } = useCopy();
-  const link = shareLink(share.token);
-  return (
-    <section className="viz-card viz-result" aria-live="polite">
-      <p className="eyebrow">Link ready</p>
-      <h2>Shared with {share.client}</h2>
-      <p className="viz-result-note">
-        Send the link and the password <strong>separately</strong> — for example the link by email and the password by
-        WhatsApp or a call. The password can't be shown again later, so note it now.
-      </p>
-      <div className="viz-copy">
-        <span className="field-label">Link</span>
-        <code>{link}</code>
-        <button className="btn-ghost btn-sm" onClick={() => copy("link", link)}>{copied === "link" ? "Copied ✓" : "Copy link"}</button>
-      </div>
-      <div className="viz-copy">
-        <span className="field-label">Password</span>
-        <code>{password}</code>
-        <button className="btn-ghost btn-sm" onClick={() => copy("pw", password)}>{copied === "pw" ? "Copied ✓" : "Copy password"}</button>
-      </div>
-      <p className="hint">Active until {when(share.expiresAt)}. You can revoke it any time from the list.</p>
-      <button className="btn-primary" onClick={onAnother}>Share another proposal</button>
-    </section>
-  );
-}
-
 function ShareRow({ s, onDeleted, onError }: { s: Share; onDeleted: () => void; onError: (e: unknown) => ApiError }) {
   const { copied, copy } = useCopy();
   const [busy, setBusy] = useState(false);
@@ -360,6 +289,7 @@ function ShareRow({ s, onDeleted, onError }: { s: Share; onDeleted: () => void; 
           {s.kind === "pdf" ? `${s.pages} page${s.pages === 1 ? "" : "s"}` : `${s.sheets} sheet${s.sheets === 1 ? "" : "s"}`} · {s.views} view{s.views === 1 ? "" : "s"}
           {s.lastViewedAt ? ` · last opened ${when(s.lastViewedAt)}` : " · not opened yet"}
         </span>
+        {s.decision && <ClientAnswer d={s.decision} />}
       </div>
       <div className="viz-share-tools">
         {!s.expired && <button className="btn-ghost btn-sm" onClick={() => copy("link", shareLink(s.token))}>{copied ? "Copied ✓" : "Copy link"}</button>}

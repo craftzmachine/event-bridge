@@ -15,8 +15,20 @@ import ProposalPreview from "../components/ProposalPreview";
 import MoneyInput from "../components/MoneyInput";
 import AppearanceControls from "../components/AppearanceControls";
 import EventDatesField from "../components/EventDatesField";
+import ShareDialog from "../components/ShareDialog";
 
-export default function Builder({ proposal: p, onChange, onClose }: { proposal: Proposal; onChange: (p: Proposal) => void; onClose: () => void }) {
+export default function Builder({
+  proposal: p,
+  onChange,
+  onClose,
+  onReauth,
+}: {
+  proposal: Proposal;
+  onChange: (p: Proposal) => void;
+  onClose: () => void;
+  /** sharing found the server session gone: sign in again and come back */
+  onReauth: () => void;
+}) {
   const { catalog, brand } = useConfig();
   const occasionChosen = !!p.eventType && !!p.style;
   const [step, setStep] = useState(() => (!p.client.name ? 0 : !occasionChosen ? 1 : p.lines.length ? 3 : 2));
@@ -68,7 +80,7 @@ export default function Builder({ proposal: p, onChange, onClose }: { proposal: 
         {step === 0 && <ClientStep p={p} setClient={setClient} />}
         {step === 1 && <OccasionStep p={p} set={set} />}
         {step === 2 && <ElementsStep p={p} set={set} />}
-        {step === 3 && <ReviewStep p={p} set={set} />}
+        {step === 3 && <ReviewStep p={p} set={set} onReauth={onReauth} />}
       </main>
 
       <footer className="stepnav" ref={navRef}>
@@ -260,8 +272,9 @@ function ElementsStep({ p, set }: StepProps) {
   );
 }
 
-function ReviewStep({ p, set }: StepProps) {
+function ReviewStep({ p, set, onReauth }: StepProps & { onReauth: () => void }) {
   const { brand } = useConfig();
+  const [sharing, setSharing] = useState(false);
   const t = computeTotals(p, brand.gstPct);
   const suggestions = roundOffSuggestions(t.beforeRound);
   return (
@@ -320,6 +333,18 @@ function ReviewStep({ p, set }: StepProps) {
           </div>
         </div>
         <ExportButton p={p} wide />
+        <button className="btn-ghost share-btn" disabled={!p.lines.length} onClick={() => setSharing(true)}>
+          Share with client
+        </button>
+        {sharing && (
+          <ShareDialog
+            p={p}
+            onClose={() => setSharing(false)}
+            onReauth={onReauth}
+            // the client now has it: mark it sent (an accepted or lost proposal keeps its status)
+            onShared={(share) => set((cur) => ({ shareId: share.id, ...(proposalStatus(cur) === "draft" ? statusPatch(cur, "sent") : {}) }))}
+          />
+        )}
       </div>
       <ProposalPreview p={p} />
     </section>

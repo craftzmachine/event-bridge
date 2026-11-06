@@ -5,6 +5,9 @@ import { ApiError, api, formatRetry, pageBitmap } from "../lib/api";
 import { capturePlatform, isCaptureShortcut } from "../lib/capture";
 import PasswordField from "../components/PasswordField";
 import AppearanceControls from "../components/AppearanceControls";
+import { shortDate, type ShareDecision } from "../lib/shares";
+
+const COMMENT_MAX = 1000; // the server keeps the first 1,000 characters
 
 interface GridCell { v: string; b?: 1; i?: 1; fg?: string; bg?: string; al?: "left" | "center" | "right"; cs?: number; rs?: number; w?: 1 }
 interface GridSheet { name: string; cols: number[]; rows: { h?: number; cells: (GridCell | null)[] }[]; truncated?: 1 }
@@ -16,6 +19,8 @@ interface Doc {
   sessionEndsAt: number;
   pages?: { w: number; h: number }[];
   grid?: { sheets: GridSheet[] };
+  /** the client's earlier answer, if any */
+  decision?: ShareDecision | null;
 }
 
 type Phase = "link" | "gate" | "loading" | "view" | "gone" | "offline";
@@ -307,6 +312,7 @@ function Viewer({ doc, id, logo, company, onSignOut, onFail }: { doc: Doc; id: s
     navigator.clipboard?.writeText("Screen capture is blocked for this proposal.").catch(() => {});
   }, []);
   useViewOnly(root, blocked, onCapture, setAway);
+  const [decision, setDecision] = useState<ShareDecision | null>(doc.decision ?? null);
 
   const endsAt = new Date(doc.sessionEndsAt).toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit" });
   return (
@@ -326,6 +332,9 @@ function Viewer({ doc, id, logo, company, onSignOut, onFail }: { doc: Doc; id: s
             </div>
           )}
           <span className="cv-session hide-phone">View-only · session ends {endsAt}</span>
+          <button className="btn-ghost btn-sm" onClick={() => document.getElementById("cv-respond")?.scrollIntoView({ behavior: "smooth", block: "end" })}>
+            {decision?.kind === "approved" ? "Approved ✓" : "Respond"}
+          </button>
           <button className="btn-primary btn-sm" onClick={onSignOut}>Sign out</button>
         </div>
       </header>
@@ -350,6 +359,7 @@ function Viewer({ doc, id, logo, company, onSignOut, onFail }: { doc: Doc; id: s
           </>
         ) : null}
         <Watermark text={`${doc.client} · Confidential`} />
+        <Respond id={id} decision={decision} onAnswered={setDecision} onFail={onFail} />
       </main>
       {toast && <p className="cv-toast" role="status">{toast}</p>}
       {captured && (
@@ -373,6 +383,81 @@ function Viewer({ doc, id, logo, company, onSignOut, onFail }: { doc: Doc; id: s
       )}
       <div className="cv-print-block" aria-hidden>Printing is turned off for this proposal.</div>
     </div>
+  );
+}
+
+/**
+ * The end of the proposal: the client approves it or tells their planner what to change. The answer is saved
+ * on the server (POST /api/view/respond) and shown to the team in Visualize Proposal and Proposal Studio.
+ */
+function Respond({ id, decision, onAnswered, onFail }: { id: string; decision: ShareDecision | null; onAnswered: (d: ShareDecision) => void; onFail: (e: unknown) => void }) {
+  const [mode, setMode] = useState<"ask" | "changes">(decision?.kind === "changes" ? "changes" : "ask");
+  const [comment, setComment] = useState(decision?.comment ?? "");
+  const [editing, setEditing] = useState(!decision);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+  const [thanks, setThanks] = useState(false);
+
+  async function send(kind: ShareDecision["kind"]) {
+    if (kind === "changes" && !comment.trim()) return setErr("Tell your planner what you'd like changed.");
+    setBusy(true);
+    setErr("");
+    try {
+      const r = await api<{ decision: ShareDecision }>(`view/respond?id=${id}`, { json: { kind, comment: kind === "changes" ? comment.trim() : "" } });
+      onAnswered(r.decision);
+      setEditing(false);
+      setThanks(true);
+    } catch (ex) {
+      const e2 = ex as ApiError;
+      if (e2.status === 401 || e2.status === 410) onFail(ex);
+      else setErr(e2.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <section id="cv-respond" className="cv-respond" aria-labelledby="cv-respond-title">
+      {!editing && decision ? (
+        <div className="cv-respond-done" aria-live="polite">
+          <h2 id="cv-respond-title">{decision.kind === "approved" ? "You approved this proposal" : "You asked for changes"}</h2>
+          {thanks && <p>Thank you — your planner has been told.</p>}
+          {decision.comment && <blockquote>{decision.comment}</blockquote>}
+          <p className="hint">
+            Sent {shortDate(decision.at)}.{" "}
+            <button className="link-btn" onClick={() => { setEditing(true); setThanks(false); setMode(decision.kind === "changes" ? "changes" : "ask"); }}>
+              Change your answer
+            </button>
+          </p>
+        </div>
+      ) : (
+        <>
+          <h2 id="cv-respond-title">Happy with the proposal?</h2>
+          <p>Approve it, or tell your planner what you'd like changed. They'll be in touch either way.</p>
+          {mode === "changes" && (
+            <label className="field cv-respond-comment">
+              <span>What would you like changed?</span>
+              <textarea rows={4} maxLength={COMMENT_MAX} value={comment} onChange={(e) => setComment(e.target.value)} autoFocus disabled={busy} />
+              <small className="hint">{comment.length}/{COMMENT_MAX}</small>
+            </label>
+          )}
+          {err && <p className="error" role="alert">{err}</p>}
+          <div className="cv-respond-actions">
+            {mode === "ask" ? (
+              <>
+                <button className="btn-primary" onClick={() => send("approved")} disabled={busy}>{busy ? "Sending…" : "Approve proposal"}</button>
+                <button className="btn-ghost" onClick={() => setMode("changes")} disabled={busy}>Request changes</button>
+              </>
+            ) : (
+              <>
+                <button className="btn-primary" onClick={() => send("changes")} disabled={busy}>{busy ? "Sending…" : "Send to my planner"}</button>
+                <button className="btn-ghost" onClick={() => { setMode("ask"); setErr(""); }} disabled={busy}>Back</button>
+              </>
+            )}
+          </div>
+        </>
+      )}
+    </section>
   );
 }
 
