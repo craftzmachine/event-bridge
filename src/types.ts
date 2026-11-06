@@ -162,6 +162,8 @@ export interface Proposal {
   sentAt?: string;
   /** the latest Visualize Proposal share made from it with "Share with client" */
   shareId?: string;
+  /** the theme chosen for sharing it as a web page (a ThemeId); unset means the planner's current theme */
+  pageTheme?: string;
 }
 
 export type ProposalStatus = "draft" | "sent" | "accepted" | "lost";

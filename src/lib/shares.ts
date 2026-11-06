@@ -6,7 +6,7 @@ export interface Share {
   token: string;
   client: string;
   title: string;
-  kind: "pdf" | "xlsx";
+  kind: "pdf" | "xlsx" | "page";
   fileName: string;
   size: number;
   pages?: number;

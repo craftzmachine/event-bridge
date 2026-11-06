@@ -6,6 +6,8 @@ import { capturePlatform, isCaptureShortcut } from "../lib/capture";
 import PasswordField from "../components/PasswordField";
 import AppearanceControls from "../components/AppearanceControls";
 import { shortDate, type ShareDecision } from "../lib/shares";
+import type { PageSnapshot } from "../lib/proposalPage";
+import ProposalPage from "../components/ProposalPage";
 
 const COMMENT_MAX = 1000; // the server keeps the first 1,000 characters
 
@@ -14,11 +16,13 @@ interface GridSheet { name: string; cols: number[]; rows: { h?: number; cells: (
 interface Doc {
   client: string;
   title: string;
-  kind: "pdf" | "xlsx";
+  kind: "pdf" | "xlsx" | "page";
   expiresAt: number;
   sessionEndsAt: number;
   pages?: { w: number; h: number }[];
   grid?: { sheets: GridSheet[] };
+  /** a proposal shared as a web page */
+  page?: PageSnapshot;
   /** the client's earlier answer, if any */
   decision?: ShareDecision | null;
 }
@@ -316,7 +320,7 @@ function Viewer({ doc, id, logo, company, onSignOut, onFail }: { doc: Doc; id: s
 
   const endsAt = new Date(doc.sessionEndsAt).toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit" });
   return (
-    <div className={`cv-viewer ${captured || away ? "is-shielded" : ""}`} ref={root}>
+    <div className={`cv-viewer ${captured || away ? "is-shielded" : ""} ${doc.page ? "is-page" : ""}`} ref={root} data-page-theme={doc.page?.theme}>
       <header className="cv-bar">
         <img className="cv-bar-logo" src={logo} alt={company} />
         <div className="cv-bar-title">
@@ -345,6 +349,10 @@ function Viewer({ doc, id, logo, company, onSignOut, onFail }: { doc: Doc; id: s
             {doc.pages.map((p, n) => (
               <PageCanvas key={n} id={id} n={n} w={p.w} h={p.h} total={doc.pages!.length} onFail={onFail} />
             ))}
+          </div>
+        ) : doc.page ? (
+          <div className="cv-webpage">
+            <ProposalPage snapshot={doc.page} />
           </div>
         ) : doc.grid ? (
           <>

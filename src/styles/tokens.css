@@ -1,4 +1,6 @@
-:root {
+/* [data-page-theme] scopes a theme to one element (a proposal shared as a web page keeps the planner's theme) */
+:root,
+[data-page-theme] {
   /* default "Parinay" theme — drawn from the crest: antique gold on ivory and espresso */
   --paper: #fbf8f2;
   --paper-2: #f4eee3;
@@ -45,7 +47,7 @@
 }
 
 /* ---------- themes (set on <html data-theme="…">) ---------- */
-:root[data-theme="solarized-light"] {
+:root[data-theme="solarized-light"], [data-page-theme="solarized-light"] {
   --paper: #fdf6e3; --paper-2: #eee8d5; --card: #fffbee;
   --ink: #073642; --ink-2: #586e75; --stone: #839496; --taupe: #c9c2ab; --line: #e4ddc8;
   --gold: #b58900; --gold-text: #8a6900; --gold-light: #e0b740; --gold-soft: #f3e5b5; --gold-wash: #fbf1d4;
@@ -53,7 +55,7 @@
   --danger: #dc322f; --danger-soft: #fbe3dc; --danger-line: #f0b8ad; --danger-ink: #a3221f;
   color-scheme: light;
 }
-:root[data-theme="solarized-dark"] {
+:root[data-theme="solarized-dark"], [data-page-theme="solarized-dark"] {
   --paper: #002b36; --paper-2: #073642; --card: #06323e;
   --ink: #eee8d5; --ink-2: #93a1a1; --stone: #839496; --taupe: #2c5662; --line: #0f4655;
   --gold: #b58900; --gold-text: #d9a915; --gold-light: #e8c25a; --gold-soft: #1f3d33; --gold-wash: #0a3a3a;
@@ -61,7 +63,7 @@
   --danger: #dc322f; --danger-soft: #3a1f22; --danger-line: #6a2b2b; --danger-ink: #f3a49b;
   color-scheme: dark;
 }
-:root[data-theme="nord"] {
+:root[data-theme="nord"], [data-page-theme="nord"] {
   --paper: #2e3440; --paper-2: #3b4252; --card: #353c4a;
   --ink: #eceff4; --ink-2: #d8dee9; --stone: #a3acbd; --taupe: #4c566a; --line: #434c5e;
   --gold: #88c0d0; --gold-text: #8fbcbb; --gold-light: #88c0d0; --gold-soft: #3b4a5a; --gold-wash: #354452;
@@ -69,7 +71,7 @@
   --danger: #bf616a; --danger-soft: #45343b; --danger-line: #6b4550; --danger-ink: #f0b6bc;
   color-scheme: dark;
 }
-:root[data-theme="dark"] {
+:root[data-theme="dark"], [data-page-theme="dark"] {
   /* warm, espresso-based dark taken from the crest rather than a neutral grey */
   --paper: #16110d; --paper-2: #1f1813; --card: #1c1611;
   --ink: #f0e7d9; --ink-2: #c7baa6; --stone: #9a8c78; --taupe: #4a3d2f; --line: #30271e;
@@ -78,7 +80,7 @@
   --danger: #e5675a; --danger-soft: #3a1d1a; --danger-line: #6b2c26; --danger-ink: #f6b0a8;
   color-scheme: dark;
 }
-:root[data-theme="white"] {
+:root[data-theme="white"], [data-page-theme="white"] {
   --paper: #ffffff; --paper-2: #f4f4f5; --card: #ffffff;
   --ink: #111111; --ink-2: #4a4a4a; --stone: #7a7a7a; --taupe: #d4d4d8; --line: #e6e6e8;
   --gold: #9a7b45; --gold-text: #7a5f30; --gold-light: #d8c39a; --gold-soft: #f4efe6; --gold-wash: #faf8f3;
@@ -87,15 +89,15 @@
   color-scheme: light;
 }
 
-:root[data-theme="solarized-dark"],
-:root[data-theme="nord"],
-:root[data-theme="dark"] {
+:root[data-theme="solarized-dark"], [data-page-theme="solarized-dark"],
+:root[data-theme="nord"], [data-page-theme="nord"],
+:root[data-theme="dark"], [data-page-theme="dark"] {
   --primary: var(--gold);
   --on-primary: var(--on-accent);
   --primary-accent: var(--on-accent);
 }
-:root[data-theme="solarized-light"],
-:root[data-theme="white"] {
+:root[data-theme="solarized-light"], [data-page-theme="solarized-light"],
+:root[data-theme="white"], [data-page-theme="white"] {
   --on-primary: var(--on-espresso);
 }
 

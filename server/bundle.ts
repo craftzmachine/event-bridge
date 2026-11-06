@@ -6,13 +6,16 @@ import type { Grid } from "./render/xlsx.js";
  */
 export type BundleHeader =
   | { kind: "pdf"; pages: { w: number; h: number; len: number }[] }
-  | { kind: "xlsx"; grid: Grid };
+  | { kind: "xlsx"; grid: Grid }
+  /** a proposal shared as a web page: the cleaned snapshot from page.ts, rendered by the client's browser */
+  | { kind: "page"; page: Record<string, unknown> };
 
 export function packPdf(pages: { w: number; h: number; image: Buffer }[]) {
   return pack({ kind: "pdf", pages: pages.map((p) => ({ w: p.w, h: p.h, len: p.image.length })) }, pages.map((p) => p.image));
 }
 
 export const packXlsx = (grid: Grid) => pack({ kind: "xlsx", grid }, []);
+export const packPage = (page: Record<string, unknown>) => pack({ kind: "page", page }, []);
 
 function pack(header: BundleHeader, parts: Buffer[]) {
   const head = Buffer.from(JSON.stringify(header));

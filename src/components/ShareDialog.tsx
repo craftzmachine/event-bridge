@@ -1,25 +1,39 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
+import { createPortal } from "react-dom";
 import type { Proposal } from "../types";
 import { useConfig } from "../config/context";
 import { ApiError, upload } from "../lib/api";
 import { exportFileName, proposalTitle } from "../lib/proposal";
 import { EXPIRY_DAYS, fileSize, generatePassword, MAX_SHARE_BYTES, type Share } from "../lib/shares";
+import { pageSnapshot, PAGE_MAX_BYTES, snapshotBytes } from "../lib/proposalPage";
+import type { ThemeId } from "../state/appearance";
 import PasswordField from "./PasswordField";
 import ShareResult from "./ShareResult";
+import ThemePicker from "./ThemePicker";
 
-type Phase = { at: "form" } | { at: "busy"; step: "pdf" | "upload"; progress: number } | { at: "done"; share: Share; password: string };
+/** "page": a themed web page rendered from the proposal; "pdf": page images of the proposal's PDF */
+export type ShareFormat = "page" | "pdf";
+
+type Phase = { at: "form" } | { at: "busy"; step: "prepare" | "upload"; progress: number } | { at: "done"; share: Share; password: string };
 
 /**
- * "Share with client" from the Review step: builds the proposal's PDF in the browser and creates a private,
- * password-protected Visualize Proposal link in one go — no separate export and upload.
+ * "Share with client" from the Review step: creates a private, password-protected Visualize Proposal link in one
+ * go. As a web page it sends a snapshot of the proposal in the chosen theme; as a PDF it builds the PDF in the
+ * browser and uploads it. No separate export and upload either way.
  */
 export default function ShareDialog({
   p,
+  format,
+  theme,
+  onTheme,
   onShared,
   onClose,
   onReauth,
 }: {
   p: Proposal;
+  format: ShareFormat;
+  theme: ThemeId;
+  onTheme: (t: ThemeId) => void;
   onShared: (share: Share) => void;
   onClose: () => void;
   onReauth: () => void;
@@ -45,14 +59,23 @@ export default function ShareDialog({
     if (!client.trim()) return setErr({ text: "Enter the client's name — it's shown on the shared page and in the watermark." });
     if (password.length < 8) return setErr({ text: "Use a password of at least 8 characters, or generate one." });
     try {
-      setPhase({ at: "busy", step: "pdf", progress: 0 });
-      const blob = await (await import("../lib/exportPdf")).buildPdfBlob(p, catalog, brand);
-      if (blob.size > MAX_SHARE_BYTES) {
-        setPhase({ at: "form" });
-        return setErr({ text: `The PDF is ${fileSize(blob.size)}; sharing allows up to 4 MB. Export it and share a smaller file from Visualize Proposal.` });
-      }
+      setPhase({ at: "busy", step: "prepare", progress: 0 });
       const form = new FormData();
-      form.set("file", new File([blob], exportFileName(p, catalog, "pdf"), { type: "application/pdf" }));
+      if (format === "page") {
+        const snapshot = pageSnapshot(p, catalog, theme);
+        if (snapshotBytes(snapshot) > PAGE_MAX_BYTES) {
+          setPhase({ at: "form" });
+          return setErr({ text: "This proposal is too large to share as a web page. Share it as a PDF instead." });
+        }
+        form.set("page", JSON.stringify(snapshot));
+      } else {
+        const blob = await (await import("../lib/exportPdf")).buildPdfBlob(p, catalog, brand);
+        if (blob.size > MAX_SHARE_BYTES) {
+          setPhase({ at: "form" });
+          return setErr({ text: `The PDF is ${fileSize(blob.size)}; sharing allows up to 4 MB. Export it and share a smaller file from Visualize Proposal.` });
+        }
+        form.set("file", new File([blob], exportFileName(p, catalog, "pdf"), { type: "application/pdf" }));
+      }
       form.set("client", client.trim());
       form.set("title", title.trim());
       form.set("password", password);
@@ -72,10 +95,11 @@ export default function ShareDialog({
   }
 
   const busy = phase.at === "busy";
-  return (
+  // rendered at the top of <body>, so the Review side card's styles don't reach it
+  return createPortal(
     <dialog ref={ref} className="venue-dialog xi share-dialog" onClose={onClose} onCancel={(e) => busy && e.preventDefault()} aria-labelledby="share-title">
       <header className="xi-head">
-        <h2 id="share-title">{phase.at === "done" ? "Ready to send" : "Share with client"}</h2>
+        <h2 id="share-title">{phase.at === "done" ? "Ready to send" : format === "page" ? "Share as a web page" : "Share the PDF"}</h2>
         <button className="vd-close" onClick={onClose} aria-label="Close" disabled={busy}>×</button>
       </header>
 
@@ -86,9 +110,11 @@ export default function ShareDialog({
       ) : (
         <form className="xi-body" onSubmit={submit} noValidate>
           <p className="xi-lede">
-            The proposal is turned into a PDF and shared as a private page: your client opens the link, enters the password and
-            reads it in the browser, watermarked with their name. Nothing to download.
+            {format === "page"
+              ? "Your client opens the link, enters the password and reads the proposal as a page in the theme below, watermarked with their name. They can approve it or ask for changes there."
+              : "The proposal is turned into a PDF and shared as a private page: your client opens the link, enters the password and reads it in the browser, watermarked with their name. Nothing to download."}
           </p>
+          {format === "page" && <ThemePicker value={theme} onChange={onTheme} disabled={busy} />}
           <label className="field">
             <span>Client name</span>
             <input value={client} maxLength={120} onChange={(e) => setClient(e.target.value)} disabled={busy} />
@@ -129,11 +155,12 @@ export default function ShareDialog({
           <div className="xi-actions">
             <button type="button" className="btn-ghost" onClick={onClose} disabled={busy}>Cancel</button>
             <button type="submit" className="btn-primary" disabled={busy}>
-              {phase.at !== "busy" ? "Create private link" : phase.step === "pdf" ? "Making the PDF…" : phase.progress < 1 ? `Uploading… ${Math.round(phase.progress * 100)}%` : "Preparing the viewer…"}
+              {phase.at !== "busy" ? "Create private link" : phase.step === "prepare" ? (format === "page" ? "Preparing the page…" : "Making the PDF…") : phase.progress < 1 ? `Uploading… ${Math.round(phase.progress * 100)}%` : "Preparing the viewer…"}
             </button>
           </div>
         </form>
       )}
-    </dialog>
+    </dialog>,
+    document.body,
   );
 }

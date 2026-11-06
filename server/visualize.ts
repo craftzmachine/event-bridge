@@ -4,7 +4,11 @@ import { DUMMY_HASH, hashPassword, normaliseEmail, verifyPassword } from "./pass
 import { HttpError, assertMethod, assertSameOrigin, bytes, clientIp, json, readJson, sleep } from "./http.js";
 import { endStaffSession, endViewSession, requireStaff, requireViewer, staffEmail, startStaffSession, startViewSession } from "./sessions.js";
 import { validateUpload, type FileKind } from "./files.js";
-import { packPdf, packXlsx, unpack } from "./bundle.js";
+import { packPage, packPdf, packXlsx, unpack } from "./bundle.js";
+import { validatePage } from "./page.js";
+
+/** an uploaded PDF or Excel file, or a proposal shared as a web page */
+export type ShareKind = FileKind | "page";
 import { renderPdf } from "./render/pdf.js";
 import { renderXlsx } from "./render/xlsx.js";
 
@@ -24,7 +28,7 @@ export interface ShareRecord {
   tokenEnc: string;
   client: string;
   title: string;
-  kind: FileKind;
+  kind: ShareKind;
   fileName: string;
   size: number;
   pages?: number;
@@ -163,33 +167,51 @@ export async function shares(req: Request, d: Deps) {
     throw new HttpError(400, "The upload didn't arrive complete. Please try again.");
   }
   const file = form.get("file");
+  // a web page share sends the proposal snapshot as a "page" field instead of a file
+  const pageText = form.get("page");
+  const isPage = !(file instanceof File) && typeof pageText === "string";
   const client = String(form.get("client") ?? "").trim().slice(0, 120);
   const password = String(form.get("password") ?? "");
   const days = Number(form.get("expiryDays"));
-  if (!(file instanceof File)) throw new HttpError(400, "Choose a PDF or Excel file to share.");
+  if (!(file instanceof File) && !isPage) throw new HttpError(400, "Choose a PDF or Excel file to share.");
   if (!client) throw new HttpError(400, "Enter the client's name.");
   if (password.length < 8 || password.length > 128) throw new HttpError(400, "The password must be 8–128 characters.");
   if (!EXPIRY_DAYS.includes(days as (typeof EXPIRY_DAYS)[number])) throw new HttpError(400, "Choose how long the link stays active.");
-
-  const data = Buffer.from(await file.arrayBuffer());
-  const check = validateUpload(file.name, data);
-  if ("error" in check) throw new HttpError(415, check.error);
-  const title = (String(form.get("title") ?? "").trim() || file.name.replace(/\.[^.]+$/, "")).slice(0, 160);
   // an opaque id from the browser's proposal list; anything unexpected is simply not stored
   const proposalId = String(form.get("proposalId") ?? "");
   const linked = /^[A-Za-z0-9_-]{1,64}$/.test(proposalId) ? { proposalId } : {};
 
+  let data: Buffer;
   let bundle: Buffer;
-  let counts: Pick<ShareRecord, "pages" | "sheets">;
-  if (check.kind === "pdf") {
-    const pdf = await renderPdf(data, `${client} · Confidential`);
-    bundle = packPdf(pdf.pages);
-    counts = { pages: pdf.pages.length };
+  let kind: ShareKind;
+  let fileName: string;
+  let counts: Pick<ShareRecord, "pages" | "sheets"> = {};
+  if (isPage) {
+    const check = validatePage(pageText as string);
+    if ("error" in check) throw new HttpError(415, check.error);
+    // the cleaned snapshot is both what's kept and what the client is shown
+    data = Buffer.from(JSON.stringify(check.page));
+    bundle = packPage(check.page);
+    kind = "page";
+    fileName = "Web page";
   } else {
-    const grid = await renderXlsx(data);
-    bundle = packXlsx(grid);
-    counts = { sheets: grid.sheets.length };
+    const f = file as File;
+    data = Buffer.from(await f.arrayBuffer());
+    const check = validateUpload(f.name, data);
+    if ("error" in check) throw new HttpError(415, check.error);
+    kind = check.kind;
+    fileName = f.name.slice(0, 200);
+    if (check.kind === "pdf") {
+      const pdf = await renderPdf(data, `${client} · Confidential`);
+      bundle = packPdf(pdf.pages);
+      counts = { pages: pdf.pages.length };
+    } else {
+      const grid = await renderXlsx(data);
+      bundle = packXlsx(grid);
+      counts = { sheets: grid.sheets.length };
+    }
   }
+  const title = (String(form.get("title") ?? "").trim() || (isPage ? "Proposal" : fileName.replace(/\.[^.]+$/, ""))).slice(0, 160);
 
   const id = randomId();
   const token = randomToken();
@@ -203,8 +225,8 @@ export async function shares(req: Request, d: Deps) {
     tokenEnc: encrypt(d.env.fileKey, Buffer.from(token)).toString("base64"),
     client,
     title,
-    kind: check.kind,
-    fileName: file.name.slice(0, 200),
+    kind,
+    fileName,
     size: data.length,
     ...counts,
     passwordHash: await hashPassword(password),
@@ -289,7 +311,7 @@ export async function viewDoc(req: Request, d: Deps) {
     expiresAt: r.expiresAt,
     sessionEndsAt: Math.min(session.endsAt, r.expiresAt),
     decision: r.decision ?? null,
-    ...(h.kind === "pdf" ? { pages: h.pages.map(({ w, h: ht }) => ({ w, h: ht })) } : { grid: h.grid }),
+    ...(h.kind === "pdf" ? { pages: h.pages.map(({ w, h: ht }) => ({ w, h: ht })) } : h.kind === "xlsx" ? { grid: h.grid } : { page: h.page }),
   });
 }
 

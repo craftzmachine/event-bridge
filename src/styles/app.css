@@ -1438,3 +1438,68 @@ body::before {
 .client-answer.is-approved .client-answer-line { color: var(--gold-text); }
 .client-answer-comment { color: var(--ink); font-style: italic; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 .share-btn { width: 100%; margin-top: 10px; }
+
+/* ---------- Review step: PDF or web page, page themes, the page preview, and the shared page ---------- */
+.deliver { gap: 12px; }
+.deliver-choice { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.deliver-choice label {
+  position: relative; display: flex; flex-direction: column; gap: 4px; padding: 12px 14px; cursor: pointer;
+  border: 1px solid var(--line); border-radius: var(--r); background: var(--paper-2);
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.deliver-choice label:hover { border-color: var(--taupe); }
+.deliver-choice label.is-on { border-color: var(--gold); background: var(--gold-wash); }
+.deliver-choice label:has(input:focus-visible) { outline: 2px solid var(--gold); outline-offset: 2px; }
+.deliver-choice input { position: absolute; opacity: 0; pointer-events: none; }
+.deliver-choice strong { font-family: var(--serif); font-size: 20px; font-weight: 500; color: var(--ink); }
+.deliver-choice small { font-size: 12.5px; line-height: 1.45; color: var(--ink-2); }
+/* the Review side column is narrow: one action per row, the main one last, next to the Excel export */
+.deliver-actions { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; }
+.deliver-actions > * { min-width: 0; }
+
+.theme-pick { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; border: 0; min-width: 0; }
+.theme-pick legend { width: 100%; margin-bottom: 6px; padding: 0; font-size: 13px; color: var(--ink-2); }
+.theme-pick label {
+  display: inline-flex; align-items: center; gap: 8px; min-height: 34px; padding: 0 12px 0 8px; cursor: pointer;
+  border: 1px solid var(--line); border-radius: 999px; background: var(--card); font-size: 12.5px; color: var(--ink-2);
+}
+.theme-pick label.is-on { border-color: var(--gold); color: var(--ink); background: var(--gold-wash); }
+.theme-pick label:has(input:focus-visible) { outline: 2px solid var(--gold); outline-offset: 2px; }
+.theme-pick input { position: absolute; opacity: 0; pointer-events: none; }
+.theme-pick-chips { display: inline-flex; }
+.theme-pick-chips i { width: 12px; height: 12px; border-radius: 50%; border: 1px solid color-mix(in srgb, var(--ink) 18%, transparent); }
+.theme-pick-chips i + i { margin-left: -4px; }
+.theme-pick:disabled label { cursor: default; opacity: 0.6; }
+
+.export-ic-web { background: var(--gold); color: var(--on-accent); }
+
+/* the full-screen preview: the page exactly as the client sees it, with its own theme */
+.page-preview { width: min(1180px, calc(100vw - 32px)); max-height: calc(100dvh - 32px); padding: 0; }
+.page-preview-head { flex-wrap: wrap; align-items: flex-start; gap: 12px 24px; padding-right: 64px; }
+.page-preview-head h2 { margin: 0; }
+.page-preview-head p { margin: 4px 0 0; font-size: 14px; color: var(--ink-2); max-width: 52ch; }
+.page-preview-head > .vd-close { position: absolute; top: 18px; right: 20px; }
+.page-preview-tools { display: flex; flex-direction: column; gap: 10px; align-items: flex-end; margin-left: auto; }
+.page-preview-tools .theme-pick legend { text-align: right; }
+.page-preview-tools .theme-pick { justify-content: flex-end; }
+.page-preview-actions { display: flex; gap: 8px; }
+.page-preview-body { padding: 0; }
+
+/* a proposal page: the theme set on it (data-page-theme) paints its own background */
+.proposal-page { background: var(--paper); color: var(--ink); padding: clamp(16px, 4vw, 44px); }
+.proposal-page .preview { max-width: 980px; margin: 0 auto; }
+.cv-viewer.is-page { background: var(--paper); color: var(--ink); }
+.cv-webpage { position: relative; z-index: 1; }
+.cv-webpage .proposal-page { padding: 0; background: none; }
+.cv-viewer.is-page .cv-stage { padding-top: 24px; }
+
+@media (max-width: 760px) {
+  .page-preview { width: 100vw; max-width: 100vw; max-height: 100dvh; border-radius: 0; }
+  /* on a phone the tools take most of the screen, so they scroll away with the page */
+  .page-preview-head { position: static; padding: 16px 56px 12px 16px; }
+  .page-preview-tools { align-items: stretch; margin-left: 0; width: 100%; }
+  .page-preview-tools .theme-pick { justify-content: flex-start; }
+  .page-preview-tools .theme-pick legend { text-align: left; }
+  .page-preview-actions > * { flex: 1; }
+  .proposal-page { padding: 10px; }
+}

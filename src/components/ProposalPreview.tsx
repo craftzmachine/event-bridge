@@ -27,7 +27,8 @@ function Row({ l, i }: { l: Line; i: number }) {
   );
 }
 
-export default function ProposalPreview({ p }: { p: Proposal }) {
+/** `dated`: the date shown as "Dated …" (a shared page keeps the day it was shared); defaults to today. */
+export default function ProposalPreview({ p, dated }: { p: Proposal; dated?: string }) {
   const { catalog, brand } = useConfig();
   const t = computeTotals(p, brand.gstPct);
   const type = catalog.eventTypes.find((x) => x.id === p.eventType);
@@ -56,7 +57,7 @@ export default function ProposalPreview({ p }: { p: Proposal }) {
         <div><span>{eventDatesLine(p).label}</span><strong>{eventDatesLine(p).text}</strong></div>
         <div><span>Venue</span><strong>{p.client.venue || "To Be Confirmed"}</strong><small>{p.client.location}</small></div>
       </section>
-      <p className="pv-ref">Quotation ref: {p.ref || "To Be Assigned"} · Dated {formatDate(todayISO())}</p>
+      <p className="pv-ref">Quotation ref: {p.ref || "To Be Assigned"} · Dated {formatDate(dated || todayISO())}</p>
 
       <p className="eyebrow">Scope of work</p>
       <h3 className="pv-h">Elements &amp; Investment</h3>

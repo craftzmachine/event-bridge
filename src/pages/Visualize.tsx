@@ -280,13 +280,13 @@ function ShareRow({ s, onDeleted, onError }: { s: Share; onDeleted: () => void; 
   }
   return (
     <li className={`viz-share ${s.expired ? "is-expired" : ""}`}>
-      <span className={`export-ic ${s.kind === "pdf" ? "export-ic-pdf" : ""}`} aria-hidden>{s.kind === "pdf" ? "PDF" : "XLS"}</span>
+      <span className={`export-ic ${s.kind === "pdf" ? "export-ic-pdf" : s.kind === "page" ? "export-ic-web" : ""}`} aria-hidden>{s.kind === "pdf" ? "PDF" : s.kind === "page" ? "WEB" : "XLS"}</span>
       <div className="viz-share-body">
         <strong>{s.client}</strong>
         <span className="viz-share-title">{s.title}</span>
         <span className="viz-share-meta">
           <span className={`viz-chip ${s.expired ? "is-off" : ""}`}>{s.expired ? "Expired" : `Active until ${when(s.expiresAt)}`}</span>
-          {s.kind === "pdf" ? `${s.pages} page${s.pages === 1 ? "" : "s"}` : `${s.sheets} sheet${s.sheets === 1 ? "" : "s"}`} · {s.views} view{s.views === 1 ? "" : "s"}
+          {s.kind === "pdf" ? `${s.pages} page${s.pages === 1 ? "" : "s"}` : s.kind === "page" ? "Web page" : `${s.sheets} sheet${s.sheets === 1 ? "" : "s"}`} · {s.views} view{s.views === 1 ? "" : "s"}
           {s.lastViewedAt ? ` · last opened ${when(s.lastViewedAt)}` : " · not opened yet"}
         </span>
         {s.decision && <ClientAnswer d={s.decision} />}

@@ -30,7 +30,11 @@ Opening a feature app while signed out goes to sign-in first, then straight back
 3. **Occasion**: any event type (Wedding, Engagement, Reception) with any ceremony style (Hindu, Christian, Muslim).
 4. **Elements**: browse the catalogue, filtered to the chosen occasion (or show everything), search, and filter by category. For each selected element, set qty, rate (or *as per actuals*), notes for the client, optional upgrades, and whether it is an *additional option*. You can also reorder elements or add a custom one-off line.
 5. **Review**: a branded preview of the proposal as the client will see it. Adjust co-ordination %, round off the Grand Total (one-click suggestions) and edit notes and terms.
-6. **Export**: **Export to Excel**, or use the ▾ menu next to it to download a **PDF**.
+6. **Send it**: under **Send it to the client**, choose how the client gets it:
+   - **Web page**: a private, password-protected page in a theme you pick (any of the site's six). **Preview page** shows it full-screen exactly as the client will see it, and you can switch themes there. **Create private link** gives you the link and password. On the page, the client can approve the proposal or ask for changes.
+   - **PDF**: **Download PDF** saves the A4 document to send yourself; **Share as private link** puts it behind a link and password instead.
+
+   **Export to Excel** (with a PDF in its ▾ menu) is still there for the editable workbook.
 
 **Venue Directory**: **Venue Directory** in the menu, or **Browse venues** in Proposal Studio, opens a searchable list of 29 hotels, resorts, convention centres and wedding halls in and around Thiruvananthapuram. Each venue shows its name, area, type, star rating, photo and event spaces. You can search, filter by type (hotels, resorts, event venues) and area, open the full details, or **Start proposal** to begin a quotation with the venue already filled in. The Venue field in step 1 also suggests directory venues.
 
@@ -242,7 +246,7 @@ Share a finished proposal with a client as a private page instead of an attachme
 3. Choose a password (or tap **Generate**) and how long the link lasts: 7, 30 or 90 days.
 4. **Create private link** gives you the link and the password. Send them **separately**, for example the link by email and the password by WhatsApp.
 
-**Straight from Proposal Studio:** on the Review step, **Share with client** makes the PDF and the private link in one go, with the client's name, a title and a strong password filled in. The proposal is then marked **Sent** (unless it's already accepted or lost).
+**Straight from Proposal Studio:** on the Review step, **Send it to the client** creates the private link in one go, as a **web page** in the theme you chose or as the **PDF**, with the client's name, a title and a strong password filled in. The proposal is then marked **Sent** (unless it's already accepted or lost). A web page shows in the list as **WEB**. The client sees it in your chosen theme, whatever theme their browser uses for the rest of the site.
 
 The list shows each share's status, views and when it was last opened, and the client's answer. **Copy link** copies it again; **Revoke** ends access immediately and deletes the file.
 

@@ -6,6 +6,7 @@ import type { Brand, Catalog } from "../src/types";
 import { buildPdfDoc } from "../src/lib/exportPdf";
 import { buildWorkbook } from "../src/lib/exportXlsx";
 import { lineFromElement, newProposal } from "../src/state/proposals";
+import { pageSnapshot } from "../src/lib/proposalPage";
 import { decrypt, encrypt } from "./crypto";
 import { hashPassword, verifyPassword } from "./passwords";
 import { memoryFiles, memoryKv, redisCredentials } from "./store";
@@ -308,6 +309,61 @@ describe("share with client and the client's answer", () => {
     const late = await respond(e.id, { kind: "approved" }, { cookie: eCookie });
     expect([401, 410]).toContain(late.status);
     expect((await listed(e.id)).decision).toBeUndefined();
+  }, 30_000);
+});
+
+describe("sharing a proposal as a web page", () => {
+  async function sharePage(page: unknown, password = "page-pass-123") {
+    const form = new FormData();
+    form.set("page", typeof page === "string" ? page : JSON.stringify(page));
+    form.set("client", "Ms. Priya Nair");
+    form.set("password", password);
+    form.set("expiryDays", "30");
+    return call(shares, "/api/shares", { method: "POST", form, cookie: await signIn() });
+  }
+  const snapshot = () => {
+    const p = proposal();
+    p.lines[0].upgrades = [
+      { id: "kept", name: "Floral arch", price: 25000, mode: "include" },
+      { id: "internal", name: "Internal option", price: 999, mode: "off" },
+    ];
+    const s = pageSnapshot(p, catalog, "nord", "2026-11-06");
+    return s;
+  };
+
+  it("stores a cleaned snapshot, encrypted, and shows it only after the password", async () => {
+    const s = snapshot() as unknown as { catalog: { ceremonyStyles: { image: string }[] }; proposal: { lines: { upgrades: unknown[] }[] } };
+    s.catalog.ceremonyStyles[0].image = "javascript:alert(1)";
+    // an upgrade sneaked in with mode "off" is dropped by the server too
+    s.proposal.lines[1].upgrades = [{ id: "x", name: "Not offered", price: 1, mode: "off" }];
+    const up = await sharePage(s);
+    expect(up.status).toBe(201);
+    const share = up.body.share;
+    expect(share).toMatchObject({ kind: "page", fileName: "Web page", title: "Proposal" });
+    expect((await d.files.get(`shares/${share.id}/view.bin`))!.includes("Priya")).toBe(false);
+
+    expect((await call(viewDoc, `/api/view/doc?id=${share.id}`)).status).toBe(401);
+    await call(unlock, "/x", { method: "POST", json: { token: share.token, password: "page-pass-123" } });
+    const doc = await call(viewDoc, `/api/view/doc?id=${share.id}`, { cookie: viewCookie() });
+    expect(doc.status).toBe(200);
+    expect(doc.body.kind).toBe("page");
+    const page = doc.body.page;
+    expect(page).toMatchObject({ v: 1, theme: "nord", dated: "2026-11-06" });
+    expect(page.proposal.client.name).toBe("Ms. Priya Nair");
+    expect(page.proposal.lines[0].upgrades.map((u: { id: string }) => u.id)).toEqual(["kept"]);
+    expect(page.proposal.lines[1].upgrades).toEqual([]);
+    expect(page.catalog.ceremonyStyles[0].image).toBe("");
+    expect(JSON.stringify(page)).not.toMatch(/Internal option|Not offered|javascript:/);
+    // no page images for a web page
+    expect((await call(viewPage, `/api/view/page?id=${share.id}&n=0`, { cookie: viewCookie() })).status).toBe(404);
+  }, 30_000);
+
+  it("refuses an unknown theme, a broken or foreign snapshot, and an oversized one", async () => {
+    const s = snapshot();
+    expect((await sharePage({ ...s, theme: "neon" })).status).toBe(415);
+    expect((await sharePage("{not json")).status).toBe(415);
+    expect((await sharePage({ hello: "world" })).status).toBe(415);
+    expect((await sharePage({ ...s, proposal: { ...s.proposal, notes: "x".repeat(300 * 1024) } })).status).toBe(415);
   }, 30_000);
 });
 

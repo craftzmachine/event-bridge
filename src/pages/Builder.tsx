@@ -15,7 +15,10 @@ import ProposalPreview from "../components/ProposalPreview";
 import MoneyInput from "../components/MoneyInput";
 import AppearanceControls from "../components/AppearanceControls";
 import EventDatesField from "../components/EventDatesField";
-import ShareDialog from "../components/ShareDialog";
+import ShareDialog, { type ShareFormat } from "../components/ShareDialog";
+import PagePreview from "../components/PagePreview";
+import ThemePicker from "../components/ThemePicker";
+import { THEMES, useAppearance, type ThemeId } from "../state/appearance";
 
 export default function Builder({
   proposal: p,
@@ -272,9 +275,87 @@ function ElementsStep({ p, set }: StepProps) {
   );
 }
 
+/**
+ * How the client gets it: a PDF document, or a web page in a chosen theme behind a private link.
+ * Either can be shared as a private link; the PDF can also be downloaded and sent another way.
+ */
+function Deliver({ p, set, onReauth }: StepProps & { onReauth: () => void }) {
+  const { catalog, brand } = useConfig();
+  const { theme: siteTheme } = useAppearance();
+  const [format, setFormat] = useState<ShareFormat>("page");
+  const [open, setOpen] = useState<"" | "preview" | "share">("");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+  // the page keeps the theme picked for it last time, else the one the planner is using
+  const theme: ThemeId = THEMES.some((t) => t.id === p.pageTheme) ? (p.pageTheme as ThemeId) : siteTheme;
+  const setTheme = (t: ThemeId) => set({ pageTheme: t });
+  const empty = !p.lines.length;
+
+  const downloadPdf = async () => {
+    setBusy(true);
+    setErr("");
+    try {
+      await (await import("../lib/exportPdf")).downloadPdf(p, catalog, brand);
+    } catch (e) {
+      setErr(`Export failed: ${(e as Error).message}`);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="side-card deliver">
+      <h3 id="deliver-title">Send it to the client</h3>
+      <div className="deliver-choice" role="radiogroup" aria-labelledby="deliver-title">
+        {(
+          [
+            { id: "page", label: "Web page", text: "A private page in your chosen theme. Clients can approve it or ask for changes." },
+            { id: "pdf", label: "PDF", text: "A print-ready A4 file to download, or share behind a link." },
+          ] as const
+        ).map((o) => (
+          <label key={o.id} className={format === o.id ? "is-on" : ""}>
+            <input type="radio" name="deliver" value={o.id} checked={format === o.id} onChange={() => setFormat(o.id)} />
+            <strong>{o.label}</strong>
+            <small>{o.text}</small>
+          </label>
+        ))}
+      </div>
+      {format === "page" ? (
+        <>
+          <ThemePicker value={theme} onChange={setTheme} />
+          <div className="deliver-actions">
+            <button className="btn-ghost" disabled={empty} onClick={() => setOpen("preview")}>Preview page</button>
+            <button className="btn-primary" disabled={empty} onClick={() => setOpen("share")}>Create private link</button>
+          </div>
+        </>
+      ) : (
+        <div className="deliver-actions">
+          <button className="btn-ghost" disabled={empty || busy} onClick={downloadPdf}>{busy ? "Preparing PDF…" : "Download PDF"}</button>
+          <button className="btn-primary" disabled={empty} onClick={() => setOpen("share")}>Share as private link</button>
+        </div>
+      )}
+      {empty && <p className="hint">Add elements first.</p>}
+      {err && <p className="error" role="alert">{err}</p>}
+
+      {open === "preview" && <PagePreview p={p} theme={theme} onTheme={setTheme} onClose={() => setOpen("")} onShare={() => setOpen("share")} />}
+      {open === "share" && (
+        <ShareDialog
+          p={p}
+          format={format}
+          theme={theme}
+          onTheme={setTheme}
+          onClose={() => setOpen("")}
+          onReauth={onReauth}
+          // the client now has it: mark it sent (an accepted or lost proposal keeps its status)
+          onShared={(share) => set((cur) => ({ shareId: share.id, ...(proposalStatus(cur) === "draft" ? statusPatch(cur, "sent") : {}) }))}
+        />
+      )}
+    </div>
+  );
+}
+
 function ReviewStep({ p, set, onReauth }: StepProps & { onReauth: () => void }) {
   const { brand } = useConfig();
-  const [sharing, setSharing] = useState(false);
   const t = computeTotals(p, brand.gstPct);
   const suggestions = roundOffSuggestions(t.beforeRound);
   return (
@@ -332,19 +413,8 @@ function ReviewStep({ p, set, onReauth }: StepProps & { onReauth: () => void }) 
             <button className="chip chip-muted" onClick={() => set({ terms: [...brand.terms] })}>Reset to standard</button>
           </div>
         </div>
+        <Deliver p={p} set={set} onReauth={onReauth} />
         <ExportButton p={p} wide />
-        <button className="btn-ghost share-btn" disabled={!p.lines.length} onClick={() => setSharing(true)}>
-          Share with client
-        </button>
-        {sharing && (
-          <ShareDialog
-            p={p}
-            onClose={() => setSharing(false)}
-            onReauth={onReauth}
-            // the client now has it: mark it sent (an accepted or lost proposal keeps its status)
-            onShared={(share) => set((cur) => ({ shareId: share.id, ...(proposalStatus(cur) === "draft" ? statusPatch(cur, "sent") : {}) }))}
-          />
-        )}
       </div>
       <ProposalPreview p={p} />
     </section>
