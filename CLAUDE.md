@@ -53,6 +53,18 @@ Photos must show the actual venue and be licensed for commercial use: CC BY, CC 
 
 **Persistence** (`src/state/proposals.ts`): all proposals live in `localStorage` under `proposal-builder.proposals.v1`, written on every change via `useProposals()`. JSON export/import is the only way to move them between devices. Changing the `Proposal` shape needs migration-tolerant reads, since old drafts persist.
 
+**Excel → proposal** (`src/lib/excelImport.ts`, `src/lib/readWorkbook.ts`, `src/components/ExcelImport.tsx`).
+- **The converter is pure.** `convertWorkbook(grid, ctx, answers)` works on plain cell grids, so `excelImport.test.ts` runs it in Node. It returns:
+  - `error` for a file it can't convert
+  - `questions`: the ones still open; some only appear after an earlier answer
+  - `ready`: a `Proposal` plus a report of each value's source cell
+- **It never fills in a value.** Anything missing, unclear or contradictory becomes a question; keep it that way.
+- **Answers:** keyed by question id (`qty:<sheet>!<row>`, `category:<section>`, …). A "decide later" choice is `""`, and `SKIP` leaves a row out.
+- **Reader:** `readWorkbook` uses ExcelJS and is `await import`ed by the dialog, like the exports. Merged cells keep only their top-left value, and formulas give their cached result.
+- **`.xls`** (OLE) is recognised and explained, not read. Adding SheetJS in `readWorkbook` is the only change needed for it.
+- **Saving:** creating goes through `store.importMany`, the same path as a JSON import.
+- **Round trip:** a test converts a `buildWorkbook` export back to the same proposal. If you change the export's layout or labels, keep that test passing.
+
 **Quotation references** (`src/lib/quoteRef.ts`) are `YYYYDDMM-ABC` (year, *day*, *month*, 3 random capitals) and must be unique per device. `newProposal(brand, takenRefs)` and `duplicate` generate them; `ensureUniqueRefs` runs on load and import to backfill empty refs (dated from `createdAt`) and replace collisions. The ref is read-only in the UI.
 
 **Event dates.** `client.dates` holds every date (sorted), and `client.date` mirrors the first so older drafts and file names keep working.

@@ -8,6 +8,7 @@ import { eventDates, proposalTitle } from "../lib/proposal";
 import Img from "../components/Img";
 import Ornament from "../components/Ornament";
 import SiteNav from "../components/SiteNav";
+import ExcelImport from "../components/ExcelImport";
 import { SITE } from "../site";
 import heroPhoto from "../assets/AMU02986.webp";
 
@@ -33,9 +34,19 @@ export default function Home({
   const { catalog, brand } = useConfig();
   const fileRef = useRef<HTMLInputElement>(null);
   const [msg, setMsg] = useState("");
+  // null = closed; { file: null } = open and asking for a file
+  const [excel, setExcel] = useState<{ file: File | null } | null>(null);
+  const isExcel = (f: File) => /.(xlsx|xls|xlsm)$/i.test(f.name);
 
   async function onImport(files: FileList | null) {
     if (!files?.length) return;
+    // an Excel file goes through the Excel conversion, which asks questions and shows a preview
+    const excelFile = Array.from(files).find(isExcel);
+    if (excelFile) {
+      setExcel({ file: excelFile });
+      if (fileRef.current) fileRef.current.value = "";
+      return;
+    }
     try {
       const items: Proposal[] = [];
       for (const f of Array.from(files)) {
@@ -75,15 +86,30 @@ export default function Home({
         <div className="home-bar">
           <h2>Your proposals</h2>
           <div className="home-actions">
+            <button className="btn-ghost" onClick={() => setExcel({ file: null })}>From Excel</button>
             <button className="btn-ghost" onClick={() => fileRef.current?.click()}>Import</button>
             <button className="btn-ghost" disabled={!store.list.length}
               onClick={() => downloadJson(`Proposals_backup_${todayISO()}.json`, store.list)}>
               Back up all
             </button>
-            <input ref={fileRef} type="file" accept="application/json,.json" multiple hidden onChange={(e) => onImport(e.target.files)} />
+            <input ref={fileRef} type="file" accept="application/json,.json,.xlsx,.xls" multiple hidden onChange={(e) => onImport(e.target.files)} />
           </div>
         </div>
         {msg && <p className="toast" role="status">{msg}</p>}
+        {excel && (
+          <ExcelImport
+            file={excel.file}
+            takenRefs={store.refs}
+            onClose={() => setExcel(null)}
+            onCreate={(p) => {
+              // the same path as importing a JSON backup, so the proposal is stored like any other
+              store.importMany([p]);
+              setExcel(null);
+              setMsg(`Created a proposal for ${p.client.name || "the client"} from Excel.`);
+              onOpen(p.id);
+            }}
+          />
+        )}
         {sorted.length === 0 ? (
           <div className="empty-state">
             <p>No proposals yet. Start one above — drafts are saved on this device as you work.</p>

@@ -40,6 +40,32 @@ Opening a feature app while signed out goes to sign-in first, then straight back
 
 Drafts save automatically in the browser on each device. Use **Save file** / **Back up all** on the home page to move proposals between devices, and **Import** to load them. Clearing the browser's site data deletes that device's drafts, so back up regularly.
 
+### Create a proposal from Excel
+
+**From Excel** on the Proposal Studio home page (or an `.xlsx` chosen with **Import**) turns an estimate spreadsheet into a new proposal.
+
+- **What it reads.**
+  - **Items table:** a header row with an item column (Element, Item, Description or Particulars) and at least one of Qty, Rate or Amount; Unit, Notes and Category columns are used when present.
+  - **Client details above the table,** as label and value: Client, Contact, Event (e.g. "Hindu Wedding"), Event date(s), Venue, Location, Quotation ref.
+  - **Section rows** (a heading with no figures) set the category of the items under them.
+  - **Also read:** the co-ordination %, a Grand Total, notes under the table, and a Terms sheet. Items on an "Additional Options" sheet become additional options.
+  - **Round trip:** files exported from Proposal Studio convert back unchanged.
+- **Nothing is invented.** Anything missing, unclear or contradictory becomes a question, asked only when needed:
+  - the client's name, if missing
+  - the event type and ceremony style, if the file doesn't name one clearly (or "decide later")
+  - the event date, if it can't be read, or could be read two ways (03/04/2027)
+  - a catalogue category for sections or items that don't match one
+  - items with only an amount: a lump sum (1 × the amount), or enter each quantity
+  - a missing quantity or rate (the rate can be "as per actuals")
+  - when quantity × rate disagrees with the amount, which one is right
+  - rows with figures but no item name: name them or leave them out
+  - the co-ordination % and terms, if the file has none
+  - whether to keep a quoted Grand Total that differs from the calculated one
+  - which sheet to use, if more than one has items
+- **Preview.** Before anything is saved, the dialog shows every value with the cell it came from (or "Your answer"), what wasn't in the file, rows left out, and things to check, such as the file's own total differing from the items. **Create proposal** saves it like an imported one and opens it; **Save as JSON** downloads it in the backup format instead.
+- **Files it can't use** get a plain explanation: damaged, empty, password-protected, over 10 MB, not an Excel file, or no items table.
+- **Old `.xls` files** (Excel 97–2003) can't be read yet: save them as `.xlsx` in Excel first. Reading them would need the SheetJS library.
+
 It works on phones, tablets and laptops. On smaller screens the selection becomes a bottom drawer.
 
 ## Run
