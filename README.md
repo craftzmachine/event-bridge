@@ -45,7 +45,7 @@ Opening a feature app while signed out goes to sign-in first, then straight back
 
 Duplicating a proposal starts the copy as a draft.
 
-Drafts save automatically in the browser on each device. Use **Save file** / **Back up all** on the home page to move proposals between devices, and **Import** to load them. Clearing the browser's site data deletes that device's drafts, so back up regularly.
+Drafts save automatically in the browser on each device. Use **Save file** / **Back up all** on the home page to move proposals between devices, and **Import** to load them. Clearing the browser's site data deletes that device's drafts, so back up regularly. If there has been no **Back up all** on a device for 7 days (or ever), the home page shows a reminder with **Back up now**; **Remind me later** hides it for 3 days. Saving a single proposal's file doesn't count as a full backup.
 It works on phones, tablets and laptops. On smaller screens the selection becomes a bottom drawer.
 
 ### Create a proposal from Excel

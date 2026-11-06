@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import type { Brand, CatalogElement, Line, Proposal } from "../types";
 import { generateQuoteRef, QUOTE_REF_PATTERN } from "../lib/quoteRef";
+import type { BackupState } from "../lib/backup";
 
 const KEY = "proposal-builder.proposals.v1";
 
@@ -139,4 +140,24 @@ export function downloadJson(name: string, data: unknown) {
   a.download = name;
   a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
+
+const BACKUP_KEY = "event-bridge.last-backup.v1";
+
+/** When "Back up all" last ran and any "Remind me later", kept per device. */
+export function readBackupState(): BackupState {
+  try {
+    const s = JSON.parse(localStorage.getItem(BACKUP_KEY) ?? "null") as BackupState | null;
+    return s && typeof s === "object" ? { at: Number(s.at) || undefined, snoozedUntil: Number(s.snoozedUntil) || undefined } : {};
+  } catch {
+    return {};
+  }
+}
+
+export function writeBackupState(s: BackupState) {
+  try {
+    localStorage.setItem(BACKUP_KEY, JSON.stringify(s));
+  } catch {
+    /* blocked storage: the reminder comes back next visit */
+  }
 }

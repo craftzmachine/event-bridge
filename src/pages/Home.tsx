@@ -1,7 +1,8 @@
 import { useRef, useState } from "react";
 import type { Proposal, ProposalStatus } from "../types";
 import { useConfig } from "../config/context";
-import { downloadJson, isProposal, type useProposals } from "../state/proposals";
+import { downloadJson, isProposal, readBackupState, writeBackupState, type useProposals } from "../state/proposals";
+import { backedUp, backupAge, backupDue, snoozed, type BackupState } from "../lib/backup";
 import { computeTotals } from "../lib/totals";
 import { formatDate, formatDates, formatINRShort, safeFilePart, todayISO } from "../lib/format";
 import { eventDates, proposalTitle } from "../lib/proposal";
@@ -72,6 +73,17 @@ export default function Home({
   const summary = pipelineSummary(store.list, brand.gstPct, now);
   const month = now.toLocaleString("en-GB", { month: "long" });
 
+  const [backup, setBackup] = useState<BackupState>(readBackupState);
+  const updateBackup = (s: BackupState) => {
+    writeBackupState(s);
+    setBackup(s);
+  };
+  const backUpAll = () => {
+    downloadJson(`Proposals_backup_${todayISO()}.json`, store.list);
+    updateBackup(backedUp(Date.now()));
+  };
+  const remind = backupDue(backup, store.list.length, now.getTime());
+
   return (
     <div className="home">
       <header className="home-hero">
@@ -96,13 +108,24 @@ export default function Home({
           <div className="home-actions">
             <button className="btn-ghost" onClick={() => setExcel({ file: null })}>From Excel</button>
             <button className="btn-ghost" onClick={() => fileRef.current?.click()}>Import</button>
-            <button className="btn-ghost" disabled={!store.list.length}
-              onClick={() => downloadJson(`Proposals_backup_${todayISO()}.json`, store.list)}>
+            <button className="btn-ghost" disabled={!store.list.length} onClick={backUpAll}>
               Back up all
             </button>
             <input ref={fileRef} type="file" accept="application/json,.json,.xlsx,.xls" multiple hidden onChange={(e) => onImport(e.target.files)} />
           </div>
         </div>
+        {remind && (
+          <aside className="backup-note" aria-label="Backup reminder">
+            <p>
+              <strong>Your proposals are saved only in this browser.</strong> {backupAge(backup, now.getTime())}. Back them up so a cleared
+              browser or a new phone doesn't lose them.
+            </p>
+            <div className="backup-note-actions">
+              <button className="btn-gold" onClick={backUpAll}>Back up now</button>
+              <button className="link-btn" onClick={() => updateBackup(snoozed(backup, Date.now()))}>Remind me later</button>
+            </div>
+          </aside>
+        )}
         {msg && <p className="toast" role="status">{msg}</p>}
         {excel && (
           <ExcelImport
