@@ -39,6 +39,7 @@ Opening a feature app while signed out goes to sign-in first, then straight back
 **Themes and fonts**: the theme button switches between Parinay, Solarized Light, Solarized Dark, Nord, Dark and White. **Dark** is the default for everyone (themes picked before this change were reset to Dark once); after that, a theme someone picks is kept. The **Aa** button cycles the font between Classic, Sans Serif and Mono. Both apply across the whole app and are remembered on each device.
 
 Drafts save automatically in the browser on each device. Use **Save file** / **Back up all** on the home page to move proposals between devices, and **Import** to load them. Clearing the browser's site data deletes that device's drafts, so back up regularly.
+It works on phones, tablets and laptops. On smaller screens the selection becomes a bottom drawer.
 
 ### Create a proposal from Excel
 
@@ -66,7 +67,6 @@ Drafts save automatically in the browser on each device. Use **Save file** / **B
 - **Files it can't use** get a plain explanation: damaged, empty, password-protected, over 10 MB, not an Excel file, or no items table.
 - **Old `.xls` files** (Excel 97–2003) can't be read yet: save them as `.xlsx` in Excel first. Reading them would need the SheetJS library.
 
-It works on phones, tablets and laptops. On smaller screens the selection becomes a bottom drawer.
 
 ## Run
 
@@ -75,7 +75,7 @@ Requires Node 18+.
 ```bash
 npm install
 npm run dev        # http://localhost:5173
-npm test           # totals, config, sign-in, exports, references, venues, Visualize Proposal security
+npm test           # totals, sign-in, exports, Excel import, references, event dates, venues, screen capture, Visualize Proposal security
 npm run build      # static site in dist/
 npm run preview    # serve the production build locally (http://localhost:4173)
 ```
@@ -179,9 +179,11 @@ All 29 venues were researched online on 4 November 2026, using official sites fi
 
 ### Logo and look
 
-The gold crest at `public/images/parinay-logo-gold.png` appears on the sign-in page, home page, top bar, proposal preview, and the Excel and PDF files. To replace it, swap the file, or point `logo` in `brand.json` at a new transparent PNG. The default palette and fonts (antique gold on ivory and espresso; Cinzel, Cormorant Garamond, Pinyon Script), the five alternative themes and the Sans/Mono font modes are all defined in `src/styles/tokens.css`.
+The gold crest at `public/images/parinay-logo-gold.png` appears on the sign-in page, home page, top bar, proposal preview, and the Excel and PDF files. To replace it, swap the file, or point `logo` in `brand.json` at a new transparent PNG. The six themes (Dark, the default, and Parinay's antique gold on ivory and espresso among them), the fonts (Cinzel, Cormorant Garamond, Pinyon Script) and the Sans/Mono font modes are all defined in `src/styles/tokens.css`.
 
-The couple photo at `src/assets/_JKN4027.webp` is the site's background, softly tinted to match the current theme, and the landing page's hero image. To use a different photo, replace that file and keep the same name, or change both references: `url(...)` in the "Site background photo" block at the end of `src/styles/app.css`, and the import at the top of `src/pages/Landing.tsx`. Then rebuild. A landscape WebP or JPEG under about 200 KB keeps pages fast.
+The couple photo at `src/assets/_JKN4027.webp` is the site's background, softly tinted to match the current theme, and the landing page's hero image. To use a different photo, replace that file and keep the same name, or change all three references: the two `url(...)`s in `src/styles/app.css` (the "Site background photo" block and the "Refinement" block), and the import at the top of `src/pages/Landing.tsx`. Then rebuild. A landscape WebP or JPEG under about 200 KB keeps pages fast.
+
+The team's own photos in `src/assets/` appear elsewhere: the seaside mandap (`AMU02986.webp`) behind the Proposal Studio heading, the jasmine canopy (`AMU02965.webp`) beside the sign-in form, and the post box (`J_J09260.webp`) in the landing page's Visualize Proposal section. Two of them carry the photographer's credit in the image, so don't crop them.
 
 ### Images
 
@@ -281,14 +283,14 @@ Until step 3 is done, Visualize says it isn't set up, and sign-in keeps using th
 |---|---|
 | `public/config/` | `catalog.json`, `brand.json` and `venues.json`: offerings, branding and venue directory, editable without a rebuild |
 | `public/images/` | logo, favicon, your own photos |
-| `src/assets/` | the site background and landing photo, bundled into the build |
+| `src/assets/` | the site background and landing photo, and the team photos used on the Proposal Studio home, sign-in and landing pages, bundled into the build |
 | `src/site.ts` | the site's name (Event Bridge) and tagline |
-| `src/pages/` | `Landing` (Event Bridge's public entry), `Login`, `Home` (Proposal Studio's saved proposals), `Builder` (the four-step wizard), `Venues` (Venue Directory), `Visualize` (staff sharing), `ClientView` (the client's password gate and viewer) |
+| `src/pages/` | `Landing` (Event Bridge's public entry), `Login`, `Home` (Proposal Studio's saved proposals, import and **From Excel**), `Builder` (the four-step wizard), `Venues` (Venue Directory), `Visualize` (staff sharing), `ClientView` (the client's password gate and viewer) |
 | `api/` | Vercel Functions for Visualize Proposal: staff sign-in, shares, client viewing |
 | `server/` | the code behind them: sessions, rate limits, encryption, storage, PDF and Excel rendering, and their tests |
 | `scripts/` | `visualize-setup.mjs`: generates the secrets and hashes staff passwords |
-| `src/components/` | the main menu (`SiteNav`), preview, element cards, line editor, totals panel and other UI pieces |
-| `src/lib/` | totals, ₹ formatting, Excel and PDF export, quotation references, venue search |
+| `src/components/` | the main menu (`SiteNav`), the Excel import dialog (`ExcelImport`), preview, element cards, line editor, totals panel and other UI pieces |
+| `src/lib/` | totals, ₹ formatting, Excel and PDF export, Excel import, quotation references, venue search, the Visualize API client and screen-capture handling |
 | `src/state/` | saved proposals, theme and font preference |
 | `src/auth/` | allow-listed accounts and the 12-hour session |
 | `src/config/` | loading and validating the JSON config |
