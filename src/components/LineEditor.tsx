@@ -2,6 +2,7 @@ import type { Line, UpgradeMode } from "../types";
 import { lineAmount } from "../lib/totals";
 import { formatINR } from "../lib/format";
 import MoneyInput from "./MoneyInput";
+import { guestQty } from "../lib/guests";
 
 const MODES: { id: UpgradeMode; label: string }[] = [
   { id: "off", label: "No" },
@@ -17,7 +18,10 @@ export default function LineEditor({
   onChange,
   onRemove,
   onMove,
+  guests = null,
 }: {
+  /** the proposal's guest count, for lines priced per guest */
+  guests?: number | null;
   line: Line;
   index: number;
   expanded: boolean;
@@ -54,8 +58,9 @@ export default function LineEditor({
           <div className="line-grid">
             <label className="field">
               <span>Qty</span>
+              {/* typing a quantity takes the line off the guest count */}
               <input type="number" min={0} step="any" inputMode="decimal" value={line.qty}
-                onChange={(e) => set({ qty: Math.max(0, Number(e.target.value) || 0) })} />
+                onChange={(e) => set({ qty: Math.max(0, Number(e.target.value) || 0), perGuest: undefined })} />
             </label>
             <label className="field">
               <span>Unit</span>
@@ -73,6 +78,24 @@ export default function LineEditor({
           {line.rate !== null && (
             <button className="link-btn" onClick={() => set({ rate: null })}>Bill as per actuals instead</button>
           )}
+          <div className="per-guest">
+            <label className="check">
+              <input type="checkbox" checked={!!line.perGuest} disabled={!guests}
+                onChange={(e) => set(e.target.checked ? { perGuest: 1, qty: guestQty(guests ?? 0, 1) } : { perGuest: undefined })} />
+              <span>{guests ? `Follow the guest count (${guests.toLocaleString("en-IN")})` : "Follow the guest count (add it in step one)"}</span>
+            </label>
+            {line.perGuest && guests ? (
+              <label className="field per-guest-factor">
+                <span>Per guest</span>
+                <input type="number" min={0.01} step="any" inputMode="decimal" value={line.perGuest}
+                  onChange={(e) => {
+                    const f = Math.max(0.01, Number(e.target.value) || 0.01);
+                    set({ perGuest: f, qty: guestQty(guests, f) });
+                  }} />
+                <small className="hint">{line.perGuest} × {guests.toLocaleString("en-IN")} guests = {guestQty(guests, line.perGuest)}</small>
+              </label>
+            ) : null}
+          </div>
           <label className="field">
             <span>Notes for the client</span>
             <textarea rows={2} value={line.notes} placeholder="e.g. jasmine and marigold, ivory drapes"

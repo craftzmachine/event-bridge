@@ -30,6 +30,8 @@ export interface CatalogElement {
   ceremonyStyles: string[];
   upgrades?: CatalogUpgrade[];
   image?: string;
+  /** priced per guest: the quantity is the guest count × this (e.g. 1 chair per guest, 0.1 tables) */
+  perGuest?: number;
 }
 
 export interface Catalog {
@@ -55,6 +57,10 @@ export interface Brand {
   gstPct: number;
   colors: { ink: string; accent: string; soft: string; line: string };
   terms: string[];
+  /** the standard payment milestones; when missing, 70% at booking and the balance before the event */
+  paymentPlan?: { label: string; pct: number; when: "booking" | "before-event" }[];
+  /** days before the first event date that a "before-event" milestone falls due (default 7) */
+  balanceDueDays?: number;
 }
 
 export interface VenueSpace {
@@ -129,6 +135,41 @@ export interface Line {
   /** true = additional option, not part of the Grand Total */
   optional: boolean;
   upgrades: LineUpgrade[];
+  /** the function (Proposal.functions id) it belongs to; none = the first function, or no functions at all */
+  fn?: string;
+  /** while set, qty follows the guest count: ⌈guests × perGuest⌉ */
+  perGuest?: number;
+  /** internal cost of the whole line (qty included); never shown to clients or exported */
+  cost?: number | null;
+}
+
+/** One function of a multi-function celebration: Haldi, Mehendi, Muhurtham, Reception… */
+export interface EventFunction {
+  id: string;
+  label: string;
+  /** YYYY-MM-DD, one of client.dates, or "" for not yet fixed */
+  date: string;
+}
+
+export type PaymentMethod = "upi" | "bank" | "cheque" | "cash" | "card";
+
+export interface Milestone {
+  id: string;
+  label: string;
+  /** share of the total including GST */
+  pct: number;
+  /** YYYY-MM-DD, or "" when it can't be dated yet */
+  due: string;
+}
+
+export interface Payment {
+  id: string;
+  date: string;
+  amount: number;
+  method: PaymentMethod;
+  reference?: string;
+  note?: string;
+  receiptNo: string;
 }
 
 export interface Proposal {
@@ -144,6 +185,10 @@ export interface Proposal {
     dates?: string[];
     venue: string;
     location: string;
+    /** expected guests; per-guest lines follow it */
+    guests?: number | null;
+    /** the family's budget for the whole proposal (compared with the Grand Total) */
+    budget?: number | null;
   };
   ref: string;
   eventType: string | null;
@@ -164,6 +209,10 @@ export interface Proposal {
   shareId?: string;
   /** the theme chosen for sharing it as a web page (a ThemeId); unset means the planner's current theme */
   pageTheme?: string;
+  /** functions of a multi-function celebration; none = one list, as before */
+  functions?: EventFunction[];
+  /** the payment plan and what has been received; unset = the standard plan, nothing received */
+  payments?: { plan?: Milestone[]; received: Payment[] };
 }
 
 export type ProposalStatus = "draft" | "sent" | "accepted" | "lost";

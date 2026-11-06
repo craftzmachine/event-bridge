@@ -39,6 +39,7 @@ export function lineFromElement(e: CatalogElement): Line {
     notes: "",
     optional: false,
     upgrades: (e.upgrades ?? []).map((u) => ({ ...u, mode: "off" as const })),
+    ...(e.perGuest ? { perGuest: e.perGuest } : {}),
   };
 }
 

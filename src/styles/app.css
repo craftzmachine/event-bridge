@@ -1503,3 +1503,31 @@ body::before {
   .page-preview-actions > * { flex: 1; }
   .proposal-page { padding: 10px; }
 }
+
+/* ---------- Budget meter, guest count and capacity notice (Builder) ---------- */
+.notice {
+  margin: 0; padding: 10px 14px; border-radius: var(--r-sm); font-size: 13.5px; line-height: 1.5;
+  border: 1px solid color-mix(in srgb, var(--gold) 50%, transparent); background: var(--gold-wash); color: var(--ink);
+}
+.review-side > .notice { margin-bottom: 4px; }
+.budget { display: flex; flex-direction: column; gap: 6px; margin-top: 6px; padding-top: 12px; border-top: 1px solid var(--line); }
+.budget.is-compact { margin-top: 12px; }
+.budget-head { display: flex; justify-content: space-between; align-items: baseline; font-size: 13px; color: var(--ink-2); }
+.budget-head strong { font-variant-numeric: tabular-nums; color: var(--ink); }
+.budget-bar { height: 6px; border-radius: 999px; background: var(--paper-2); overflow: hidden; }
+.budget-bar span { display: block; height: 100%; border-radius: inherit; background: var(--gold); transition: width 0.3s ease; }
+.budget.is-near .budget-bar span { background: var(--gold-text); }
+.budget.is-over .budget-bar span { background: var(--danger); }
+.budget-msg { margin: 0; font-size: 13px; color: var(--ink-2); }
+.budget.is-over .budget-msg { color: var(--danger-ink); font-weight: 500; }
+.budget-swaps ul { list-style: none; margin: 6px 0 0; padding: 0; display: grid; gap: 8px; }
+.budget-swaps li { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 13px; color: var(--ink-2); }
+.budget-swaps li strong { color: var(--ink); font-weight: 500; }
+.budget-swaps li small { display: block; color: var(--stone); font-size: 12px; }
+.budget-swaps .btn-sm { flex: none; }
+.budget-none { margin: 4px 0 0; }
+.per-guest { display: flex; flex-direction: column; gap: 8px; }
+.per-guest-factor { max-width: 220px; }
+@media (prefers-reduced-motion: reduce) {
+  .budget-bar span { transition: none; }
+}

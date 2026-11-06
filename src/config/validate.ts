@@ -47,6 +47,8 @@ export function validateCatalog(c: unknown): string[] {
       if (!u.id || !u.name || typeof u.price !== "number")
         errs.push(`${at} has an upgrade without id, name or numeric price.`);
     });
+    if (e.perGuest !== undefined && !(typeof e.perGuest === "number" && e.perGuest > 0))
+      errs.push(`${at} "perGuest" must be a positive number (e.g. 1 per guest, 0.1 for one per ten guests).`);
   });
   return errs;
 }
@@ -85,5 +87,19 @@ export function validateBrand(b: unknown): string[] {
   if (typeof brand.coordinationPct !== "number") errs.push(`brand.json "coordinationPct" must be a number.`);
   if (typeof brand.gstPct !== "number") errs.push(`brand.json "gstPct" must be a number.`);
   if (!Array.isArray(brand.terms)) errs.push(`brand.json "terms" must be a list.`);
+  if (brand.paymentPlan !== undefined) {
+    const plan = brand.paymentPlan;
+    if (!Array.isArray(plan) || !plan.length) errs.push(`brand.json "paymentPlan" must be a list of milestones.`);
+    else {
+      plan.forEach((m, i) => {
+        if (!m?.label || typeof m.pct !== "number" || m.pct <= 0 || (m.when !== "booking" && m.when !== "before-event"))
+          errs.push(`brand.json payment milestone #${i + 1} needs a "label", a positive "pct" and "when": "booking" or "before-event".`);
+      });
+      const total = plan.reduce((t, m) => t + (typeof m?.pct === "number" ? m.pct : 0), 0);
+      if (Math.abs(total - 100) > 0.01) errs.push(`brand.json "paymentPlan" percentages add up to ${total}%, not 100%.`);
+    }
+  }
+  if (brand.balanceDueDays !== undefined && !(Number.isInteger(brand.balanceDueDays) && brand.balanceDueDays >= 0))
+    errs.push(`brand.json "balanceDueDays" must be a whole number of days.`);
   return errs;
 }

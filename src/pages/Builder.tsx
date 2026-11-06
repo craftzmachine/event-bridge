@@ -18,6 +18,8 @@ import EventDatesField from "../components/EventDatesField";
 import ShareDialog, { type ShareFormat } from "../components/ShareDialog";
 import PagePreview from "../components/PagePreview";
 import ThemePicker from "../components/ThemePicker";
+import BudgetMeter from "../components/BudgetMeter";
+import { applyGuests, capacityWarning, guestQty } from "../lib/guests";
 import { THEMES, useAppearance, type ThemeId } from "../state/appearance";
 
 export default function Builder({
@@ -80,7 +82,7 @@ export default function Builder({
       <StepRail step={step} onStep={go} canReach={canReach} />
 
       <main className="stage" key={step}>
-        {step === 0 && <ClientStep p={p} setClient={setClient} />}
+        {step === 0 && <ClientStep p={p} set={set} setClient={setClient} />}
         {step === 1 && <OccasionStep p={p} set={set} />}
         {step === 2 && <ElementsStep p={p} set={set} />}
         {step === 3 && <ReviewStep p={p} set={set} onReauth={onReauth} />}
@@ -104,10 +106,14 @@ export default function Builder({
 }
 
 type SetFn = (patch: Partial<Proposal> | ((cur: Proposal) => Partial<Proposal>)) => void;
+const latestGuests = (p: Proposal) => (p.client.guests && p.client.guests > 0 ? p.client.guests : null);
 type StepProps = { p: Proposal; set: SetFn };
 
-function ClientStep({ p, setClient }: { p: Proposal; setClient: (c: Partial<Proposal["client"]>) => void }) {
+function ClientStep({ p, set, setClient }: StepProps & { setClient: (c: Partial<Proposal["client"]>) => void }) {
   const { venues } = useConfig();
+  // a new guest count updates every line priced per guest
+  const setGuests = (n: number | null) => set((cur) => ({ client: { ...cur.client, guests: n }, lines: applyGuests(cur.lines, n) }));
+  const capacity = capacityWarning(p, venues.venues);
   // picking a directory venue fills its area into Location (unless one is already typed)
   const onVenue = (name: string) => {
     const match = venues.venues.find((v) => v.name.toLowerCase() === name.trim().toLowerCase());
@@ -141,6 +147,18 @@ function ClientStep({ p, setClient }: { p: Proposal; setClient: (c: Partial<Prop
           <span>Location</span>
           <input value={p.client.location} placeholder="e.g. Kovalam" onChange={(e) => setClient({ location: e.target.value })} />
         </label>
+        <label className="field">
+          <span>Guests expected</span>
+          <input type="number" min={0} step={10} inputMode="numeric" value={p.client.guests ?? ""} placeholder="e.g. 600"
+            onChange={(e) => setGuests(e.target.value === "" ? null : Math.max(0, Math.round(Number(e.target.value) || 0)))} />
+          <small className="hint">Elements priced per guest follow this number.</small>
+        </label>
+        <div className="field">
+          <span>Family's budget</span>
+          <MoneyInput label="Budget" placeholder="Not shared yet" value={p.client.budget ?? null} onChange={(n) => setClient({ budget: n })} />
+          <small className="hint">The quote is measured against it as you add elements.</small>
+        </div>
+        {capacity && <p className="notice field-wide" role="status">{capacity}</p>}
         <div className="field">
           <span>Quotation reference</span>
           <output className="ref-badge" aria-live="polite">{p.ref || "Assigning…"}</output>
@@ -196,9 +214,12 @@ function ElementsStep({ p, set }: StepProps) {
 
   const setLines = (fn: (lines: Line[]) => Line[]) => set((cur) => ({ lines: fn(cur.lines) }));
   const add = (l: Line) => {
-    setLines((ls) => [...ls, l]);
+    const g = latestGuests(p);
+    const placed = l.perGuest && g ? { ...l, qty: guestQty(g, l.perGuest) } : l;
+    setLines((ls) => [...ls, placed]);
     setOpen(l.uid);
   };
+  const swap = (uid: string, next: Line) => setLines((ls) => ls.map((x) => (x.uid === uid ? next : x)));
   const move = (uid: string, dir: -1 | 1) =>
     setLines((ls) => {
       const i = ls.findIndex((x) => x.uid === uid);
@@ -261,7 +282,7 @@ function ElementsStep({ p, set }: StepProps) {
           {!p.lines.length && <p className="empty">Add elements from the list. Tap a selected element to set quantity, price, notes and upgrades.</p>}
           <ol className="lines">
             {p.lines.map((l, i) => (
-              <LineEditor key={l.uid} line={l} index={i} expanded={open === l.uid}
+              <LineEditor key={l.uid} line={l} index={i} expanded={open === l.uid} guests={p.client.guests ?? null}
                 onToggle={() => setOpen(open === l.uid ? null : l.uid)}
                 onChange={(nl) => setLines((ls) => ls.map((x) => (x.uid === l.uid ? nl : x)))}
                 onRemove={() => setLines((ls) => ls.filter((x) => x.uid !== l.uid))}
@@ -269,6 +290,7 @@ function ElementsStep({ p, set }: StepProps) {
             ))}
           </ol>
           {p.lines.length > 0 && <TotalsPanel t={t} pct={p.coordinationPct} compact />}
+          {p.lines.length > 0 && <BudgetMeter p={p} onSwap={swap} compact />}
         </div>
       </aside>
     </section>
@@ -355,7 +377,9 @@ function Deliver({ p, set, onReauth }: StepProps & { onReauth: () => void }) {
 }
 
 function ReviewStep({ p, set, onReauth }: StepProps & { onReauth: () => void }) {
-  const { brand } = useConfig();
+  const { brand, venues } = useConfig();
+  const capacity = capacityWarning(p, venues.venues);
+  const swap = (uid: string, next: Line) => set((cur) => ({ lines: cur.lines.map((x) => (x.uid === uid ? next : x)) }));
   const t = computeTotals(p, brand.gstPct);
   const suggestions = roundOffSuggestions(t.beforeRound);
   return (
@@ -363,6 +387,7 @@ function ReviewStep({ p, set, onReauth }: StepProps & { onReauth: () => void }) 
       <div className="review-side">
         <p className="eyebrow">Step four</p>
         <h1>Review &amp; finish</h1>
+        {capacity && <p className="notice" role="status">{capacity}</p>}
         <div className="side-card">
           <h3 id="status-title">Status</h3>
           <div className="seg status-seg" role="group" aria-labelledby="status-title">
@@ -386,6 +411,7 @@ function ReviewStep({ p, set, onReauth }: StepProps & { onReauth: () => void }) 
             <MoneyInput label="Grand Total" placeholder={formatINR(t.beforeRound).replace("₹ ", "")} value={p.grandTotal} onChange={(n) => set({ grandTotal: n })} />
           </div>
           <p className="hint">Before round-off: {formatINR(t.beforeRound)}</p>
+          <BudgetMeter p={p} onSwap={swap} />
           <div className="chips">
             {suggestions.map((s) => (
               <button key={s} className="chip" onClick={() => set({ grandTotal: s })}>{formatINRShort(s)}</button>
