@@ -10,6 +10,7 @@ import { formatDate, formatDates, formatINRShort, safeFilePart, todayISO } from 
 import { eventDates, proposalTitle } from "../lib/proposal";
 import { matchesSearch, pipelineSummary, proposalStatus, statusLabel, statusPatch, STATUSES } from "../lib/status";
 import { clientAnswers, type Share } from "../lib/shares";
+import { followUps } from "../lib/followups";
 import { api } from "../lib/api";
 import ClientAnswer from "../components/ClientAnswer";
 import Img from "../components/Img";
@@ -106,6 +107,7 @@ export default function Home({
       .catch(() => {});
   }, [linked]);
   const answers = clientAnswers(store.list, shares);
+  const todo = followUps(store.list, shares, brand);
 
   return (
     <div className="home">
@@ -175,6 +177,20 @@ export default function Home({
               onOpen(p.id);
             }}
           />
+        )}
+        {todo.length > 0 && (
+          <aside className="home-todo" aria-labelledby="home-todo-title">
+            <h3 id="home-todo-title">To do</h3>
+            <ul>
+              {todo.slice(0, 3).map((f) => (
+                <li key={f.key}>
+                  <button className="link-btn" onClick={() => onOpen(f.proposalId)}>{f.client}</button>
+                  <span>{f.title}</span>
+                </li>
+              ))}
+            </ul>
+            <a className="link-btn" href="#/dashboard">{todo.length > 3 ? `See all ${todo.length} on the dashboard` : "Open the dashboard"}</a>
+          </aside>
         )}
         {sorted.length > 0 && (
           <>

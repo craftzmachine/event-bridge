@@ -10,18 +10,19 @@ import Login from "./pages/Login";
 import Venues from "./pages/Venues";
 import Landing from "./pages/Landing";
 import Visualize from "./pages/Visualize";
+import Dashboard from "./pages/Dashboard";
 import ClientView from "./pages/ClientView";
 import { endSession, readSession, SERVER_SIGNIN, startSession, type Session } from "./auth/auth";
 import { ApiError, api } from "./lib/api";
 
 /**
  * Event Bridge's top-level pages live in the URL hash so they can be linked to directly on any static host:
- * #/ (landing), #/login, the signed-in feature apps #/studio (Proposal Studio), #/venues (Venue Directory) and
+ * #/ (landing), #/login, the signed-in #/dashboard (team overview) and feature apps #/studio (Proposal Studio), #/venues (Venue Directory) and
  * #/visualize (Visualize Proposal), and the public #/view/<token> where a client opens a shared proposal.
  */
-type Route = "landing" | "login" | "studio" | "venues" | "visualize" | "view";
-type AppRoute = "studio" | "venues" | "visualize";
-const APP_ROUTES: Route[] = ["studio", "venues", "visualize"];
+type Route = "landing" | "login" | "dashboard" | "studio" | "venues" | "visualize" | "view";
+type AppRoute = "dashboard" | "studio" | "venues" | "visualize";
+const APP_ROUTES: Route[] = ["dashboard", "studio", "venues", "visualize"];
 const readRoute = (hash: string): Route => {
   const h = hash.replace(/^#\/?/, "").split("/")[0].toLowerCase();
   return h === "login" || h === "view" || APP_ROUTES.includes(h as Route) ? (h as Route) : "landing";
@@ -140,7 +141,9 @@ export default function App() {
           />
         ) : open ? (
           // the open proposal survives the sign-in, so it reopens afterwards
-          <Builder key={open.id} proposal={open} onChange={store.save} onClose={() => setOpenId(null)} onReauth={() => reauth(route === "venues" ? "venues" : "studio")} />
+          <Builder key={open.id} proposal={open} onChange={store.save} onClose={() => setOpenId(null)} onReauth={() => reauth(route === "venues" || route === "dashboard" ? route : "studio")} />
+        ) : route === "dashboard" ? (
+          <Dashboard list={store.list} account={session.email} onSignOut={signOut} onOpen={setOpenId} />
         ) : route === "venues" ? (
           <Venues onBack={() => go("studio")} onStartProposal={(v) => startProposal({ venue: v.name, location: v.area })} />
         ) : (

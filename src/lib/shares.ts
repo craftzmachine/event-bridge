@@ -50,11 +50,16 @@ export function generatePassword() {
 export function clientAnswers(list: { id: string; shareId?: string }[], shares: Share[]): Map<string, ShareDecision> {
   const out = new Map<string, ShareDecision>();
   for (const p of list) {
-    const own = p.shareId ? shares.find((s) => s.id === p.shareId) : undefined;
-    const latest = own ?? shares.filter((s) => s.proposalId === p.id).sort((a, b) => b.createdAt - a.createdAt)[0];
+    const latest = shareFor(p, shares);
     if (latest?.decision) out.set(p.id, latest.decision);
   }
   return out;
+}
+
+/** The share recorded on the proposal (`shareId`), or else the newest share made from it. */
+export function shareFor(p: { id: string; shareId?: string }, shares: Share[]): Share | undefined {
+  const own = p.shareId ? shares.find((s) => s.id === p.shareId) : undefined;
+  return own ?? shares.filter((s) => s.proposalId === p.id).sort((a, b) => b.createdAt - a.createdAt)[0];
 }
 
 /** "Approved 3 Dec 2026" / "Changes requested 3 Dec 2026" */
