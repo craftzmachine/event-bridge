@@ -14,6 +14,7 @@
     "@upstash/redis": "^1.41.0",
     "@vercel/blob": "^2.8.2",
     "exceljs": "^4.4.0",
+    "jszip": "^3.10.1",
     "pdfjs-dist": "^6.5.438",
     "pdfmake": "^0.2.23",
     "react": "^18.3.1",

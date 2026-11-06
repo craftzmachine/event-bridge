@@ -45,12 +45,13 @@ Photos must show the actual venue and be licensed for commercial use: CC BY, CC 
 - `#/` → `Landing` (public)
 - `#/login` → `Login`
 - `#/dashboard` → `Dashboard` (team overview)
+- `#/expenses`, `#/expenses/<proposalId>`, `#/expenses/review/<handoverId>` → `Expenses` (event expenses and handovers)
 - `#/studio` → Proposal Studio (`Home`)
 - `#/venues` → `Venues` (the Venue Directory)
 - `#/visualize` → `Visualize` (staff sharing)
 - `#/view/<token>` → `ClientView` (public; the client's password gate and viewer)
 
-`App` keeps the raw `hash` in state and derives the route, so moving between `#/view/<a>` and `#/view/<b>` re-renders. The four signed-in routes (`APP_ROUTES`: dashboard, studio, venues, visualize) need a session. Without one, an effect stores the target in the module-level `returnTo` and goes to `#/login`; after sign-in it goes back to `returnTo`. `returnTo` is reset only once that route is reached, because the login → app redirect races `onSignedIn`. An open proposal (`openId`) shows `Builder` over the dashboard, studio or venues route, and closing it returns to that route. The main menu is `src/components/SiteNav.tsx` (Home / Dashboard / Proposal Studio / Venue Directory / Visualize Proposal, plus appearance and account controls). It folds into a ☰ panel below 1440 px, because five labels don't fit beside the brand and controls; the email hides below 1500 px. It is laid over the dark heroes of `Landing` and `Home`; `Venues` and `Builder` keep their own light top bars with a back button. `Builder` is a 4-step wizard (client, occasion, elements, review); steps are inner components of `src/pages/Builder.tsx`.
+`App` keeps the raw `hash` in state and derives the route, so moving between `#/view/<a>` and `#/view/<b>` re-renders. The five signed-in routes (`APP_ROUTES`: dashboard, expenses, studio, venues, visualize) need a session. Without one, an effect stores the target in the module-level `returnTo` and goes to `#/login`; after sign-in it goes back to `returnTo`. `returnTo` is reset only once that route is reached, because the login → app redirect races `onSignedIn`. An open proposal (`openId`) shows `Builder` over the dashboard, studio or venues route, and closing it returns to that route. The main menu is `src/components/SiteNav.tsx` (Home / Dashboard / Proposal Studio / Venue Directory / Visualize Proposal, plus appearance and account controls). It folds into a ☰ panel below 1440 px, because five labels don't fit beside the brand and controls; the email hides below 1500 px. It is laid over the dark heroes of `Landing` and `Home`; `Venues` and `Builder` keep their own light top bars with a back button. `Builder` is a 4-step wizard (client, occasion, elements, review); steps are inner components of `src/pages/Builder.tsx`.
 
 **Persistence** (`src/state/proposals.ts`): all proposals live in `localStorage` under `proposal-builder.proposals.v1`, written on every change via `useProposals()`. JSON export/import is the only way to move them between devices. Changing the `Proposal` shape needs migration-tolerant reads, since old drafts persist. The backup reminder on the Studio home is decided by the pure `backupDue` in `src/lib/backup.ts`; only "Back up all" records a backup (`event-bridge.last-backup.v1`, read and written by `readBackupState`/`writeBackupState`).
 
@@ -91,6 +92,21 @@ Photos must show the actual venue and be licensed for commercial use: CC BY, CC 
   - **Data:** this device's proposals plus `/api/shares` when available; `shareFor` picks a proposal's share.
   - **Pipeline chart:** a single-hue bar per status with direct value labels, deliberately, so no categorical palette has to be validated across six themes.
   - **Studio home:** shows the first three follow-ups as To do.
+- **Event expenses** (`src/pages/Expenses.tsx`, lazy-loaded; rules in `src/lib/expenses.ts`, handover in `src/lib/handover.ts` and `src/lib/handoverPack.ts`; `expenses.test.ts`):
+  - **Routes:** `#/expenses` (events and received handovers), `#/expenses/<proposalId>` (the ledger) and `#/expenses/review/<handoverId>`. The `expenses` branch in `App` comes before the open-proposal check, so the Builder's Expenses link works.
+  - **Storage:** IndexedDB (`src/state/expenses.ts`, database `event-bridge`, stores `expenses`, `proofs`, `sent`, `received`), because screenshots are too big for localStorage. Received images are stored under `receivedFileId(handoverId, fileId)`. Custom categories live in `event-bridge.expense-categories.v1`; team ones in `brand.expenseCategories` (validated).
+  - **Proof:** `prepareProof` (`src/lib/proofImage.ts`) scales an image to at most 1600 px WebP and fingerprints it. `fingerprint` uses `crypto.subtle`, or `sha256Bytes` on plain http.
+  - **Rules (all pure and tested):**
+    - `checkExpense`: a UPI ref already in the event **blocks**; a repeated image hash, the same amount + date + vendor, no proof, an amount ≥ `LARGE_AMOUNT`, or a date outside `eventWindow` **warn**
+    - `flagsOf`, `summarise` and `filterExpenses`
+    - history: `saveExpense` records who and what with `diff`; `removeExpense`/`restoreExpense` never hard-delete
+  - **Handover:**
+    - **Pack:** a ZIP from `buildPack`: `expenses.json` (`packData`), `expenses.xlsx` (`ledgerWorkbook`), `summary.pdf` (`packSummaryDoc`), and `proof/<date>_<vendor>_<amount>_<id>.<ext>`.
+    - **Arrival:** `readPack` checks image hashes and `canReview`. The reviewer must not appear in any expense's `recordedBy` or history, other than as a reviewer.
+    - **Sign-off and reply:** `signOff` builds the `Reply`, and `applyReply` records the review on the recorder's expenses.
+    - **JSZip:** pass it bytes, not Blobs, which it accepts only in browsers.
+  - **Review state:** in `Review`, decisions use a functional `setH`; reading `h` from the closure lost quick successive clicks.
+  - **GPay:** there's no automatic import. Phase 2 (in-browser OCR of screenshots, parsing pasted SMS text) and Phase 3 (PWA share target, bank statement matching) aren't built yet.
 
 **Quotation references** (`src/lib/quoteRef.ts`) are `YYYYDDMM-ABC` (year, *day*, *month*, 3 random capitals) and must be unique per device. `newProposal(brand, takenRefs)` and `duplicate` generate them; `ensureUniqueRefs` runs on load and import to backfill empty refs (dated from `createdAt`) and replace collisions. The ref is read-only in the UI.
 

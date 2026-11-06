@@ -9,6 +9,8 @@ import { statusLabel } from "../lib/status";
 import { formatDate, formatINR, formatINRShort } from "../lib/format";
 import { waLink, waNumber } from "../lib/whatsapp";
 import SiteNav from "../components/SiteNav";
+import { listExpenses } from "../state/expenses";
+import { summarise, type Expense } from "../lib/expenses";
 
 const month = (d: Date) => d.toLocaleString("en-GB", { month: "long" });
 const pct = (x: number | null) => (x === null ? "—" : `${Math.round(x * 100)}%`);
@@ -49,6 +51,18 @@ export default function Dashboard({ list, account, onSignOut, onOpen }: { list: 
   const pay = paymentsOverview(list, brand, now);
   const margin = marginThisMonth(list, brand.gstPct, now);
   const sold = selling(list, catalog, brand.gstPct);
+  // events with expenses on this device, those without proof first
+  const [expenses, setExpenses] = useState<Expense[]>([]);
+  useEffect(() => {
+    listExpenses().then(setExpenses).catch(() => setExpenses([]));
+  }, []);
+  const expenseRows = list
+    .map((p) => {
+      const s = summarise(expenses.filter((e) => e.eventId === p.id));
+      return { id: p.id, client: p.client.name || "Untitled client", count: s.count, total: s.total, missingProof: s.missingProof };
+    })
+    .filter((r) => r.count)
+    .sort((a, b) => b.missingProof - a.missingProof || b.total - a.total);
   const lastName = month(m.lastMonth);
 
   const nudge = (f: FollowUp) =>
@@ -218,6 +232,24 @@ export default function Dashboard({ list, account, onSignOut, onOpen }: { list: 
                 )}
               </section>
             </div>
+
+            <section className="dash-card" aria-labelledby="dash-exp-title">
+              <h2 id="dash-exp-title">Expenses</h2>
+              {expenseRows.length === 0 ? (
+                <p className="dash-empty">No expenses recorded on this device yet. Record them from a proposal's “Expenses” link.</p>
+              ) : (
+                <ul className="dash-pay-list">
+                  {expenseRows.map((r) => (
+                    <li key={r.id} className={r.missingProof ? "is-overdue" : ""}>
+                      <a className="link-btn" href={`#/expenses/${r.id}`}>{r.client}</a>
+                      <span>{r.count} expense{r.count === 1 ? "" : "s"}{r.missingProof ? ` · ${r.missingProof} without proof` : ""}</span>
+                      <strong>{formatINR(r.total)}</strong>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <a className="link-btn" href="#/expenses">All event expenses and handovers</a>
+            </section>
           </>
         )}
       </main>

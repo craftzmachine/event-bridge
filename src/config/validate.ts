@@ -122,6 +122,8 @@ export function validateBrand(b: unknown): string[] {
       if (Math.abs(total - 100) > 0.01) errs.push(`brand.json "paymentPlan" percentages add up to ${total}%, not 100%.`);
     }
   }
+  if (brand.expenseCategories !== undefined && (!Array.isArray(brand.expenseCategories) || brand.expenseCategories.some((c) => !c?.id || !c?.label)))
+    errs.push(`brand.json "expenseCategories" must be a list of { "id", "label" }.`);
   if (brand.balanceDueDays !== undefined && !(Number.isInteger(brand.balanceDueDays) && brand.balanceDueDays >= 0))
     errs.push(`brand.json "balanceDueDays" must be a whole number of days.`);
   return errs;

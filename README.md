@@ -17,6 +17,7 @@ The main menu sits on the landing page, the Proposal Studio home and the dashboa
 | `/#/` | landing page: what Event Bridge does, with Proposal Studio featured (public) |
 | `/#/login` | sign-in, with a **Back to home** link |
 | `/#/dashboard` | the team dashboard (needs sign-in) |
+| `/#/expenses` | event expenses and handovers; `/#/expenses/<proposal id>` for one event (needs sign-in) |
 | `/#/studio` | Proposal Studio (needs sign-in) |
 | `/#/venues` | Venue Directory (needs sign-in) |
 | `/#/visualize` | Visualize Proposal: upload and share (needs sign-in) |
@@ -80,6 +81,30 @@ Duplicating a proposal starts the copy as a draft, with the payment plan but no 
 - **The next 90 days:** each function or event date, with guests and a capacity warning.
 - **Payments:** what's due or overdue.
 - **What's selling:** wins by occasion.
+- **Expenses:** events with expenses recorded, those without proof first.
+
+**Event expenses** (`#/expenses`; also **Expenses** on each proposal card and in the Builder's top bar): what's spent on each wedding, with its proof, handed over to a colleague to check.
+- **Recording an expense:** **Add expense**.
+  - **Proof:** attach the GPay screenshot or a photo of the receipt (**Take photo**, **Choose screenshot**, or paste with Ctrl+V). Images are scaled down and kept on this device.
+  - **Details:** amount, date (and time), who was paid, what it was for, the category, the function, who paid (you, a colleague or the company account), the method, and the UPI transaction ID / UTR and payee UPI ID when paid by UPI.
+  - **Categories:** the defaults are Purchases, Ceremonial, Travel, Food & refreshments, Décor & flowers, Vendor payment, Staff & labour and Other. **+ New category…** adds your own; team-wide ones go in `brand.json` as `expenseCategories`.
+  - **Entry is manual for now.** Reading the details from screenshots automatically is the next phase. There's no direct Google Pay connection: a website can't read payment notifications, and no Google Pay API for this is known.
+- **Safeguards:**
+  - A UPI transaction ID already recorded for the event **blocks** the save, with a link to the earlier entry.
+  - A screenshot attached before, the same amount to the same vendor on the same day, no proof, an amount over ₹1,00,000, or a date far outside the event all ask you to confirm.
+  - Expenses without proof are marked **Proof missing**.
+  - UPI IDs are shown masked (`an…on@okaxis`) to others.
+- **The ledger:** spending so far (against the quote, for reference), what needs attention, totals by category and by who paid, and filters (category, payer, proof missing, possible duplicates, queried, removed) with search.
+  - **History:** every edit is recorded with who and when, under **History** in the expense.
+  - **Removing:** needs a reason, and the expense can be restored.
+- **Handing over:**
+  1. **Prepare handover** shows a checklist (proof missing, possible duplicates, open queries) and what to reimburse to each person who paid. Add a note, then **Create handover file**.
+  2. Send the `.zip` to the colleague who'll check it. It holds `summary.pdf`, `expenses.xlsx`, the proof images named by date, vendor and amount, and the data file.
+  3. The colleague opens **Expenses → Receive a handover** on their device. Event Bridge checks every image's fingerprint, and refuses the file if anyone who recorded or edited the expenses tries to review it.
+  4. They mark each expense **Checked**, **Query** (with their question) or **Reject** (with a reason), then **Sign off**. That downloads a reply file and a handover receipt PDF. All checked means **Reconciled**; any query or rejection means **Returned with queries**.
+  5. Back on the recorder's device, **Prepare handover → Import the reply** marks each expense with the review.
+  6. Once reconciled, **Clear from this device** removes the event's expenses and screenshots there.
+- **Privacy:** expenses and screenshots are kept in this browser only (IndexedDB, not encrypted), so use your own phone. The handover file is an ordinary ZIP: send it only to the reviewer, and delete it after sign-off. Moving expenses to the server, with real access control, comes once Visualize Proposal is set up.
 
 Drafts save automatically in the browser on each device. Use **Save file** / **Back up all** on the home page to move proposals between devices, and **Import** to load them. Clearing the browser's site data deletes that device's drafts, so back up regularly. If there has been no **Back up all** on a device for 7 days (or ever), the home page shows a reminder with **Back up now**; **Remind me later** hides it for 3 days. Saving a single proposal's file doesn't count as a full backup.
 It works on phones, tablets and laptops. On smaller screens the selection becomes a bottom drawer.

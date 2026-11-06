@@ -11,6 +11,7 @@ import { eventDates, proposalTitle } from "../lib/proposal";
 import { matchesSearch, pipelineSummary, proposalStatus, statusLabel, statusPatch, STATUSES } from "../lib/status";
 import { clientAnswers, type Share } from "../lib/shares";
 import { followUps } from "../lib/followups";
+import { useExpenseCounts } from "../state/expenses";
 import { api } from "../lib/api";
 import ClientAnswer from "../components/ClientAnswer";
 import Img from "../components/Img";
@@ -108,6 +109,7 @@ export default function Home({
   }, [linked]);
   const answers = clientAnswers(store.list, shares);
   const todo = followUps(store.list, shares, brand);
+  const expenseCounts = useExpenseCounts();
 
   return (
     <div className="home">
@@ -258,6 +260,9 @@ export default function Home({
                     {answers.get(p.id)?.kind === "approved" && proposalStatus(p) === "sent" && (
                       <button className="link-btn" onClick={() => store.save({ ...p, ...statusPatch(p, "accepted") })}>Mark accepted</button>
                     )}
+                    <a className="link-btn" href={`#/expenses/${p.id}`}>
+                      Expenses{expenseCounts.get(p.id) ? ` (${expenseCounts.get(p.id)!.count})` : ""}
+                    </a>
                     <button className="link-btn" onClick={() => onOpen(store.duplicate(p).id)}>Duplicate</button>
                     <button className="link-btn" onClick={() => downloadJson(`Proposal_${safeFilePart(p.client.name)}.json`, p)}>Save file</button>
                     <button className="link-btn link-danger"

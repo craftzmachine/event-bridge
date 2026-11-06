@@ -61,6 +61,8 @@ export interface Brand {
   paymentPlan?: { label: string; pct: number; when: "booking" | "before-event" }[];
   /** days before the first event date that a "before-event" milestone falls due (default 7) */
   balanceDueDays?: number;
+  /** expense categories for the whole team, added to the defaults (Purchases, Ceremonial, Travel…) */
+  expenseCategories?: { id: string; label: string }[];
 }
 
 export interface VenueSpace {
