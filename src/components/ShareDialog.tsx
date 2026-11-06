@@ -105,7 +105,7 @@ export default function ShareDialog({
 
       {phase.at === "done" ? (
         <div className="xi-body">
-          <ShareResult share={phase.share} password={phase.password} actions={<button className="btn-primary" onClick={onClose}>Done</button>} />
+          <ShareResult share={phase.share} password={phase.password} contact={p.client.contact} actions={<button className="btn-primary" onClick={onClose}>Done</button>} />
         </div>
       ) : (
         <form className="xi-body" onSubmit={submit} noValidate>

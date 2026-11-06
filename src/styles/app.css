@@ -1557,3 +1557,8 @@ body::before {
   .pkg { grid-template-columns: minmax(0, 1fr); grid-template-areas: "text" "price" "tools"; }
   .landing-pkgs { margin-top: 44px; }
 }
+
+/* ---------- Share result: send the link and the password by WhatsApp or email ---------- */
+.send-links { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding-top: 4px; }
+.send-links .field-label { width: 100%; }
+.send-links .hint { width: 100%; margin: 0; }
