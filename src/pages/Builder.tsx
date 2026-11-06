@@ -21,6 +21,7 @@ import ThemePicker from "../components/ThemePicker";
 import BudgetMeter from "../components/BudgetMeter";
 import FunctionsField from "../components/FunctionsField";
 import MarginCard from "../components/MarginCard";
+import PaymentsCard from "../components/PaymentsCard";
 import { readCosts } from "../state/costs";
 import { byFunction, fnOf, functionHeading, functionsOf } from "../lib/functions";
 import { functionTotals } from "../lib/totals";
@@ -522,6 +523,7 @@ function ReviewStep({ p, set, onReauth }: StepProps & { onReauth: () => void }) 
         <Deliver p={p} set={set} onReauth={onReauth} />
         <ExportButton p={p} wide />
         <SavePackage p={p} />
+        <PaymentsCard p={p} set={set} />
         <MarginCard p={p} setLines={(fn) => set((cur) => ({ lines: fn(cur.lines) }))} />
       </div>
       <ProposalPreview p={p} />

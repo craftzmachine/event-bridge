@@ -240,6 +240,11 @@ export function buildPdfDoc(p: Proposal, catalog: Catalog, brand: Brand, logoPng
 
 /** Builds the PDF in the browser. pdfmake and its fonts load only on first use. */
 export async function buildPdfBlob(p: Proposal, catalog: Catalog, brand: Brand): Promise<Blob> {
+  return renderPdf(brand, (logo) => buildPdfDoc(p, catalog, brand, logo));
+}
+
+/** Renders any document of ours (the proposal, a receipt) with the company logo; pdfmake loads on first use. */
+export async function renderPdf(brand: Brand, build: (logoPng?: string) => TDocumentDefinitions): Promise<Blob> {
   const [{ default: pdfMake }, fonts, logo] = await Promise.all([
     import("pdfmake/build/pdfmake"),
     import("pdfmake/build/vfs_fonts"),
@@ -251,7 +256,7 @@ export async function buildPdfBlob(p: Proposal, catalog: Catalog, brand: Brand):
   const vfs = f.pdfMake?.vfs ?? f.vfs ?? f;
   // @types/pdfmake describes 0.3; the installed 0.2 takes vfs as the 4th argument and a callback for getBlob
   const make = pdfMake as unknown as { createPdf: (d: TDocumentDefinitions, l?: unknown, f?: unknown, v?: Vfs) => { getBlob: (cb: (b: Blob) => void) => void } };
-  const doc = make.createPdf(buildPdfDoc(p, catalog, brand, logo), undefined, undefined, vfs);
+  const doc = make.createPdf(build(logo), undefined, undefined, vfs);
   return new Promise<Blob>((resolve) => doc.getBlob(resolve));
 }
 

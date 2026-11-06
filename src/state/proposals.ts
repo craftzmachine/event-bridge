@@ -117,6 +117,8 @@ export function useProposals() {
         statusAt: undefined,
         sentAt: undefined,
         shareId: undefined,
+        // the copy keeps the payment plan, not the payments
+        payments: p.payments?.plan ? { plan: p.payments.plan.map((m) => ({ ...m, due: "" })), received: [] } : undefined,
       };
       setList((l) => [copy, ...l]);
       return copy;
