@@ -10,12 +10,13 @@ Proposals and their exports are branded **Parinay Weddings**, because that's wha
 
 ## Navigation
 
-The main menu sits on the landing page and the Proposal Studio home: **Home**, **Proposal Studio**, **Venue Directory** and **Visualize Proposal**, plus the theme and font buttons and **Team sign in** / **Sign out**. Below 1280 px wide it folds into a ☰ menu.
+The main menu sits on the landing page, the Proposal Studio home and the dashboard: **Home**, **Dashboard**, **Proposal Studio**, **Venue Directory** and **Visualize Proposal**, plus the theme and font buttons and **Team sign in** / **Sign out**. Below 1440 px wide it folds into a ☰ menu.
 
 | Address | Page |
 |---|---|
 | `/#/` | landing page: what Event Bridge does, with Proposal Studio featured (public) |
 | `/#/login` | sign-in, with a **Back to home** link |
+| `/#/dashboard` | the team dashboard (needs sign-in) |
 | `/#/studio` | Proposal Studio (needs sign-in) |
 | `/#/venues` | Venue Directory (needs sign-in) |
 | `/#/visualize` | Visualize Proposal: upload and share (needs sign-in) |
@@ -26,10 +27,21 @@ Opening a feature app while signed out goes to sign-in first, then straight back
 ## Proposal Studio
 
 1. **Sign in** with an authorised team account, then choose **Proposal Studio** from the menu.
-2. **Client & event**: client name, one or more event dates (pick a date, then **+ Add date** for multi-day celebrations; each shows as a removable chip), contact, venue (with suggestions from the venue directory) and location. The quotation reference is filled in automatically.
+2. **Client & event**:
+   - **The basics:** client name, one or more event dates (pick a date, then **+ Add date** for multi-day celebrations; each shows as a removable chip), contact, venue (with suggestions from the venue directory) and location. The quotation reference is filled in automatically.
+   - **Guests and budget:** the guest count, and the family's budget. When the guests are more than the chosen directory venue's largest space holds, a warning says so, here and on the Review step.
+   - **Functions** (optional), for a celebration over several functions: add Haldi, Mehendi, Sangeet, Muhurtham, Nikah, Reception or your own, each on one of the event dates. Every element then belongs to a function, and the preview, PDF and Excel show each function with its own subtotal; the Sub Total is their sum. Without functions, the proposal is one list as before.
 3. **Occasion**: any event type (Wedding, Engagement, Reception) with any ceremony style (Hindu, Christian, Muslim).
-4. **Elements**: browse the catalogue, filtered to the chosen occasion (or show everything), search, and filter by category. For each selected element, set qty, rate (or *as per actuals*), notes for the client, optional upgrades, and whether it is an *additional option*. You can also reorder elements or add a custom one-off line.
-5. **Review**: a branded preview of the proposal as the client will see it. Adjust co-ordination %, round off the Grand Total (one-click suggestions) and edit notes and terms.
+4. **Elements**: browse the catalogue, filtered to the chosen occasion (or show everything), search, and filter by category.
+   - **Each element:** set qty, rate (or *as per actuals*), notes for the client, optional upgrades, and whether it is an *additional option*. You can also reorder elements or add a custom one-off line.
+   - **Functions:** with functions, **Adding to** picks the function new elements go into, and the selection is grouped by function.
+   - **Guest count:** **Follow the guest count** makes an element's quantity the guest count × a per-guest factor (1 chair per guest, 0.1 for one table per ten). Catalogue elements can set this with `"perGuest"`.
+   - **Budget:** a bar under the totals compares the quote with the budget. When it's over, it suggests up to three lower-priced elements from the same category, each with **Swap**.
+   - **Internal cost:** each element has a cost per unit. It's for the team only and is never shown to the client or exported.
+5. **Review**: a branded preview of the proposal as the client will see it. Adjust co-ordination %, round off the Grand Total (one-click suggestions) and edit notes and terms. The side column also has:
+   - **Payments:** the payment plan as milestones of the total including GST. By default that is 70% on booking and the balance 7 days before the first event date, following the terms; change it in `brand.json` (`paymentPlan`, `balanceDueDays`) or per proposal with **Change the plan**. **Record a payment** (date, amount, method, reference) gives it a receipt number, and **Receipt** downloads a branded receipt PDF with the amount in words. Paid, due soon, overdue and the balance are shown.
+   - **Margin** (team only): the quote, the cost and the margin, each element's margin, and a warning below your minimum (20% by default). **Load cost sheet** reads an Excel or CSV file of element names and costs into this device, and new elements take their cost from it. Costs are never written to `public/config`, which anyone can download.
+   - **Save as a package for next time:** keeps the occasion, elements, functions and terms (no client, dates, payments or costs).
 6. **Send it**: under **Send it to the client**, choose how the client gets it:
    - **Web page**: a private, password-protected page in a theme you pick (any of the site's six). **Preview page** shows it full-screen exactly as the client will see it, and you can switch themes there. **Create private link** gives you the link and password. On the page, the client can approve the proposal or ask for changes.
    - **PDF**: **Download PDF** saves the A4 document to send yourself; **Share as private link** puts it behind a link and password instead.
@@ -47,7 +59,27 @@ Opening a feature app while signed out goes to sign-in first, then straight back
 - **Filters and search:** filter the list by status, or search by client, reference or venue.
 - **Status on each card:** with the date it last changed.
 
-Duplicating a proposal starts the copy as a draft.
+Duplicating a proposal starts the copy as a draft, with the payment plan but no payments.
+
+**Packages**: **Start from a package** on the Proposal Studio home starts a new proposal from a saved package. It lists your own packages (kept on this device) and the team's, from `public/config/packages.json`. That file ships empty: use **Save file** on one of your packages and add it to the file's `"packages"` list to share it with everyone. Team packages also appear on the landing page with their starting price.
+
+**Sending the link**: after a private link is created, **Link on WhatsApp** and **Password on WhatsApp** open WhatsApp with each message ready, as two separate messages, addressed to the client's number when it looks like a mobile number. **Email the link** opens your email. Nothing is sent until you press Send.
+
+**Dashboard** (`#/dashboard`, in the menu): this device's proposals at a glance.
+- **This month:** sent, accepted, win rate and payments received, against last month, plus the margin when costs exist.
+- **Follow up:** in this order:
+  1. changes the client asked for
+  2. overdue payments
+  3. events within 14 days that are still only sent
+  4. links ending within 3 days
+  5. links opened with no answer after 3 days
+  6. links not opened after 2 days
+
+  Each has **Open**, and **WhatsApp** where there's a number. The first three also show as **To do** on the Studio home. Link activity needs Visualize Proposal to be set up.
+- **Pipeline:** the value at each status.
+- **The next 90 days:** each function or event date, with guests and a capacity warning.
+- **Payments:** what's due or overdue.
+- **What's selling:** wins by occasion.
 
 Drafts save automatically in the browser on each device. Use **Save file** / **Back up all** on the home page to move proposals between devices, and **Import** to load them. Clearing the browser's site data deletes that device's drafts, so back up regularly. If there has been no **Back up all** on a device for 7 days (or ever), the home page shows a reminder with **Back up now**; **Remind me later** hides it for 3 days. Saving a single proposal's file doesn't count as a full backup.
 It works on phones, tablets and laptops. On smaller screens the selection becomes a bottom drawer.

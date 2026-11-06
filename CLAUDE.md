@@ -44,12 +44,13 @@ Photos must show the actual venue and be licensed for commercial use: CC BY, CC 
 **Navigation: hash routes, then component state.** `App.tsx` reads the top-level page from the URL hash so it can be linked to on any static host with no rewrites:
 - `#/` → `Landing` (public)
 - `#/login` → `Login`
+- `#/dashboard` → `Dashboard` (team overview)
 - `#/studio` → Proposal Studio (`Home`)
 - `#/venues` → `Venues` (the Venue Directory)
 - `#/visualize` → `Visualize` (staff sharing)
 - `#/view/<token>` → `ClientView` (public; the client's password gate and viewer)
 
-`App` keeps the raw `hash` in state and derives the route, so moving between `#/view/<a>` and `#/view/<b>` re-renders. The three feature routes need a session. Without one, an effect stores the target in the module-level `returnTo` and goes to `#/login`; after sign-in it goes back to `returnTo`. `returnTo` is reset only once that route is reached, because the login → app redirect races `onSignedIn`. An open proposal (`openId`) shows `Builder` over either feature route, and closing it returns to that route. The main menu is `src/components/SiteNav.tsx` (Home / Proposal Studio / Venue Directory / Visualize Proposal, plus appearance and account controls). It folds into a ☰ panel below 1280 px, because four labels don't fit beside the brand and controls; the email hides below 1500 px. It is laid over the dark heroes of `Landing` and `Home`; `Venues` and `Builder` keep their own light top bars with a back button. `Builder` is a 4-step wizard (client, occasion, elements, review); steps are inner components of `src/pages/Builder.tsx`.
+`App` keeps the raw `hash` in state and derives the route, so moving between `#/view/<a>` and `#/view/<b>` re-renders. The four signed-in routes (`APP_ROUTES`: dashboard, studio, venues, visualize) need a session. Without one, an effect stores the target in the module-level `returnTo` and goes to `#/login`; after sign-in it goes back to `returnTo`. `returnTo` is reset only once that route is reached, because the login → app redirect races `onSignedIn`. An open proposal (`openId`) shows `Builder` over the dashboard, studio or venues route, and closing it returns to that route. The main menu is `src/components/SiteNav.tsx` (Home / Dashboard / Proposal Studio / Venue Directory / Visualize Proposal, plus appearance and account controls). It folds into a ☰ panel below 1440 px, because five labels don't fit beside the brand and controls; the email hides below 1500 px. It is laid over the dark heroes of `Landing` and `Home`; `Venues` and `Builder` keep their own light top bars with a back button. `Builder` is a 4-step wizard (client, occasion, elements, review); steps are inner components of `src/pages/Builder.tsx`.
 
 **Persistence** (`src/state/proposals.ts`): all proposals live in `localStorage` under `proposal-builder.proposals.v1`, written on every change via `useProposals()`. JSON export/import is the only way to move them between devices. Changing the `Proposal` shape needs migration-tolerant reads, since old drafts persist. The backup reminder on the Studio home is decided by the pure `backupDue` in `src/lib/backup.ts`; only "Back up all" records a backup (`event-bridge.last-backup.v1`, read and written by `readBackupState`/`writeBackupState`).
 
@@ -66,6 +67,30 @@ Photos must show the actual venue and be licensed for commercial use: CC BY, CC 
 - **Round trip:** a test converts a `buildWorkbook` export back to the same proposal. If you change the export's layout or labels, keep that test passing.
 
 **Proposal status** (`src/lib/status.ts`, tests in `status.test.ts`). `Proposal.status` is optional: drafts saved before it read as `"draft"`, so always read it through `proposalStatus(p)`. Change it only with `statusPatch(cur, status)`, which sets `statusAt` and, the first time it leaves draft, `sentAt` (kept afterwards). The Studio home's summary (`pipelineSummary`) counts "sent this month" by `sentAt` and "accepted this month" by `statusAt`, valued at each proposal's Grand Total. `duplicate` resets the copy to a draft.
+
+**Planning features.** Every field below is optional on `Proposal`/`Line`, so old drafts read as before.
+- **Functions** (`src/lib/functions.ts`, `functions.test.ts`):
+  - **Data:** `Proposal.functions` holds `{id, label, date}`, and `Line.fn` points at one. Always resolve a line's function with `fnOf(p, l)` (an unknown or missing fn means the first function) and group with `byFunction`. `functionTotals` gives the subtotals.
+  - **Outputs:** the preview, PDF and Excel render the same structure. In Excel, a `FUNCTION: <label> — <date>` row (merged A:G) and a `<label> subtotal` row make the Sub Total the sum of those cells. `excelImport` reads both rows back, and the round trip is tested.
+  - **Without functions:** everything renders exactly as before (no wrapper around the preview tables).
+- **Guests and budget** (`src/lib/guests.ts`, `src/lib/budget.ts`, `budget.test.ts`):
+  - **Fields:** `client.guests` and `client.budget`.
+  - **Per-guest lines:** `Line.perGuest` set means qty = ⌈guests × perGuest⌉ (`applyGuests` when the count changes). Typing a qty clears it. Catalogue `perGuest` is validated.
+  - **Capacity:** `capacityWarning` uses the directory venue matched by name and `largestCapacity`.
+  - **Swaps:** `budgetSuggestions` offers cheaper same-category, fitting elements.
+- **Cost and margin** (`src/lib/margin.ts`, `src/state/costs.ts`, `margin.test.ts`):
+  - **Field:** `Line.cost` is the internal cost **per unit**. The cost sheet (`event-bridge.costs.v1`) and minimum margin (`event-bridge.min-margin.v1`) live only in localStorage.
+  - **Rule:** costs must never reach a client output. `onlyShown` in `proposalPage.ts` strips `cost`/`perGuest`, packages strip `cost`, and a test checks the PDF, workbook and snapshot. Never put costs in `public/config`.
+- **Payments** (`src/lib/payments.ts`, `src/lib/exportReceipt.ts`, `payments.test.ts`):
+  - **Data:** `Proposal.payments = { plan?, received }`. With no plan, `planFor` derives one from `brand.paymentPlan`, else 70% on booking (dated from acceptance) and 30% `balanceDueDays` (7) before the first event date.
+  - **Amounts:** a share of **total incl. GST**, rounded to the rupee, with the last milestone taking the remainder. Payments are applied in order.
+  - **Receipts:** `R-<ref>-<n>`. `buildReceiptDoc` is pure and lazy-loaded, and renders through `renderPdf` in `exportPdf.ts`.
+- **Packages** (`src/state/packages.ts`, `packages.test.ts`): the team's come from the optional `public/config/packages.json` (`validatePackages`; a 404 means none), and the planner's own from `event-bridge.packages.v1`. `proposalFromPackage` goes through `newProposal`, so the proposal gets a fresh ref, and it gives new line and function ids.
+- **WhatsApp** (`src/lib/whatsapp.ts`): `waNumber` reads Indian mobiles typed with or without +91, and `waLink` builds a `wa.me` link. These only open WhatsApp; the app never sends anything.
+- **Dashboard** (`src/pages/Dashboard.tsx`, pure figures in `src/lib/dashboard.ts` and `src/lib/followups.ts`, `dashboard.test.ts`):
+  - **Data:** this device's proposals plus `/api/shares` when available; `shareFor` picks a proposal's share.
+  - **Pipeline chart:** a single-hue bar per status with direct value labels, deliberately, so no categorical palette has to be validated across six themes.
+  - **Studio home:** shows the first three follow-ups as To do.
 
 **Quotation references** (`src/lib/quoteRef.ts`) are `YYYYDDMM-ABC` (year, *day*, *month*, 3 random capitals) and must be unique per device. `newProposal(brand, takenRefs)` and `duplicate` generate them; `ensureUniqueRefs` runs on load and import to backfill empty refs (dated from `createdAt`) and replace collisions. The ref is read-only in the UI.
 
