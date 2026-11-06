@@ -12,10 +12,13 @@ describe("sha256", () => {
 });
 
 describe("checkCredentials", () => {
+  // a throwaway account, so no real password appears in the tests
+  const test = [{ email: "tester@example.com", hash: credentialHash("tester@example.com", "correct horse") }];
+
   it("rejects unknown emails, empty and wrong passwords", () => {
-    expect(checkCredentials("someone@example.com", "000")).toBeNull();
-    expect(checkCredentials("operations.eventsiq@gmail.com", "")).toBeNull();
-    expect(checkCredentials("operations.eventsiq@gmail.com", "0000")).toBeNull();
+    expect(checkCredentials("someone@example.com", "correct horse", test)).toBeNull();
+    expect(checkCredentials("tester@example.com", "", test)).toBeNull();
+    expect(checkCredentials("tester@example.com", "wrong horse", test)).toBeNull();
     expect(checkCredentials("info.parinayweddings@gmail.com", "wrong")).toBeNull();
   });
   it("normalises the email before hashing", () => {
@@ -28,7 +31,7 @@ describe("checkCredentials", () => {
     expect(credentialHash("a@b.c", "pass＠１２３")).toBe(base);
     expect(credentialHash("a@b.c", "Pass@123")).not.toBe(base); // still case-sensitive
   });
-  it("accepts the 000 account with a trailing space", () => {
-    expect(checkCredentials("operations.eventsiq@gmail.com", "000 ")).toBe("operations.eventsiq@gmail.com");
+  it("accepts a listed account typed with stray spaces and capitals in the email", () => {
+    expect(checkCredentials(" Tester@Example.com", "correct horse ", test)).toBe("tester@example.com");
   });
 });

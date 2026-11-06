@@ -24,7 +24,7 @@ npx vite preview --port 4173        # serve dist/ (.claude/launch.json: "proposa
 
 To inspect the generated PDF, run `PDF_SAMPLE=<path> npx vitest run src/lib/exportPdf.test.ts` (in PowerShell, `$env:PDF_SAMPLE="<path>"`), then open the file.
 
-There is no linter configured.
+There is no linter configured. CI (`.github/workflows/ci.yml`, Node 22) runs `npm ci`, `npx tsc -b`, `npm test` and `npm run build` on every push and PR to `main`; Vitest 4 needs Node 20+. Tests use throwaway accounts (`checkCredentials(email, password, accounts)`), never the real ones.
 
 **Shell notes (Windows PowerShell 5.1; Git Bash also available):**
 - There is no `&&`.

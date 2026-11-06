@@ -29,9 +29,9 @@ export function credentialHash(email: string, password: string) {
 }
 
 /** Returns the account email when the pair matches an authorised account, otherwise null. */
-export function checkCredentials(email: string, password: string): string | null {
+export function checkCredentials(email: string, password: string, accounts = ACCOUNTS): string | null {
   const e = normaliseEmail(email);
-  const account = ACCOUNTS.find((a) => a.email === e);
+  const account = accounts.find((a) => a.email === e);
   if (!account || !normalisePassword(password)) return null;
   return credentialHash(e, password) === account.hash ? account.email : null;
 }

@@ -70,7 +70,7 @@ It works on phones, tablets and laptops. On smaller screens the selection become
 
 ## Run
 
-Requires Node 18+.
+Requires Node 20+.
 
 ```bash
 npm install
@@ -85,6 +85,8 @@ npm run preview    # serve the production build locally (http://localhost:4173)
 `npm run build` produces a static site in `dist/` with relative paths. Upload it to any static host (Netlify, Vercel, Cloudflare Pages, GitHub Pages, an internal web server). Config files in `dist/config/` can be edited on the host afterwards. **Visualize Proposal** also needs the small server API in `api/`, which runs as Vercel Functions. On other hosts everything else works, and Visualize says it can't reach the sharing service. `vercel.json` also sets the site's security headers.
 
 **Vercel:** import the GitHub repository with the **Vite** framework preset, build command `npm run build` and output directory `dist`. Every push to `main` then redeploys automatically. Check under **Deployments** that the latest commit is live before testing.
+
+**Checks before deploy:** GitHub Actions (`.github/workflows/ci.yml`) type-checks, tests and builds every push and pull request to `main`. To stop a broken commit from going live, add the **CI** check as a required check in Vercel's project settings (Deployment Checks), so production waits for it. Alternatively, require it in GitHub's branch protection for `main` and merge changes through pull requests.
 
 ## How totals work
 
