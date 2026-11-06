@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { loadConfig, type Loaded } from "./config/load";
 import { ConfigContext } from "./config/context";
 import { newProposal, useProposals } from "./state/proposals";
+import { proposalFromPackage } from "./state/packages";
 import { AppearanceContext, useAppearanceState } from "./state/appearance";
 import Home from "./pages/Home";
 import Builder from "./pages/Builder";
@@ -151,6 +152,11 @@ export default function App() {
             onVenues={() => go("venues")}
             onVisualize={() => go("visualize")}
             onNew={() => startProposal()}
+            onNewFrom={(pk) => {
+              const p = proposalFromPackage(pk, config.brand, store.refs);
+              store.save(p);
+              setOpenId(p.id);
+            }}
           />
         )}
       </ConfigContext.Provider>

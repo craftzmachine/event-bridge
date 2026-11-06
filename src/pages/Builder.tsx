@@ -19,6 +19,7 @@ import ShareDialog, { type ShareFormat } from "../components/ShareDialog";
 import PagePreview from "../components/PagePreview";
 import ThemePicker from "../components/ThemePicker";
 import BudgetMeter from "../components/BudgetMeter";
+import { packageFromProposal, usePackages } from "../state/packages";
 import { applyGuests, capacityWarning, guestQty } from "../lib/guests";
 import { THEMES, useAppearance, type ThemeId } from "../state/appearance";
 
@@ -376,6 +377,44 @@ function Deliver({ p, set, onReauth }: StepProps & { onReauth: () => void }) {
   );
 }
 
+/** Keeps this proposal's occasion and elements (no client, dates, payments or costs) as a package for next time. */
+function SavePackage({ p }: { p: Proposal }) {
+  const { catalog } = useConfig();
+  const { save } = usePackages();
+  const [name, setName] = useState<string | null>(null);
+  const [saved, setSaved] = useState("");
+  if (!p.lines.length) return null;
+  if (name === null)
+    return (
+      <div className="save-pkg">
+        <button className="link-btn" onClick={() => { setSaved(""); setName(`${proposalTitle(p, catalog)} package`); }}>Save as a package for next time</button>
+        {saved && <p className="hint" role="status">Saved “{saved}”. Find it under “Start from a package”.</p>}
+      </div>
+    );
+  return (
+    <form
+      className="save-pkg is-open"
+      onSubmit={(e) => {
+        e.preventDefault();
+        const pk = packageFromProposal(p, name);
+        save(pk);
+        setSaved(pk.name);
+        setName(null);
+      }}
+    >
+      <label className="field">
+        <span>Package name</span>
+        <input autoFocus value={name} maxLength={80} onChange={(e) => setName(e.target.value)} />
+      </label>
+      <p className="hint">Keeps the occasion, elements, functions and terms. Leaves out the client, dates, payments and internal costs.</p>
+      <div className="save-pkg-actions">
+        <button type="button" className="btn-ghost btn-sm" onClick={() => setName(null)}>Cancel</button>
+        <button type="submit" className="btn-primary btn-sm">Save package</button>
+      </div>
+    </form>
+  );
+}
+
 function ReviewStep({ p, set, onReauth }: StepProps & { onReauth: () => void }) {
   const { brand, venues } = useConfig();
   const capacity = capacityWarning(p, venues.venues);
@@ -441,6 +480,7 @@ function ReviewStep({ p, set, onReauth }: StepProps & { onReauth: () => void }) 
         </div>
         <Deliver p={p} set={set} onReauth={onReauth} />
         <ExportButton p={p} wide />
+        <SavePackage p={p} />
       </div>
       <ProposalPreview p={p} />
     </section>

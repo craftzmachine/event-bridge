@@ -2,6 +2,8 @@ import { useConfig } from "../config/context";
 import { SITE } from "../site";
 import Ornament from "../components/Ornament";
 import SiteNav from "../components/SiteNav";
+import { computeTotals } from "../lib/totals";
+import { formatINRShort } from "../lib/format";
 import heroPhoto from "../assets/_JKN4027.webp";
 import letterPhoto from "../assets/J_J09260.webp";
 
@@ -10,7 +12,9 @@ import letterPhoto from "../assets/J_J09260.webp";
  * Feature links go to their own routes; App sends signed-out visitors through sign-in and back.
  */
 export default function Landing({ account, onSignOut }: { account?: string; onSignOut: () => void }) {
-  const { catalog, brand, venues } = useConfig();
+  const { catalog, brand, venues, packages } = useConfig();
+  const occasion = (eventType: string | null, style: string | null) =>
+    [catalog.ceremonyStyles.find((x) => x.id === style)?.label, catalog.eventTypes.find((x) => x.id === eventType)?.label].filter(Boolean).join(" ");
   const logo = `${import.meta.env.BASE_URL}${brand.logo}`;
   const toApps = () => document.getElementById("landing-apps")?.scrollIntoView({ behavior: "smooth" });
 
@@ -72,6 +76,27 @@ export default function Landing({ account, onSignOut }: { account?: string; onSi
             </article>
           </div>
         </section>
+
+        {packages.length > 0 && (
+          <section className="landing-pkgs" aria-labelledby="landing-pkgs-title">
+            <header className="landing-apps-head">
+              <h2 id="landing-pkgs-title">Celebrations to start from</h2>
+              <p className="lede">Each is a starting point: your planner shapes it around your day, your guests and your budget.</p>
+            </header>
+            <ul className="landing-pkg-list">
+              {packages.map((pk) => (
+                <li key={pk.id}>
+                  <h3>{pk.name}</h3>
+                  {occasion(pk.eventType, pk.style) && <p className="landing-pkg-occ">{occasion(pk.eventType, pk.style)}</p>}
+                  {pk.description && <p>{pk.description}</p>}
+                  <p className="landing-pkg-price">
+                    from {formatINRShort(computeTotals({ lines: pk.lines, coordinationPct: pk.coordinationPct ?? brand.coordinationPct, grandTotal: null }, brand.gstPct).grandTotal)}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
 
         <section className="landing-viz" aria-labelledby="landing-viz-title">
           <figure className="landing-viz-photo">

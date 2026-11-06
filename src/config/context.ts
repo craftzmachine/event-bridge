@@ -1,7 +1,7 @@
 import { createContext, useContext } from "react";
-import type { Brand, Catalog, CatalogElement, VenueDirectory } from "../types";
+import type { Brand, Catalog, CatalogElement, ProposalPackage, VenueDirectory } from "../types";
 
-export const ConfigContext = createContext<{ catalog: Catalog; brand: Brand; venues: VenueDirectory } | null>(null);
+export const ConfigContext = createContext<{ catalog: Catalog; brand: Brand; venues: VenueDirectory; packages: ProposalPackage[] } | null>(null);
 
 export function useConfig() {
   const c = useContext(ConfigContext);

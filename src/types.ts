@@ -143,6 +143,23 @@ export interface Line {
   cost?: number | null;
 }
 
+/**
+ * A ready-made starting point: an occasion and its elements, without any client. Team packages live in
+ * public/config/packages.json; a planner's own are kept on their device.
+ */
+export interface ProposalPackage {
+  id: string;
+  name: string;
+  description?: string;
+  eventType: string | null;
+  style: string | null;
+  lines: Line[];
+  functions?: EventFunction[];
+  terms?: string[];
+  coordinationPct?: number;
+  notes?: string;
+}
+
 /** One function of a multi-function celebration: Haldi, Mehendi, Muhurtham, Reception… */
 export interface EventFunction {
   id: string;

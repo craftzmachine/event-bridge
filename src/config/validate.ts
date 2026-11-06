@@ -1,4 +1,4 @@
-import type { Brand, Catalog, VenueDirectory } from "../types";
+import type { Brand, Catalog, ProposalPackage, VenueDirectory } from "../types";
 
 /** Returns readable problems with an edited catalog.json; empty when it is fine. */
 export function validateCatalog(c: unknown): string[] {
@@ -75,6 +75,29 @@ export function validateVenues(v: unknown): string[] {
       errs.push(`${at} has a photo but no "photoCredit" (author, license and source).`);
   });
   if (dir.venues.filter((x) => x?.featured).length > 1) errs.push(`Only one venue can be "featured".`);
+  return errs;
+}
+
+/** packages.json: { "packages": [...] }, each with an id, a name and lines in known categories */
+export function validatePackages(x: unknown, catalog: Catalog): string[] {
+  const list = (x as { packages?: unknown })?.packages;
+  if (!x || typeof x !== "object" || !Array.isArray(list)) return [`packages.json needs a "packages" list (it can be empty).`];
+  const errs: string[] = [];
+  const cats = new Set(catalog.categories.map((c) => c.id));
+  const ids = new Set<string>();
+  (list as ProposalPackage[]).forEach((pk, i) => {
+    const at = pk?.id ? `Package "${pk.id}"` : `Package #${i + 1}`;
+    if (!pk?.id) errs.push(`${at} has no "id".`);
+    else if (ids.has(pk.id)) errs.push(`Package id "${pk.id}" is used twice.`);
+    else ids.add(pk.id);
+    if (!pk?.name) errs.push(`${at} has no "name".`);
+    if (!Array.isArray(pk?.lines) || !pk.lines.length) return errs.push(`${at} needs a "lines" list.`);
+    pk.lines.forEach((l, j) => {
+      if (!l?.name || typeof l.qty !== "number" || (l.rate !== null && typeof l.rate !== "number"))
+        errs.push(`${at} line ${j + 1} needs a "name", a numeric "qty" and a numeric "rate" (or null).`);
+      else if (!cats.has(l.category)) errs.push(`${at} line "${l.name}" has unknown category "${l.category}".`);
+    });
+  });
   return errs;
 }
 

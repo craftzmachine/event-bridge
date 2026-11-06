@@ -1531,3 +1531,29 @@ body::before {
 @media (prefers-reduced-motion: reduce) {
   .budget-bar span { transition: none; }
 }
+
+/* ---------- Packages: picker dialog, Save as package, landing showcase ---------- */
+.pkg-dialog { width: min(760px, calc(100vw - 32px)); }
+.pkg-h { margin: 4px 0 10px; font-size: 20px; }
+.pkg-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.pkg { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "text price" "tools tools"; gap: 8px 16px; padding: 14px 16px; border: 1px solid var(--line); border-radius: var(--r); background: var(--paper-2); }
+.pkg-text { grid-area: text; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.pkg-text strong { font-family: var(--serif); font-size: 20px; font-weight: 500; }
+.pkg-text span, .pkg-text small { font-size: 13px; color: var(--ink-2); }
+.pkg-price { grid-area: price; align-self: start; font-variant-numeric: tabular-nums; font-weight: 600; white-space: nowrap; }
+.pkg-tools { grid-area: tools; display: flex; align-items: center; gap: 16px; }
+.save-pkg { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
+.save-pkg.is-open { padding: 14px 16px; border: 1px solid var(--line); border-radius: var(--r); background: var(--card); }
+.save-pkg .hint { margin: 0; }
+.save-pkg-actions { display: flex; justify-content: flex-end; gap: 8px; }
+.landing-pkgs { margin-top: 64px; }
+.landing-pkg-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
+.landing-pkg-list li { padding: 22px 22px 20px; border: 1px solid var(--line); border-radius: var(--r-lg); background: color-mix(in srgb, var(--card) 92%, transparent); display: flex; flex-direction: column; gap: 6px; }
+.landing-pkg-list h3 { font-size: 24px; }
+.landing-pkg-list p { margin: 0; color: var(--ink-2); font-size: 14.5px; }
+.landing-pkg-list .landing-pkg-occ { color: var(--gold-text); font-size: 13px; }
+.landing-pkg-list .landing-pkg-price { margin-top: auto; padding-top: 8px; color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
+@media (max-width: 760px) {
+  .pkg { grid-template-columns: minmax(0, 1fr); grid-template-areas: "text" "price" "tools"; }
+  .landing-pkgs { margin-top: 44px; }
+}

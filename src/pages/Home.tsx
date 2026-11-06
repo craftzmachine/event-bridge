@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-import type { Proposal, ProposalStatus } from "../types";
+import type { Proposal, ProposalPackage, ProposalStatus } from "../types";
+import { usePackages } from "../state/packages";
+import PackagePicker from "../components/PackagePicker";
 import { useConfig } from "../config/context";
 import { downloadJson, isProposal, readBackupState, writeBackupState, type useProposals } from "../state/proposals";
 import { backedUp, backupAge, backupDue, snoozed, type BackupState } from "../lib/backup";
@@ -27,6 +29,7 @@ export default function Home({
   onVenues,
   onVisualize,
   onNew,
+  onNewFrom,
 }: {
   store: Store;
   account: string;
@@ -35,7 +38,11 @@ export default function Home({
   onVenues: () => void;
   onVisualize: () => void;
   onNew: () => void;
+  /** start a proposal from a package */
+  onNewFrom: (pk: ProposalPackage) => void;
 }) {
+  const packages = usePackages();
+  const [picking, setPicking] = useState(false);
   const { catalog, brand } = useConfig();
   const fileRef = useRef<HTMLInputElement>(null);
   const [msg, setMsg] = useState("");
@@ -112,6 +119,7 @@ export default function Home({
           <p className="lede">Choose the occasion, curate the elements and hand the client a polished estimate in minutes.</p>
           <div className="hero-actions">
             <button className="btn-gold btn-lg" onClick={onNew}>Start a new proposal</button>
+            <button className="btn-outline-light btn-lg" onClick={() => setPicking(true)}>Start from a package</button>
             <button className="btn-outline-light btn-lg" onClick={onVenues}>Browse venues</button>
             <button className="btn-outline-light btn-lg" onClick={onVisualize}>Visualize Proposal</button>
           </div>
@@ -143,6 +151,17 @@ export default function Home({
           </aside>
         )}
         {msg && <p className="toast" role="status">{msg}</p>}
+        {picking && (
+          <PackagePicker
+            mine={packages.mine}
+            onRemove={packages.remove}
+            onClose={() => setPicking(false)}
+            onUse={(pk) => {
+              setPicking(false);
+              onNewFrom(pk);
+            }}
+          />
+        )}
         {excel && (
           <ExcelImport
             file={excel.file}
