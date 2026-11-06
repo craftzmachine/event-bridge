@@ -121,6 +121,14 @@ node -e "console.log(require('crypto').createHash('sha256').update('parinay-prop
 
 **Limits:** the browser check keeps casual visitors out but is not real security. Short passwords can be guessed offline from the published code. For anything sensitive, put the site behind hosting-level authentication (for example Cloudflare Access or Netlify password protection).
 
+**Switching to server-only sign-in** (recommended once sharing works on the live site): the switch is off until you turn it on. With it on, only the server's `STAFF_ACCOUNTS` can sign in, with no browser-list fallback. The browser list no longer decides who stays signed in; the site asks the server on each visit instead, so the hashes in `src/auth/auth.ts` stop mattering.
+1. Finish **Setting up Visualize Proposal** below, with **every** team account in `STAFF_ACCOUNTS`. Use long passwords: the setup script stores only scrypt hashes, which can't be guessed offline the way the browser list can.
+2. Check that each person can sign in and open **Visualize Proposal** on the live site.
+3. In Vercel → Settings → Environment Variables, add `VITE_SERVER_SIGNIN` = `1` (Production), then redeploy. It's read at build time, so it takes effect only after a new deployment.
+4. Later, remove the hashes from `src/auth/auth.ts` in a separate change.
+
+To undo, delete the variable and redeploy. If the server can't be reached while the switch is on, sign-in says it's unavailable; anyone already signed in keeps working with the drafts on their device.
+
 ## Updating offerings — no code changes
 
 Everything the team sells and the venue directory live in JSON files in `public/config/` (copied as-is to `dist/config/`). Edit them, reload the page — no rebuild needed. If an edit has a mistake, the app shows a list of exactly what to fix instead of loading.

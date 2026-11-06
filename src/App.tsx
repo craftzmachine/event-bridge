@@ -10,8 +10,8 @@ import Venues from "./pages/Venues";
 import Landing from "./pages/Landing";
 import Visualize from "./pages/Visualize";
 import ClientView from "./pages/ClientView";
-import { endSession, readSession, startSession, type Session } from "./auth/auth";
-import { api } from "./lib/api";
+import { endSession, readSession, SERVER_SIGNIN, startSession, type Session } from "./auth/auth";
+import { ApiError, api } from "./lib/api";
 
 /**
  * Event Bridge's top-level pages live in the URL hash so they can be linked to directly on any static host:
@@ -52,6 +52,21 @@ export default function App() {
   useEffect(() => {
     loadConfig().then(setConfig);
   }, []);
+
+  // with server-only sign-in the server decides who is signed in: a saved session it no longer knows ends here
+  // (when it can't be reached, the saved session stays, so drafts on this device remain usable offline)
+  const signedInAs = session?.email;
+  useEffect(() => {
+    if (!SERVER_SIGNIN || !signedInAs) {
+      return;
+    }
+    api("staff/me").catch((e: ApiError) => {
+      if (e.status === 401) {
+        endSession();
+        setSession(null);
+      }
+    });
+  }, [signedInAs]);
 
   useEffect(() => {
     const onHash = () => setHash(window.location.hash);

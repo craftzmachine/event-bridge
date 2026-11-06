@@ -14,6 +14,13 @@ const ACCOUNTS: { email: string; hash: string }[] = [
   { email: "operations.eventsiq@gmail.com", hash: "f0ae1150e33e88bff0a7acee2b7d691c21f9bcbc9eedb87cf92f1b265a380a52" },
 ];
 
+/**
+ * VITE_SERVER_SIGNIN=1 (set in Vercel, then redeploy): staff sign in only through the server's STAFF_ACCOUNTS,
+ * with no browser-list fallback, and a session is confirmed with /api/staff/me. Turn it on only once
+ * Visualize Proposal is set up on the live site with every team account, or nobody can sign in.
+ */
+export const SERVER_SIGNIN = import.meta.env.VITE_SERVER_SIGNIN === "1";
+
 const SESSION_KEY = "proposal-builder.session.v1";
 const SESSION_HOURS = 12;
 
@@ -45,8 +52,8 @@ export function readSession(): Session | null {
   try {
     const s = JSON.parse(localStorage.getItem(SESSION_KEY) ?? "null") as Session | null;
     if (!s || typeof s.email !== "string" || s.expires < Date.now()) return null;
-    // an account removed from the list loses access on its next visit
-    return ACCOUNTS.some((a) => a.email === s.email) ? s : null;
+    // an account removed from the list loses access on its next visit (with server sign-in, App asks the server)
+    return SERVER_SIGNIN || ACCOUNTS.some((a) => a.email === s.email) ? s : null;
   } catch {
     return null;
   }

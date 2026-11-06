@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useConfig } from "../config/context";
-import { checkCredentials } from "../auth/auth";
+import { checkCredentials, SERVER_SIGNIN } from "../auth/auth";
+import { decideLogin } from "../auth/loginRules";
 import { ApiError, api } from "../lib/api";
 import { SITE } from "../site";
 import Img from "../components/Img";
@@ -35,37 +36,31 @@ export default function Login({ onSignedIn }: { onSignedIn: (email: string) => v
       setError("Enter your email address and password.");
       return;
     }
-    // The server check also opens Visualize Proposal. Where the API isn't available (offline, a plain static host,
-    // or before it's set up) Event Bridge falls back to the browser-side allow-list.
-    const account = checkCredentials(email, password);
+    // The server check also opens Visualize Proposal. Unless SERVER_SIGNIN is on, Event Bridge falls back to the
+    // browser-side allow-list where the API isn't available (offline, a plain static host, or before it's set up).
+    const account = SERVER_SIGNIN ? null : checkCredentials(email, password);
     setBusy(true);
+    let server: Parameters<typeof decideLogin>[0];
     try {
-      const r = await api<{ email: string }>("staff/login", { json: { email, password } });
-      onSignedIn(r.email);
-      return;
+      server = await api<{ email: string }>("staff/login", { json: { email, password } });
     } catch (ex) {
       const err = ex as ApiError;
-      if (err.status === 429) {
-        setPassword("");
-        setLockedFor(err.retryAfter ?? LOCK_SECONDS);
-        setError(err.message);
-        return;
-      }
-      if (err.status === 401 && account) {
-        // a valid team login the server doesn't know yet: say why, rather than looking like a wrong password
-        setPassword("");
-        setError(`${account} isn't in the server's staff list yet, so it can't sign in here. Ask the Event Bridge admin to add it to STAFF_ACCOUNTS.`);
-        return;
-      }
-      if (err.status !== 0 && err.status !== 503) return wrong();
+      server = { status: err.status, retryAfter: err.retryAfter, message: err.message };
     } finally {
       setBusy(false);
     }
-    if (account) {
-      onSignedIn(account);
-      return;
+    const out = decideLogin(server, account, SERVER_SIGNIN);
+    if (out.kind === "signedIn") return onSignedIn(out.email);
+    if (out.kind === "wrong") return wrong();
+    setPassword("");
+    if (out.kind === "locked") {
+      setLockedFor(out.seconds ?? LOCK_SECONDS);
+      setError(out.message);
+    } else if (out.kind === "notOnServer") {
+      setError(`${out.account} isn't in the server's staff list yet, so it can't sign in here. Ask the Event Bridge admin to add it to STAFF_ACCOUNTS.`);
+    } else {
+      setError("Sign-in is unavailable right now. Check your connection and try again in a moment.");
     }
-    wrong();
   }
 
   function wrong() {

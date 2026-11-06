@@ -112,8 +112,9 @@ If you change totals logic, update the preview (`ProposalPreview`, `TotalsPanel`
   - **Sign-in again:** a 401 while sharing offers "Sign in again" (`onReauth` from `App`); the open proposal reopens after sign-in.
 - **Free-tier sizing:** each share is two blobs (`original.bin` and the `view.bin` bundle; see `server/bundle.ts`).
 - **Front end:** `src/lib/api.ts` treats a non-JSON answer as "API unavailable" (status 0).
-  - **Sign-in (`Login.tsx`):** it tries `/api/staff/login` first and falls back to the browser allow-list only on status 0 or 503. A 401 for an account the browser list accepts explains that it's missing from `STAFF_ACCOUNTS`.
+  - **Sign-in (`Login.tsx`):** it tries `/api/staff/login` first. What happens next is decided by the pure `decideLogin` (`src/auth/loginRules.ts`, tested in both modes). Normally it falls back to the browser allow-list only on status 0 or 503, and a 401 for an account the browser list accepts explains that it's missing from `STAFF_ACCOUNTS`.
   - **Staff accounts:** they must be in both lists. `readSession` drops sessions for emails that aren't in `src/auth/auth.ts`, so a server-only account is signed out on reload.
+  - **Server-only switch:** `SERVER_SIGNIN` (`VITE_SERVER_SIGNIN=1`, a build-time flag, off by default) removes the fallback and the `ACCOUNTS` check in `readSession`. `App` then confirms the session with `GET /api/staff/me` and signs out on a 401, but not when the server is unreachable. Don't turn it on before the live site has every account in `STAFF_ACCOUNTS`.
 - **Gotchas:**
   - Password hashes use `:` separators (`scrypt:N:r:p:salt:hash`), because Vite's dotenv-expand mangled `$`.
   - `logoToPng` uses `img.onload` with a timeout, not `img.decode()`, which can stay pending forever in a non-painting tab and hung the exports.
