@@ -1,10 +1,11 @@
 import { useRef, useState } from "react";
-import type { Proposal } from "../types";
+import type { Proposal, ProposalStatus } from "../types";
 import { useConfig } from "../config/context";
 import { downloadJson, isProposal, type useProposals } from "../state/proposals";
 import { computeTotals } from "../lib/totals";
-import { formatDates, formatINRShort, safeFilePart, todayISO } from "../lib/format";
+import { formatDate, formatDates, formatINRShort, safeFilePart, todayISO } from "../lib/format";
 import { eventDates, proposalTitle } from "../lib/proposal";
+import { matchesSearch, pipelineSummary, proposalStatus, statusLabel, STATUSES } from "../lib/status";
 import Img from "../components/Img";
 import Ornament from "../components/Ornament";
 import SiteNav from "../components/SiteNav";
@@ -62,7 +63,14 @@ export default function Home({
     if (fileRef.current) fileRef.current.value = "";
   }
 
+  const [filter, setFilter] = useState<ProposalStatus | "all">("all");
+  const [query, setQuery] = useState("");
   const sorted = [...store.list].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+  const counts = Object.fromEntries(STATUSES.map((s) => [s.id, store.list.filter((p) => proposalStatus(p) === s.id).length]));
+  const shown = sorted.filter((p) => (filter === "all" || proposalStatus(p) === filter) && matchesSearch(p, query));
+  const now = new Date();
+  const summary = pipelineSummary(store.list, brand.gstPct, now);
+  const month = now.toLocaleString("en-GB", { month: "long" });
 
   return (
     <div className="home">
@@ -110,13 +118,49 @@ export default function Home({
             }}
           />
         )}
+        {sorted.length > 0 && (
+          <>
+            <dl className="pipeline" aria-label={`${month} at a glance`}>
+              <div>
+                <dt>Sent in {month}</dt>
+                <dd>{formatINRShort(summary.sent.value)} <small>{summary.sent.count} proposal{summary.sent.count === 1 ? "" : "s"}</small></dd>
+              </div>
+              <div>
+                <dt>Accepted in {month}</dt>
+                <dd>{formatINRShort(summary.accepted.value)} <small>{summary.accepted.count} proposal{summary.accepted.count === 1 ? "" : "s"}</small></dd>
+              </div>
+              <div>
+                <dt>Win rate</dt>
+                <dd>{summary.winRate === null ? "—" : `${Math.round(summary.winRate * 100)}%`} <small>{summary.winRate === null ? "once one is accepted or lost" : "accepted of those decided"}</small></dd>
+              </div>
+            </dl>
+            <div className="home-filters">
+              <div className="seg" role="group" aria-label="Show proposals">
+                {([{ id: "all", label: "All" }, ...STATUSES] as const).map((s) => (
+                  <button key={s.id} type="button" className={filter === s.id ? "is-on" : ""} aria-pressed={filter === s.id} onClick={() => setFilter(s.id)}>
+                    {s.label} <span className="seg-count">{s.id === "all" ? store.list.length : counts[s.id]}</span>
+                  </button>
+                ))}
+              </div>
+              <label className="home-search">
+                <span className="sr-only">Search proposals</span>
+                <input type="search" placeholder="Search client, reference or venue" value={query} onChange={(e) => setQuery(e.target.value)} />
+              </label>
+            </div>
+          </>
+        )}
         {sorted.length === 0 ? (
           <div className="empty-state">
             <p>No proposals yet. Start one above — drafts are saved on this device as you work.</p>
           </div>
+        ) : shown.length === 0 ? (
+          <div className="empty-state">
+            <p>No {filter === "all" ? "" : `${statusLabel(filter).toLowerCase()} `}proposals{query.trim() ? ` match “${query.trim()}”` : " yet"}.</p>
+            <button className="btn-ghost" onClick={() => { setFilter("all"); setQuery(""); }}>Show all proposals</button>
+          </div>
         ) : (
           <ul className="cards">
-            {sorted.map((p) => {
+            {shown.map((p) => {
               const t = computeTotals(p, brand.gstPct);
               const style = catalog.ceremonyStyles.find((s) => s.id === p.style);
               return (
@@ -129,6 +173,10 @@ export default function Home({
                       <span className="pcard-ref">{p.ref}</span>
                       <span className="pcard-meta">{formatDates(eventDates(p))}{p.client.venue && ` · ${p.client.venue}`}</span>
                       <span className="pcard-total">{formatINRShort(t.grandTotal)} <small>· {p.lines.length} element{p.lines.length === 1 ? "" : "s"}</small></span>
+                      <span className={`pcard-status is-${proposalStatus(p)}`}>
+                        {statusLabel(proposalStatus(p))}
+                        {p.statusAt && proposalStatus(p) !== "draft" && ` ${formatDate(todayISO(new Date(p.statusAt)))}`}
+                      </span>
                     </span>
                   </button>
                   <div className="pcard-tools">

@@ -22,6 +22,7 @@ export function newProposal(brand: Brand, takenRefs: Iterable<string> = [], venu
     grandTotal: null,
     terms: [...brand.terms],
     notes: "",
+    status: "draft",
   };
 }
 
@@ -109,6 +110,10 @@ export function useProposals() {
         updatedAt: now.toISOString(),
         ref: generateQuoteRef(list.map((x) => x.ref), now),
         client: { ...p.client, name: p.client.name ? `${p.client.name} (copy)` : "" },
+        // a copy is a new quotation: it starts as a draft, not linked to the original's share
+        status: "draft",
+        statusAt: undefined,
+        sentAt: undefined,
       };
       setList((l) => [copy, ...l]);
       return copy;

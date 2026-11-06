@@ -5,6 +5,7 @@ import { customLine, lineFromElement } from "../state/proposals";
 import { computeTotals, roundOffSuggestions } from "../lib/totals";
 import { formatINR, formatINRShort } from "../lib/format";
 import { eventDates, proposalTitle } from "../lib/proposal";
+import { proposalStatus, statusPatch, STATUSES } from "../lib/status";
 import StepRail, { STEPS } from "../components/StepRail";
 import ImageChoiceCard from "../components/ImageChoiceCard";
 import ElementCard from "../components/ElementCard";
@@ -268,6 +269,18 @@ function ReviewStep({ p, set }: StepProps) {
       <div className="review-side">
         <p className="eyebrow">Step four</p>
         <h1>Review &amp; finish</h1>
+        <div className="side-card">
+          <h3 id="status-title">Status</h3>
+          <div className="seg status-seg" role="group" aria-labelledby="status-title">
+            {STATUSES.map((s) => (
+              <button key={s.id} type="button" className={proposalStatus(p) === s.id ? "is-on" : ""} aria-pressed={proposalStatus(p) === s.id}
+                onClick={() => set((cur) => statusPatch(cur, s.id))}>
+                {s.label}
+              </button>
+            ))}
+          </div>
+          <p className="hint">Mark it sent once the client has it, then accepted or lost when they decide.</p>
+        </div>
         <div className="side-card">
           <h3>Pricing</h3>
           <label className="field">

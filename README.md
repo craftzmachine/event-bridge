@@ -38,6 +38,13 @@ Opening a feature app while signed out goes to sign-in first, then straight back
 
 **Themes and fonts**: the theme button switches between Parinay, Solarized Light, Solarized Dark, Nord, Dark and White. **Dark** is the default for everyone (themes picked before this change were reset to Dark once); after that, a theme someone picks is kept. The **Aa** button cycles the font between Classic, Sans Serif and Mono. Both apply across the whole app and are remembered on each device.
 
+**Status and overview**: in the Review step, mark a proposal **Draft**, **Sent**, **Accepted** or **Lost**. The Proposal Studio home then shows:
+- **This month at a glance:** the value sent to clients and the value accepted, each as Grand Totals, plus the win rate (accepted out of those accepted or lost).
+- **Filters and search:** filter the list by status, or search by client, reference or venue.
+- **Status on each card:** with the date it last changed.
+
+Duplicating a proposal starts the copy as a draft.
+
 Drafts save automatically in the browser on each device. Use **Save file** / **Back up all** on the home page to move proposals between devices, and **Import** to load them. Clearing the browser's site data deletes that device's drafts, so back up regularly.
 It works on phones, tablets and laptops. On smaller screens the selection becomes a bottom drawer.
 

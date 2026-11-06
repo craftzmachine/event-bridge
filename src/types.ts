@@ -154,4 +154,12 @@ export interface Proposal {
   grandTotal: number | null;
   terms: string[];
   notes: string;
+  /** where it stands with the client; older drafts have none, so read through proposalStatus() */
+  status?: ProposalStatus;
+  /** when the status last changed (ISO) */
+  statusAt?: string;
+  /** when it was first marked sent (ISO); kept when it later becomes accepted or lost */
+  sentAt?: string;
 }
+
+export type ProposalStatus = "draft" | "sent" | "accepted" | "lost";

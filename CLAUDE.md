@@ -65,6 +65,8 @@ Photos must show the actual venue and be licensed for commercial use: CC BY, CC 
 - **Saving:** creating goes through `store.importMany`, the same path as a JSON import.
 - **Round trip:** a test converts a `buildWorkbook` export back to the same proposal. If you change the export's layout or labels, keep that test passing.
 
+**Proposal status** (`src/lib/status.ts`, tests in `status.test.ts`). `Proposal.status` is optional: drafts saved before it read as `"draft"`, so always read it through `proposalStatus(p)`. Change it only with `statusPatch(cur, status)`, which sets `statusAt` and, the first time it leaves draft, `sentAt` (kept afterwards). The Studio home's summary (`pipelineSummary`) counts "sent this month" by `sentAt` and "accepted this month" by `statusAt`, valued at each proposal's Grand Total. `duplicate` resets the copy to a draft.
+
 **Quotation references** (`src/lib/quoteRef.ts`) are `YYYYDDMM-ABC` (year, *day*, *month*, 3 random capitals) and must be unique per device. `newProposal(brand, takenRefs)` and `duplicate` generate them; `ensureUniqueRefs` runs on load and import to backfill empty refs (dated from `createdAt`) and replace collisions. The ref is read-only in the UI.
 
 **Event dates.** `client.dates` holds every date (sorted), and `client.date` mirrors the first so older drafts and file names keep working.
