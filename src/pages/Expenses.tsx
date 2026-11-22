@@ -7,20 +7,24 @@ import {
   deleteReceived,
   getProof,
   getReceived,
+  listAdvances,
   listExpenses,
   listReceived,
   listSent,
+  putAdvances,
   putExpenses,
   putProof,
   putReceived,
   putSent,
   readCustomCategories,
   receivedFileId,
+  useEventAdvances,
   useEventExpenses,
   writeCustomCategories,
 } from "../state/expenses";
-import { canReview, DEFAULT_CATEGORIES, eventWindow, filterExpenses, flagsOf, maskUpi, summarise, type Expense, type ExpenseFilter, type ReviewState } from "../lib/expenses";
-import { applyReply, handoverReceiptDoc, packData, packSummaryDoc, signOff, type PackData, type ReceivedHandover, type SentHandover } from "../lib/handover";
+import { DEFAULT_CATEGORIES, eventWindow, filterExpenses, flagsOf, maskUpi, payerLabel, summarise, type Expense, type ExpenseFilter, type ReviewState } from "../lib/expenses";
+import { advanceAlerts, advanceState, balanceOf, canManage, defaultSettleBy, settlement, STATE_LABEL, type Advance } from "../lib/advances";
+import { applyReply, canReviewPack, dueText, handoverReceiptDoc, packData, packSummaryDoc, signOff, withReviews, type PackData, type ReceivedHandover, type SentHandover } from "../lib/handover";
 import { eventDates, proposalTitle } from "../lib/proposal";
 import { proposalStatus, statusLabel } from "../lib/status";
 import { functionsOf } from "../lib/functions";
@@ -29,6 +33,7 @@ import { formatDate, formatINR, formatINRShort, todayISO } from "../lib/format";
 import { saveBlob } from "../lib/files";
 import AppearanceControls from "../components/AppearanceControls";
 import ExpenseDialog, { type ExpenseEventInfo } from "../components/ExpenseDialog";
+import AdvanceDialog from "../components/AdvanceDialog";
 import ProofThumb from "../components/ProofThumb";
 
 const FLAG_LABEL = { missingProof: "Proof missing", possibleDuplicate: "Check duplicate", queried: "Queried", rejected: "Rejected" } as const;
@@ -92,12 +97,14 @@ function Index({ proposals, account }: { proposals: Proposal[]; account: string 
   const { catalog } = useConfig();
   const [all, setAll] = useState<Expense[]>([]);
   const [received, setReceived] = useState<ReceivedHandover[]>([]);
+  const [advances, setAdvances] = useState<Advance[]>([]);
   const [msg, setMsg] = useState("");
   const [err, setErr] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
   const refresh = () => {
     listExpenses().then(setAll).catch((e: Error) => setErr(e.message));
     listReceived().then(setReceived).catch(() => {});
+    listAdvances().then(setAdvances).catch(() => {});
   };
   useEffect(refresh, []);
 
@@ -128,6 +135,10 @@ function Index({ proposals, account }: { proposals: Proposal[]; account: string 
 
   const byEvent = new Map<string, Expense[]>();
   for (const e of all) if (!e.removed) byEvent.set(e.eventId, [...(byEvent.get(e.eventId) ?? []), e]);
+  // money still with staff on each event: what's left on its open advances
+  const withStaff = new Map<string, number>();
+  for (const a of advances) if (!a.closed) withStaff.set(a.eventId, (withStaff.get(a.eventId) ?? 0) + Math.max(balanceOf(a, all).left, 0));
+  const outTotal = [...withStaff.values()].reduce((t, n) => t + n, 0);
   // accepted events first, then any with expenses, then the rest
   const events = [...proposals]
     .filter((x) => proposalStatus(x) !== "lost" || byEvent.has(x.id))
@@ -139,6 +150,7 @@ function Index({ proposals, account }: { proposals: Proposal[]; account: string 
         <div>
           <h1>Event expenses</h1>
           <p className="lede">Record what's spent on each wedding with its proof, then hand it over to a colleague to check.</p>
+          {outTotal > 0 && <p className="adv-out">{formatINR(outTotal)} is with staff on open advances, across {withStaff.size} event{withStaff.size === 1 ? "" : "s"}.</p>}
         </div>
         <div className="exp-head-tools">
           <button className="btn-ghost" onClick={() => fileRef.current?.click()}>Receive a handover</button>
@@ -186,6 +198,7 @@ function Index({ proposals, account }: { proposals: Proposal[]; account: string 
                   <span className="exp-count">
                     {list.length ? `${s.count} · ${formatINRShort(s.total)}` : "No expenses"}
                     {s.missingProof > 0 && <small className="warn"> · {s.missingProof} without proof</small>}
+                    {(withStaff.get(x.id) ?? 0) > 0 && <small> · {formatINRShort(withStaff.get(x.id)!)} with staff</small>}
                   </span>
                 </li>
               );
@@ -202,8 +215,10 @@ function Index({ proposals, account }: { proposals: Proposal[]; account: string 
 function Ledger({ p, account }: { p: Proposal; account: string }) {
   const { catalog, brand } = useConfig();
   const { list, error, refresh, save } = useEventExpenses(p.id);
+  const adv = useEventAdvances(p.id);
   const cats = useCategories();
   const [editing, setEditing] = useState<Expense | "new" | null>(null);
+  const [opened, setOpened] = useState<Advance | "new" | null>(null);
   const [filter, setFilter] = useState<ExpenseFilter>({});
   const [handover, setHandover] = useState(false);
   const event: ExpenseEventInfo = useMemo(
@@ -228,7 +243,8 @@ function Ledger({ p, account }: { p: Proposal; account: string }) {
           </p>
         </div>
         <div className="exp-head-tools">
-          <button className="btn-ghost" onClick={() => setHandover(true)} disabled={!s.count}>Prepare handover</button>
+          {canManage(brand.advanceManagers, account) && <button className="btn-ghost" onClick={() => setOpened("new")}>Give money</button>}
+          <button className="btn-ghost" onClick={() => setHandover(true)} disabled={!s.count && !adv.list.length}>Prepare handover</button>
           <button className="btn-primary" onClick={() => setEditing("new")}>Add expense</button>
         </div>
       </div>
@@ -255,6 +271,8 @@ function Ledger({ p, account }: { p: Proposal; account: string }) {
         </div>
       </section>
 
+      {adv.list.length > 0 && <Advances list={adv.list} expenses={all} account={account} onOpen={setOpened} />}
+
       <div className="exp-filters">
         <input type="search" placeholder="Search vendor, item, UPI ref, amount" aria-label="Search expenses" value={filter.q ?? ""} onChange={(e) => setFilter({ ...filter, q: e.target.value })} />
         <select aria-label="Category" value={filter.category ?? ""} onChange={(e) => setFilter({ ...filter, category: e.target.value || undefined })}>
@@ -263,7 +281,7 @@ function Ledger({ p, account }: { p: Proposal; account: string }) {
         </select>
         <select aria-label="Paid by" value={filter.payer ?? ""} onChange={(e) => setFilter({ ...filter, payer: e.target.value || undefined })}>
           <option value="">Anyone paid</option>
-          {s.byPayer.map((x) => <option key={x.key} value={x.kind === "company" ? "company" : x.label}>{x.label}</option>)}
+          {s.byPayer.map((x) => <option key={x.key} value={x.key}>{x.label}</option>)}
         </select>
         <select aria-label="Show" value={filter.flag ?? ""} onChange={(e) => setFilter({ ...filter, flag: (e.target.value || undefined) as ExpenseFilter["flag"] })}>
           <option value="">All expenses</option>
@@ -288,7 +306,7 @@ function Ledger({ p, account }: { p: Proposal; account: string }) {
                 <ProofThumb fileId={e.proof?.fileId} alt="" />
                 <span className="exp-row-main">
                   <strong>{e.vendor}</strong>
-                  <span>{[e.description, catLabel(e.category), fnLabel(e.fn), e.payer.kind === "company" ? "Company account" : e.payer.name, maskUpi(e.payeeUpi)].filter(Boolean).join(" · ")}</span>
+                  <span>{[e.description, catLabel(e.category), fnLabel(e.fn), payerLabel(e), maskUpi(e.payeeUpi)].filter(Boolean).join(" · ")}</span>
                   <span className="exp-flags">
                     {flagsOf(e, all).map((f) => <em key={f} className={`is-${f}`}>{FLAG_LABEL[f]}</em>)}
                     {e.review.state === "checked" && <em className="is-checked">Checked</em>}
@@ -311,6 +329,7 @@ function Ledger({ p, account }: { p: Proposal; account: string }) {
           event={event}
           expense={editing === "new" ? undefined : editing}
           all={all}
+          advances={adv.list}
           account={account}
           categories={cats.all}
           vendors={vendors}
@@ -320,14 +339,73 @@ function Ledger({ p, account }: { p: Proposal; account: string }) {
           onClose={() => setEditing(null)}
         />
       )}
-      {handover && <Handover p={p} list={all} account={account} categories={cats.all} onDone={refresh} onClose={() => setHandover(false)} />}
+      {opened && (
+        <AdvanceDialog
+          key={opened === "new" ? "new" : opened.id}
+          event={{ ...event, settleBy: defaultSettleBy(eventDates(p)) }}
+          advance={opened === "new" ? undefined : opened}
+          advances={adv.list}
+          expenses={all}
+          account={account}
+          manager={canManage(brand.advanceManagers, account)}
+          people={[...new Set([...adv.list.map((a) => a.staff), ...all.map((e) => e.recordedBy)].filter((x) => x && x !== account))].sort()}
+          onSave={adv.save}
+          onClose={() => setOpened(null)}
+        />
+      )}
+      {handover && <Handover p={p} list={all} advances={adv.list} account={account} categories={cats.all} onDone={() => { refresh(); adv.refresh(); }} onClose={() => setHandover(false)} />}
     </>
+  );
+}
+
+// ---- staff advances on the ledger ----------------------------------------------------------------------------------
+
+function Advances({ list, expenses, account, onOpen }: { list: Advance[]; expenses: Expense[]; account: string; onOpen: (a: Advance) => void }) {
+  const today = todayISO();
+  const now = new Date();
+  const mine = list.filter((a) => !a.closed && a.staff.toLowerCase() === account.toLowerCase());
+  return (
+    <section className="dash-card adv-card" aria-label="Staff advances">
+      <h2>Staff advances</h2>
+      {mine.map((a) => {
+        const left = balanceOf(a, expenses).left;
+        return (
+          <button key={a.id} className="adv-mine" onClick={() => onOpen(a)}>
+            <span>Your advance{mine.length > 1 ? ` for ${a.purpose}` : ""}</span>
+            <strong className={left < 0 ? "is-over" : ""}>{left < 0 ? `${formatINR(-left)} over` : `${formatINR(left)} left`}</strong>
+          </button>
+        );
+      })}
+      <ul className="adv-rows">
+        {list.map((a) => {
+          const b = settlement(a, expenses);
+          const st = advanceState(a, expenses, today);
+          const alerts = advanceAlerts(a, expenses, now, today);
+          return (
+            <li key={a.id}>
+              <button className="adv-row" onClick={() => onOpen(a)}>
+                <span className="adv-row-main">
+                  <strong>{a.staff}</strong>
+                  <span>{a.purpose}{a.settleBy && !a.closed ? ` · settle by ${formatDate(a.settleBy)}` : ""}</span>
+                  {alerts.length > 0 && <small className="hint warn">{alerts.join(" · ")}</small>}
+                </span>
+                <span className="adv-row-figs">
+                  <span>Given {formatINRShort(b.given)} · spent {formatINRShort(b.spent)}{b.returned ? ` · returned ${formatINRShort(b.returned)}` : ""}</span>
+                  <strong>{a.closed ? "Closed" : b.left < 0 ? `${formatINRShort(-b.left)} over` : `${formatINRShort(b.left)} left`}</strong>
+                  <em className={`adv-state is-${st}`}>{st === "settled" || st === "closed" ? STATE_LABEL[st] : b.holds.length ? `${STATE_LABEL[st]} · settles after review` : `${STATE_LABEL[st]} · ${dueText(b.due, "them")}`}</em>
+                </span>
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
   );
 }
 
 // ---- preparing a handover (the recorder) --------------------------------------------------------------------------
 
-function Handover({ p, list, account, categories, onDone, onClose }: { p: Proposal; list: Expense[]; account: string; categories: { id: string; label: string }[]; onDone: () => void; onClose: () => void }) {
+function Handover({ p, list, advances, account, categories, onDone, onClose }: { p: Proposal; list: Expense[]; advances: Advance[]; account: string; categories: { id: string; label: string }[]; onDone: () => void; onClose: () => void }) {
   const { catalog, brand } = useConfig();
   const ref = useRef<HTMLDialogElement>(null);
   const replyRef = useRef<HTMLInputElement>(null);
@@ -355,6 +433,7 @@ function Handover({ p, list, account, categories, onDone, onClose }: { p: Propos
         note: note.trim(),
         categories,
         expenses: list,
+        advances,
       });
       const images = new Map<string, Blob>();
       for (const e of live) if (e.proof) {
@@ -379,9 +458,10 @@ function Handover({ p, list, account, categories, onDone, onClose }: { p: Propos
   async function importReply(file: File | undefined) {
     if (!file) return;
     try {
-      const r = applyReply(JSON.parse(await file.text()), sent, list);
+      const r = applyReply(JSON.parse(await file.text()), sent, list, advances);
       if ("error" in r) return setMsg(r.error);
       await putExpenses(r.expenses);
+      await putAdvances(r.advances);
       await putSent(r.handover);
       setSent((x) => x.map((h) => (h.id === r.handover.id ? r.handover : h)));
       onDone();
@@ -406,6 +486,7 @@ function Handover({ p, list, account, categories, onDone, onClose }: { p: Propos
           <li className={s.duplicates ? "is-warn" : "is-ok"}>{s.duplicates ? `${s.duplicates} may be duplicates: check them first` : "No possible duplicates"}</li>
           <li className={s.queried ? "is-warn" : "is-ok"}>{s.queried ? `${s.queried} still queried from the last review` : "No open queries"}</li>
           <li>{s.count} expenses, {formatINR(s.total)}</li>
+          {advances.length > 0 && <li>{advances.length} staff advance{advances.length === 1 ? "" : "s"}, {advances.filter((a) => !a.closed).length} open: the reviewer sees what's due on each</li>}
         </ul>
         <div>
           <span className="field-label">To reimburse or settle</span>
@@ -437,7 +518,7 @@ function Handover({ p, list, account, categories, onDone, onClose }: { p: Propos
               onClose();
             }}>Clear from this device</button>
           )}
-          <button className="btn-primary" onClick={create} disabled={!!busy || !live.length}>Create handover file</button>
+          <button className="btn-primary" onClick={create} disabled={!!busy || (!live.length && !advances.length)}>Create handover file</button>
         </div>
       </div>
     </dialog>
@@ -457,7 +538,9 @@ function Review({ id, account }: { id: string; account: string }) {
   if (h === null) return <div className="empty-state"><p>This handover isn't on this device.</p><a className="btn-ghost" href="#/expenses">All events</a></div>;
 
   const live = h.pack.expenses.filter((e) => !e.removed);
-  const own = !canReview(h.pack.expenses, account);
+  const own = !canReviewPack(h.pack, account);
+  const advances = h.pack.advances ?? [];
+  const reviewed = withReviews(h);
   const cat = (c: string) => h.pack.categories.find((x) => x.id === c)?.label ?? c;
   // builds on the latest state, so quick successive decisions don't overwrite each other
   const decide = (eid: string, state: ReviewState, note?: string) =>
@@ -496,11 +579,28 @@ function Review({ id, account }: { id: string; account: string }) {
           <button className="btn-primary" onClick={finish} disabled={own || h.state !== "reviewing"}>Sign off</button>
         </div>
       </div>
-      {own && <p className="error" role="alert">You recorded or edited some of these expenses, so another team member has to review them.</p>}
+      {own && <p className="error" role="alert">You recorded or edited some of these expenses, or gave or held the money, so another team member has to review them.</p>}
       {h.pack.note && <p className="notice">Note from {h.pack.from}: {h.pack.note}</p>}
       {h.state !== "reviewing" && <p className="toast">{h.state === "reconciled" ? "Reconciled" : "Returned with queries"} by {h.reviewer} on {formatDate((h.signedAt ?? "").slice(0, 10))}.</p>}
       {msg && <p className="toast" role="status">{msg}</p>}
       <p className="hint">{done} of {live.length} reviewed · total {formatINR(s.total)}</p>
+      {advances.length > 0 && (
+        <section className="dash-card adv-card" aria-label="Staff advances">
+          <h2>Staff advances, with your decisions so far</h2>
+          <ul className="exp-payers">
+            {advances.map((a) => {
+              const st = settlement(a, reviewed);
+              return (
+                <li key={a.id}>
+                  <span>{a.staff} · {a.purpose}<small className="hint"> · given {formatINRShort(st.given)}, accepted {formatINRShort(st.accepted)}, returned {formatINRShort(st.returned)}{st.reimbursed ? `, repaid ${formatINRShort(st.reimbursed)}` : ""}</small></span>
+                  <strong>{a.closed ? "Closed" : dueText(st.due, a.staff)}</strong>
+                </li>
+              );
+            })}
+          </ul>
+          <p className="hint">Rejected expenses, and ones without proof that you don't check, stay with the person who held the money.</p>
+        </section>
+      )}
 
       <ul className="exp-review">
         {live.map((e) => {
@@ -510,7 +610,7 @@ function Review({ id, account }: { id: string; account: string }) {
               <ProofThumb fileId={e.proof ? receivedFileId(h.id, e.proof.fileId) : undefined} alt={`Proof of payment to ${e.vendor}`} full />
               <div className="exp-review-body">
                 <strong>{e.vendor} · {formatINR(e.amount)}</strong>
-                <span>{formatDate(e.paidOn)}{e.paidAt ? ` ${e.paidAt}` : ""} · {cat(e.category)} · paid by {e.payer.kind === "company" ? "the company account" : e.payer.name}</span>
+                <span>{formatDate(e.paidOn)}{e.paidAt ? ` ${e.paidAt}` : ""} · {cat(e.category)} · paid by {payerLabel(e)}</span>
                 {e.description && <span>{e.description}</span>}
                 <span>{e.upiRef ? `UPI ref ${e.upiRef}` : "No UPI ref"}{e.payeeUpi ? ` · to ${maskUpi(e.payeeUpi)}` : ""} · recorded by {e.recordedBy}</span>
                 <span className="exp-flags">{flagsOf(e, h.pack.expenses).filter((f) => f === "missingProof" || f === "possibleDuplicate").map((f) => <em key={f} className={`is-${f}`}>{FLAG_LABEL[f]}</em>)}</span>

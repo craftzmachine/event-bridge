@@ -124,7 +124,9 @@ export function validateBrand(b: unknown): string[] {
   }
   if (brand.expenseCategories !== undefined && (!Array.isArray(brand.expenseCategories) || brand.expenseCategories.some((c) => !c?.id || !c?.label)))
     errs.push(`brand.json "expenseCategories" must be a list of { "id", "label" }.`);
-  if (brand.balanceDueDays !== undefined && !(Number.isInteger(brand.balanceDueDays) && brand.balanceDueDays >= 0))
+  if (brand.advanceManagers !== undefined && (!Array.isArray(brand.advanceManagers) || brand.advanceManagers.some((m) => typeof m !== "string" || !m.includes("@"))))
+    errs.push(`brand.json "advanceManagers" must be a list of sign-in email addresses.`);
+  if (brand.balanceDueDays !== undefined &&!(Number.isInteger(brand.balanceDueDays) && brand.balanceDueDays >= 0))
     errs.push(`brand.json "balanceDueDays" must be a whole number of days.`);
   return errs;
 }

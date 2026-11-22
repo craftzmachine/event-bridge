@@ -3,11 +3,12 @@ import { useConfig } from "../config/context";
 import { SITE } from "../site";
 import AppearanceControls from "./AppearanceControls";
 
-export type NavItem = "home" | "dashboard" | "studio" | "venues" | "visualize";
+export type NavItem = "home" | "dashboard" | "expenses" | "studio" | "venues" | "visualize";
 
 const ITEMS: { id: NavItem; label: string; href: string }[] = [
   { id: "home", label: "Home", href: "#/" },
   { id: "dashboard", label: "Dashboard", href: "#/dashboard" },
+  { id: "expenses", label: "Expenses", href: "#/expenses" },
   { id: "studio", label: "Proposal Studio", href: "#/studio" },
   { id: "venues", label: "Venue Directory", href: "#/venues" },
   { id: "visualize", label: "Visualize Proposal", href: "#/visualize" },

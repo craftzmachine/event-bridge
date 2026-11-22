@@ -83,7 +83,7 @@ Duplicating a proposal starts the copy as a draft, with the payment plan but no 
 - **What's selling:** wins by occasion.
 - **Expenses:** events with expenses recorded, those without proof first.
 
-**Event expenses** (`#/expenses`; also **Expenses** on each proposal card and in the Builder's top bar): what's spent on each wedding, with its proof, handed over to a colleague to check.
+**Event expenses** (`#/expenses`, **Expenses** in the main menu; also on each proposal card and in the Builder's top bar): what's spent on each wedding, with its proof, handed over to a colleague to check.
 - **Recording an expense:** **Add expense**.
   - **Proof:** attach the GPay screenshot or a photo of the receipt (**Take photo**, **Choose screenshot**, or paste with Ctrl+V). Images are scaled down and kept on this device.
   - **Details:** amount, date (and time), who was paid, what it was for, the category, the function, who paid (you, a colleague or the company account), the method, and the UPI transaction ID / UTR and payee UPI ID when paid by UPI.
@@ -97,13 +97,20 @@ Duplicating a proposal starts the copy as a draft, with the payment plan but no 
 - **The ledger:** spending so far (against the quote, for reference), what needs attention, totals by category and by who paid, and filters (category, payer, proof missing, possible duplicates, queried, removed) with search.
   - **History:** every edit is recorded with who and when, under **History** in the expense.
   - **Removing:** needs a reason, and the expense can be restored.
+- **Staff advances** (money given to a team member for the event's purchases):
+  - **Giving money:** **Give money** on the event's ledger: the team member's sign-in email, what it's for, the amount, how it was paid, a settle-by date (3 days after the last event date by default) and an optional limit for one expense.
+  - **Spending it:** when that person adds an expense, **From my advance (₹x left)** is chosen for them. Going over the advance or the limit asks them to confirm; it's allowed, because events can't wait.
+  - **The card:** each advance shows given, spent, returned and what's left, with a state (open, running low, overspent, settle now, ready to close, closed). Alerts cover running low (under 20% left), overspending, a passed settle-by date and expenses without proof for over 24 hours. Your own advance shows as one big "₹x left".
+  - **Settling:** what's due = given − accepted spending − cash returned + repaid. Rejected expenses, and ones without proof that the reviewer didn't check, aren't accepted, so that money stays owed. Queried and unreviewed expenses hold the settlement. Open an advance to **Record cash returned**, **Repay overspend**, **Give more** or **Close**. Closing needs nothing due, or a written-off amount with a reason. A closed advance can be reopened, with a reason.
+  - **Nothing is deleted:** a wrong entry is **Reversed** with a reason, and every change is in the advance's history.
+  - **Who can manage advances:** list sign-in emails in `brand.json` as `"advanceManagers": ["…"]`. Without it, anyone signed in can give money and settle. Others can see advances but not change them.
 - **Handing over:**
   1. **Prepare handover** shows a checklist (proof missing, possible duplicates, open queries) and what to reimburse to each person who paid. Add a note, then **Create handover file**.
-  2. Send the `.zip` to the colleague who'll check it. It holds `summary.pdf`, `expenses.xlsx`, the proof images named by date, vendor and amount, and the data file.
-  3. The colleague opens **Expenses → Receive a handover** on their device. Event Bridge checks every image's fingerprint, and refuses the file if anyone who recorded or edited the expenses tries to review it.
+  2. Send the `.zip` to the colleague who'll check it. It holds `summary.pdf`, `expenses.xlsx` (with an **Advances** sheet when there are any), the proof images named by date, vendor and amount, and the data file.
+  3. The colleague opens **Expenses → Receive a handover** on their device. Event Bridge checks every image's fingerprint, and refuses the file if anyone who recorded or edited the expenses, or gave, held or moved money on its advances, tries to review it. The review page shows what's due on each advance as decisions are made, and the reply carries it back to the advance's history.
   4. They mark each expense **Checked**, **Query** (with their question) or **Reject** (with a reason), then **Sign off**. That downloads a reply file and a handover receipt PDF. All checked means **Reconciled**; any query or rejection means **Returned with queries**.
   5. Back on the recorder's device, **Prepare handover → Import the reply** marks each expense with the review.
-  6. Once reconciled, **Clear from this device** removes the event's expenses and screenshots there.
+  6. Once reconciled, **Clear from this device** removes the event's expenses, screenshots and closed advances there. Open advances stay, since money is still out.
 - **Privacy:** expenses and screenshots are kept in this browser only (IndexedDB, not encrypted), so use your own phone. The handover file is an ordinary ZIP: send it only to the reviewer, and delete it after sign-off. Moving expenses to the server, with real access control, comes once Visualize Proposal is set up.
 
 Drafts save automatically in the browser on each device. Use **Save file** / **Back up all** on the home page to move proposals between devices, and **Import** to load them. Clearing the browser's site data deletes that device's drafts, so back up regularly. If there has been no **Back up all** on a device for 7 days (or ever), the home page shows a reminder with **Back up now**; **Remind me later** hides it for 3 days. Saving a single proposal's file doesn't count as a full backup.

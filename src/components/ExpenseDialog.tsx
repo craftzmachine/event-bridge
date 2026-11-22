@@ -4,7 +4,8 @@ import { uid } from "../state/proposals";
 import { putProof } from "../state/expenses";
 import { prepareProof } from "../lib/proofImage";
 import { checkExpense, cleanRef, maskUpi, METHODS, PAYERS, removeExpense, restoreExpense, saveExpense, type Expense, type Problem } from "../lib/expenses";
-import { formatDate, todayISO } from "../lib/format";
+import { balanceOf, spendWarning, type Advance } from "../lib/advances";
+import { formatDate, formatINRShort, todayISO } from "../lib/format";
 import MoneyInput from "./MoneyInput";
 import ProofThumb from "./ProofThumb";
 
@@ -15,7 +16,17 @@ export interface ExpenseEventInfo {
   window?: { from: string; to: string };
 }
 
-const blank = (ev: ExpenseEventInfo, by: string): Expense => ({
+/** A new expense: paid from the account's own open advance when they hold one, else by them. */
+const blank = (ev: ExpenseEventInfo, by: string, advances: Advance[] = []): Expense => {
+  const own = advances.find((a) => !a.closed && a.staff.toLowerCase() === by.toLowerCase());
+  return {
+    ...base(ev, by),
+    payer: own ? { kind: "advance", name: own.staff } : { kind: "self", name: by },
+    advanceId: own?.id,
+  };
+};
+
+const base = (ev: ExpenseEventInfo, by: string): Expense => ({
   id: `x-${uid()}`,
   eventId: ev.id,
   eventRef: ev.ref,
@@ -41,6 +52,7 @@ export default function ExpenseDialog({
   event,
   expense,
   all,
+  advances = [],
   account,
   categories,
   vendors,
@@ -52,6 +64,8 @@ export default function ExpenseDialog({
   event: ExpenseEventInfo;
   expense?: Expense;
   all: Expense[];
+  /** the event's staff advances: open ones can pay for an expense */
+  advances?: Advance[];
   account: string;
   categories: { id: string; label: string }[];
   vendors: string[];
@@ -63,7 +77,7 @@ export default function ExpenseDialog({
   const ref = useRef<HTMLDialogElement>(null);
   const camRef = useRef<HTMLInputElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
-  const [e, setE] = useState<Expense>(() => expense ?? blank(event, account));
+  const [e, setE] = useState<Expense>(() => expense ?? blank(event, account, advances));
   const [proofBlob, setProofBlob] = useState<Blob | null>(null);
   const [busy, setBusy] = useState("");
   const [err, setErr] = useState("");
@@ -104,7 +118,18 @@ export default function ExpenseDialog({
     }
   };
 
-  const problems: Problem[] = checkExpense({ ...e, upiRef: cleanRef(e.upiRef) || undefined }, all, event.window);
+  // open advances, plus a closed one this expense already uses
+  const usable = advances.filter((a) => !a.closed || a.id === e.advanceId);
+  const others = all.filter((x) => x.id !== e.id);
+  const advLabel = (a: Advance) =>
+    `From ${a.staff.toLowerCase() === account.toLowerCase() ? "my" : `${a.staff}'s`} advance (${formatINRShort(balanceOf(a, others).left)} left)${a.closed ? ", closed" : ""}`;
+  const chosen = e.payer.kind === "advance" ? usable.find((a) => a.id === e.advanceId) : undefined;
+  const overspend = chosen ? spendWarning(e, chosen, all) : undefined;
+  const problems: Problem[] = [
+    ...checkExpense({ ...e, upiRef: cleanRef(e.upiRef) || undefined }, all, event.window),
+    ...(overspend ? [{ kind: "warn" as const, field: "payer", text: overspend }] : []),
+    ...(e.payer.kind === "advance" && !e.advanceId ? [{ kind: "block" as const, field: "payer", text: "Choose the advance it was paid from." }] : []),
+  ];
   const blocks = problems.filter((p) => p.kind === "block");
   const warns = problems.filter((p) => p.kind === "warn");
 
@@ -117,7 +142,7 @@ export default function ExpenseDialog({
       const clean: Expense = { ...e, upiRef: cleanRef(e.upiRef) || undefined, vendor: e.vendor.trim(), description: e.description.trim(), payeeUpi: e.payeeUpi?.trim() || undefined };
       await onSave(saveExpense(clean, expense, account));
       if (again) {
-        setE({ ...blank(event, account), category: e.category, payer: e.payer, method: e.method, fn: e.fn, paidOn: e.paidOn });
+        setE({ ...base(event, account), category: e.category, payer: e.payer, advanceId: e.advanceId, method: e.method, fn: e.fn, paidOn: e.paidOn });
         setProofBlob(null);
         setConfirmed(false);
         setErr("");
@@ -214,12 +239,18 @@ export default function ExpenseDialog({
           )}
           <label className="field">
             <span>Who paid</span>
-            <select value={e.payer.kind} onChange={(ev) => {
-              const kind = ev.target.value as Expense["payer"]["kind"];
-              set({ payer: { kind, name: kind === "self" ? account : kind === "company" ? "" : e.payer.kind === "colleague" ? e.payer.name : "" } });
+            <select value={e.payer.kind === "advance" ? `adv:${e.advanceId ?? ""}` : e.payer.kind} onChange={(ev) => {
+              const v = ev.target.value;
+              const a = v.startsWith("adv:") ? usable.find((x) => x.id === v.slice(4)) : undefined;
+              if (a) return set({ payer: { kind: "advance", name: a.staff }, advanceId: a.id });
+              const kind = v as Expense["payer"]["kind"];
+              set({ payer: { kind, name: kind === "self" ? account : kind === "company" ? "" : e.payer.kind === "colleague" ? e.payer.name : "" }, advanceId: undefined });
             }}>
+              {usable.map((a) => <option key={a.id} value={`adv:${a.id}`}>{advLabel(a)}</option>)}
+              {e.payer.kind === "advance" && !chosen && <option value={`adv:${e.advanceId ?? ""}`}>An advance not on this device</option>}
               {PAYERS.map((x) => <option key={x.id} value={x.id}>{x.label}</option>)}
             </select>
+            {note("payer")}
           </label>
           {e.payer.kind === "colleague" && (
             <label className="field">

@@ -2,9 +2,10 @@
 // images. Loaded only through `await import("./handoverPack")`, like the exports: JSZip and ExcelJS are heavy.
 import JSZip from "jszip";
 import ExcelJS from "exceljs";
-import { cleanRef, maskUpi, METHODS } from "./expenses";
+import { cleanRef, maskUpi, METHODS, payerLabel } from "./expenses";
+import { MOVEMENT_LABEL, settlement } from "./advances";
 import { fingerprint } from "./proofImage";
-import { verifyPack, type PackData, type PackProblem } from "./handover";
+import { dueText, verifyPack, type PackData, type PackProblem } from "./handover";
 
 /** The ledger as a workbook: one row per expense, with the proof's file name so each row can be checked. */
 export function ledgerWorkbook(p: PackData): ExcelJS.Workbook {
@@ -38,7 +39,7 @@ export function ledgerWorkbook(p: PackData): ExcelJS.Workbook {
       vendor: e.vendor,
       what: e.description,
       category: cat(e.category),
-      payer: e.payer.kind === "company" ? "Company account" : e.payer.name,
+      payer: payerLabel(e),
       method: METHODS.find((m) => m.id === e.method)?.label ?? e.method,
       ref: cleanRef(e.upiRef),
       upi: maskUpi(e.payeeUpi),
@@ -50,7 +51,37 @@ export function ledgerWorkbook(p: PackData): ExcelJS.Workbook {
   ws.getColumn("amount").numFmt = "#,##,##0.00";
   const total = ws.addRow({ vendor: "Total", amount: { formula: `SUM(K2:K${live.length + 1})`, result: live.reduce((t, e) => t + e.amount, 0) } });
   total.font = { bold: true };
+  if (p.advances?.length) advancesSheet(wb, p);
   return wb;
+}
+
+/** The staff advances: a balance per advance, then every movement (reversed ones marked). */
+function advancesSheet(wb: ExcelJS.Workbook, p: PackData) {
+  const ws = wb.addWorksheet("Advances");
+  ws.columns = [
+    { header: "Held by", key: "staff", width: 28 },
+    { header: "For", key: "purpose", width: 30 },
+    { header: "Given (₹)", key: "given", width: 13 },
+    { header: "Spent (₹)", key: "spent", width: 13 },
+    { header: "Returned (₹)", key: "returned", width: 13 },
+    { header: "Repaid (₹)", key: "reimbursed", width: 13 },
+    { header: "Left (₹)", key: "left", width: 13 },
+    { header: "Settlement (before review)", key: "due", width: 30 },
+    { header: "Settle by", key: "settleBy", width: 12 },
+    { header: "Status", key: "status", width: 10 },
+  ];
+  ws.getRow(1).font = { bold: true };
+  for (const a of p.advances) {
+    const s = settlement(a, p.expenses);
+    ws.addRow({ staff: a.staff, purpose: a.purpose, given: s.given, spent: s.spent, returned: s.returned, reimbursed: s.reimbursed, left: s.left, due: dueText(s.due, a.staff), settleBy: a.settleBy ?? "", status: a.closed ? "closed" : "open" });
+  }
+  for (const k of ["given", "spent", "returned", "reimbursed", "left"]) ws.getColumn(k).numFmt = "#,##,##0.00";
+  ws.addRow({});
+  const head = ws.addRow({ staff: "Movements", purpose: "What", given: "Amount (₹)", spent: "Date", returned: "Method", reimbursed: "UPI ref", left: "By", due: "Reversed" });
+  head.font = { bold: true };
+  for (const a of p.advances)
+    for (const m of a.movements)
+      ws.addRow({ staff: a.staff, purpose: MOVEMENT_LABEL[m.kind], given: m.amount, spent: m.on, returned: METHODS.find((x) => x.id === m.method)?.label ?? m.method, reimbursed: cleanRef(m.upiRef), left: m.by, due: m.reversed ? m.reversed.reason : "" });
 }
 
 export async function buildPack(p: PackData, images: Map<string, Blob>, summaryPdf?: Blob): Promise<Blob> {

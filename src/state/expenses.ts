@@ -2,10 +2,12 @@
 // localStorage). Phase 4 moves this to the server; until then a handover pack is how they move between people.
 import { useCallback, useEffect, useState } from "react";
 import type { Expense } from "../lib/expenses";
+import type { Advance } from "../lib/advances";
 import type { ReceivedHandover, SentHandover } from "../lib/handover";
 
 const DB = "event-bridge";
-const VERSION = 1;
+// 2: the "advances" store (staff advances)
+const VERSION = 2;
 const CATEGORIES = "event-bridge.expense-categories.v1";
 
 function open(): Promise<IDBDatabase> {
@@ -17,6 +19,7 @@ function open(): Promise<IDBDatabase> {
       if (!db.objectStoreNames.contains("proofs")) db.createObjectStore("proofs");
       if (!db.objectStoreNames.contains("sent")) db.createObjectStore("sent", { keyPath: "id" }).createIndex("eventId", "eventId");
       if (!db.objectStoreNames.contains("received")) db.createObjectStore("received", { keyPath: "id" });
+      if (!db.objectStoreNames.contains("advances")) db.createObjectStore("advances", { keyPath: "id" }).createIndex("eventId", "eventId");
     };
     req.onsuccess = () => resolve(req.result);
     req.onerror = () => reject(req.error ?? new Error("This browser can't store expenses (IndexedDB is unavailable, for example in a private window)."));
@@ -52,11 +55,21 @@ export const listReceived = () => run<ReceivedHandover[]>("received", "readonly"
 export const getReceived = (id: string) => run<ReceivedHandover | undefined>("received", "readonly", (s) => s.get(id));
 export const putReceived = (h: ReceivedHandover) => run<void>("received", "readwrite", (s) => s.put(h));
 
-/** After a reconciled handover: removes this event's expenses and their images from this device. */
+export const listAdvances = (eventId?: string) =>
+  run<Advance[]>("advances", "readonly", (s) => (eventId ? s.index("eventId").getAll(eventId) : s.getAll()));
+export const putAdvance = (a: Advance) => run<void>("advances", "readwrite", (s) => s.put(a));
+export const putAdvances = (list: Advance[]) => run<void>("advances", "readwrite", (s) => void list.forEach((a) => s.put(a)));
+
+/**
+ * After a reconciled handover: removes this event's expenses and their images from this device, and its closed
+ * advances. Open advances stay, since money is still out.
+ */
 export async function clearEvent(eventId: string) {
   const list = await listExpenses(eventId);
   await run<void>("proofs", "readwrite", (s) => void list.forEach((e) => e.proof && s.delete(e.proof.fileId)));
   await run<void>("expenses", "readwrite", (s) => void list.forEach((e) => s.delete(e.id)));
+  const closed = (await listAdvances(eventId)).filter((a) => a.closed);
+  await run<void>("advances", "readwrite", (s) => void closed.forEach((a) => s.delete(a.id)));
 }
 
 /** Removes a received handover and its copies of the images. */
@@ -94,6 +107,25 @@ export function useEventExpenses(eventId: string) {
     [refresh],
   );
   return { list, error, refresh, save };
+}
+
+/** One event's staff advances, reloaded after every change. */
+export function useEventAdvances(eventId: string) {
+  const [list, setList] = useState<Advance[]>([]);
+  const refresh = useCallback(() => {
+    listAdvances(eventId).then((l) => setList(l.sort((a, b) => a.createdAt.localeCompare(b.createdAt)))).catch(() => setList([]));
+  }, [eventId]);
+  useEffect(() => {
+    refresh();
+  }, [refresh]);
+  const save = useCallback(
+    async (a: Advance) => {
+      await putAdvance(a);
+      refresh();
+    },
+    [refresh],
+  );
+  return { list, refresh, save };
 }
 
 /** Every event's expense count on this device, for the links on the Studio cards and the dashboard. */

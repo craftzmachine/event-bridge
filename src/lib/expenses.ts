@@ -1,7 +1,8 @@
 // Event expenses: the record, the safeguards (duplicates, missing proof, out-of-window dates), summaries and the
 // audit trail. Pure, so every rule is tested in Node. Storage is in src/state/expenses.ts.
 
-export type PayerKind = "self" | "colleague" | "company";
+/** "advance": paid from money given to a team member (`advanceId`, with `name` their email) */
+export type PayerKind = "self" | "colleague" | "company" | "advance";
 export type ExpenseMethod = "gpay" | "upi" | "cash" | "card" | "bank";
 export type ReviewState = "open" | "checked" | "queried" | "rejected";
 
@@ -41,6 +42,8 @@ export interface Expense {
   /** the recipient's UPI ID, shown masked */
   payeeUpi?: string;
   payer: { kind: PayerKind; name: string };
+  /** the staff advance it was paid from, when payer.kind is "advance" */
+  advanceId?: string;
   method: ExpenseMethod;
   /** UPI transaction ID / UTR: unique within an event */
   upiRef?: string;
@@ -77,6 +80,13 @@ export const PAYERS: { id: PayerKind; label: string }[] = [
   { id: "colleague", label: "A colleague paid" },
   { id: "company", label: "Company account" },
 ];
+
+/** Who paid, as shown on the ledger and in the handover. */
+export function payerLabel(e: Pick<Expense, "payer">): string {
+  if (e.payer.kind === "company") return "Company account";
+  if (e.payer.kind === "advance") return `${e.payer.name || "Staff"}'s advance`;
+  return e.payer.name || "Unnamed";
+}
 
 /** above this, saving asks "is this right?" */
 export const LARGE_AMOUNT = 100000;
@@ -172,13 +182,16 @@ export interface ExpenseSummary {
   total: number;
   count: number;
   byCategory: { id: string; total: number; count: number }[];
-  /** who paid, for reimbursement: "Company account", or the person's name */
+  /** who paid, for reimbursement: "Company account", an advance, or the person's name */
   byPayer: { key: string; label: string; kind: PayerKind; total: number }[];
   byFunction: { fn: string | null; total: number }[];
   missingProof: number;
   duplicates: number;
   queried: number;
 }
+
+/** "company", "a:<advanceId>" or "p:<name>": one reimbursement or settlement line per key. */
+export const payerKey = (e: Expense) => (e.payer.kind === "company" ? "company" : e.payer.kind === "advance" ? `a:${e.advanceId ?? ""}` : `p:${norm(e.payer.name)}`);
 
 export function summarise(list: Expense[]): ExpenseSummary {
   const live = list.filter((e) => !e.removed);
@@ -198,10 +211,10 @@ export function summarise(list: Expense[]): ExpenseSummary {
     total,
     count: live.length,
     byCategory: group((e) => e.category).map(([id, g]) => ({ id, total: g.total, count: g.count })),
-    byPayer: group((e) => (e.payer.kind === "company" ? "company" : `p:${norm(e.payer.name)}`)).map(([key, g]) => ({
+    byPayer: group(payerKey).map(([key, g]) => ({
       key,
       kind: g.sample.payer.kind,
-      label: g.sample.payer.kind === "company" ? "Company account" : g.sample.payer.name || "Unnamed",
+      label: payerLabel(g.sample),
       total: g.total,
     })),
     byFunction: group((e) => e.fn ?? "").map(([fn, g]) => ({ fn: fn || null, total: g.total })),
@@ -214,6 +227,7 @@ export function summarise(list: Expense[]): ExpenseSummary {
 export interface ExpenseFilter {
   q?: string;
   category?: string;
+  /** a payerKey */
   payer?: string;
   flag?: Flag | "removed" | "";
 }
@@ -223,13 +237,13 @@ export function filterExpenses(list: Expense[], f: ExpenseFilter): Expense[] {
   return list
     .filter((e) => (f.flag === "removed" ? !!e.removed : !e.removed))
     .filter((e) => !f.category || e.category === f.category)
-    .filter((e) => !f.payer || (f.payer === "company" ? e.payer.kind === "company" : norm(e.payer.name) === norm(f.payer)))
+    .filter((e) => !f.payer || payerKey(e) === f.payer)
     .filter((e) => !f.flag || f.flag === "removed" || flagsOf(e, list).includes(f.flag))
     .filter((e) => !q || [e.vendor, e.description, e.upiRef, e.payer.name, String(e.amount)].some((x) => norm(x).includes(q)))
     .sort((a, b) => (b.paidOn + (b.paidAt ?? "")).localeCompare(a.paidOn + (a.paidAt ?? "")) || b.recordedAt.localeCompare(a.recordedAt));
 }
 
-const TRACKED: (keyof Expense)[] = ["amount", "paidOn", "paidAt", "category", "vendor", "payeeUpi", "payer", "method", "upiRef", "description", "fn", "proof"];
+const TRACKED: (keyof Expense)[] = ["amount", "paidOn", "paidAt", "category", "vendor", "payeeUpi", "payer", "advanceId", "method", "upiRef", "description", "fn", "proof"];
 
 /** What changed between two versions of an expense, for the history ("Amount 2,400 → 2,450"). */
 export function diff(before: Expense, after: Expense): Record<string, [unknown, unknown]> {

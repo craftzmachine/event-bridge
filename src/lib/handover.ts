@@ -3,7 +3,8 @@
 // itself is built and read in handoverPack.ts.
 import type { TableCell, TDocumentDefinitions } from "pdfmake/interfaces";
 import type { Brand } from "../types";
-import { canReview, cleanRef, contributors, flagsOf, maskUpi, summarise, type Expense, type ReviewState } from "./expenses";
+import { canReview, cleanRef, contributors, flagsOf, maskUpi, payerLabel, summarise, type Expense, type ReviewState } from "./expenses";
+import { advanceContributors, MOVEMENT_LABEL, settlement, type Advance } from "./advances";
 import { formatDate, formatINR } from "./format";
 
 export const PACK_FORMAT = "event-bridge.expenses";
@@ -19,10 +20,10 @@ export interface PackEvent {
   functions: { id: string; label: string }[];
 }
 
-/** expenses.json inside the pack */
+/** expenses.json inside the pack. v2 adds the event's staff advances; v1 packs are read with none. */
 export interface PackData {
   format: typeof PACK_FORMAT;
-  v: 1;
+  v: 1 | 2;
   id: string;
   event: PackEvent;
   from: string;
@@ -30,6 +31,7 @@ export interface PackData {
   note: string;
   categories: { id: string; label: string }[];
   expenses: Expense[];
+  advances: Advance[];
   /** fileId → path inside the ZIP and the image's SHA-256 */
   files: Record<string, { path: string; sha256: string }>;
 }
@@ -68,14 +70,26 @@ export interface Reply {
   signedAt: string;
   state: "reconciled" | "returned";
   reviews: Record<string, { state: ReviewState; note?: string }>;
+  /** each advance's settlement after this review: positive is due back, negative owed to the staff member */
+  settlements?: Record<string, { due: number }>;
 }
 
-export function packData(o: { id: string; event: PackEvent; from: string; note: string; categories: { id: string; label: string }[]; expenses: Expense[]; now?: Date }): PackData {
+export function packData(o: { id: string; event: PackEvent; from: string; note: string; categories: { id: string; label: string }[]; expenses: Expense[]; advances?: Advance[]; now?: Date }): PackData {
   const files: PackData["files"] = {};
   for (const e of o.expenses)
     if (e.proof) files[e.proof.fileId] = { path: `proof/${proofName(e)}`, sha256: e.proof.sha256 };
-  return { format: PACK_FORMAT, v: 1, id: o.id, event: o.event, from: o.from, createdAt: (o.now ?? new Date()).toISOString(), note: o.note, categories: o.categories, expenses: o.expenses, files };
+  const advances = o.advances ?? [];
+  return { format: PACK_FORMAT, v: 2, id: o.id, event: o.event, from: o.from, createdAt: (o.now ?? new Date()).toISOString(), note: o.note, categories: o.categories, expenses: o.expenses, advances, files };
 }
+
+/** The pack's expenses with the reviewer's decisions so far, for working out each advance's settlement. */
+export function withReviews(h: Pick<ReceivedHandover, "pack" | "reviews">): Expense[] {
+  return h.pack.expenses.map((e) => (h.reviews[e.id] ? { ...e, review: { ...e.review, state: h.reviews[e.id].state, note: h.reviews[e.id].note } } : e));
+}
+
+/** Nobody who recorded these expenses, or gave, held or moved the money of these advances, may review them. */
+export const canReviewPack = (p: Pick<PackData, "expenses" | "advances">, reviewer: string) =>
+  canReview(p.expenses, reviewer) && !advanceContributors(p.advances ?? []).has(reviewer.trim().toLowerCase());
 
 /** "2027-02-14_Flower-market_2450_ab12cd.webp": sortable by date, readable without the app */
 export function proofName(e: Expense): string {
@@ -91,12 +105,15 @@ export type PackProblem = { fatal: boolean; text: string };
  * reviewer isn't someone who recorded or edited these expenses.
  */
 export function verifyPack(data: unknown, imageHashes: Record<string, string | undefined>, reviewer: string): { pack?: PackData; problems: PackProblem[] } {
-  const p = data as PackData;
-  if (!p || p.format !== PACK_FORMAT || p.v !== 1 || !Array.isArray(p.expenses) || !p.event?.id)
+  const raw = data as PackData;
+  if (!raw || raw.format !== PACK_FORMAT || (raw.v !== 1 && raw.v !== 2) || !Array.isArray(raw.expenses) || !raw.event?.id || (raw.v === 2 && !Array.isArray(raw.advances)))
     return { problems: [{ fatal: true, text: "This isn't an Event Bridge expenses handover file." }] };
+  const p: PackData = { ...raw, advances: raw.advances ?? [] };
   const problems: PackProblem[] = [];
   if (!canReview(p.expenses, reviewer))
     problems.push({ fatal: true, text: "You recorded or edited some of these expenses, so another team member has to review them." });
+  else if (!canReviewPack(p, reviewer))
+    problems.push({ fatal: true, text: "You gave, held or moved money on one of these advances, so another team member has to review them." });
   for (const e of p.expenses) {
     if (!e.proof) continue;
     const want = p.files[e.proof.fileId]?.sha256;
@@ -114,20 +131,28 @@ export function signOff(h: ReceivedHandover, now = new Date()): { ok: false; ope
   const open = live.filter((e) => (h.reviews[e.id]?.state ?? "open") === "open").length;
   if (open) return { ok: false, open };
   const state = live.some((e) => h.reviews[e.id]?.state !== "checked") ? "returned" : "reconciled";
+  const reviewed = withReviews(h);
+  const settlements: Record<string, { due: number }> = {};
+  for (const a of h.pack.advances ?? []) settlements[a.id] = { due: settlement(a, reviewed).due };
   return {
     ok: true,
     state,
-    reply: { format: REPLY_FORMAT, v: 1, handoverId: h.id, eventId: h.pack.event.id, eventRef: h.pack.event.ref, reviewer: h.reviewer, signedAt: now.toISOString(), state, reviews: h.reviews },
+    reply: { format: REPLY_FORMAT, v: 1, handoverId: h.id, eventId: h.pack.event.id, eventRef: h.pack.event.ref, reviewer: h.reviewer, signedAt: now.toISOString(), state, reviews: h.reviews, settlements },
   };
 }
 
-/** The recorder's side: the reviewer's decisions on each expense, with a "reviewed" history entry. */
-export function applyReply(reply: unknown, sent: SentHandover[], expenses: Expense[]): { error: string } | { handover: SentHandover; expenses: Expense[] } {
+/**
+ * The recorder's side: the reviewer's decisions on each expense, with a "reviewed" history entry, and each advance's
+ * settlement noted in its history.
+ */
+export function applyReply(reply: unknown, sent: SentHandover[], expenses: Expense[], advances: Advance[] = []): { error: string } | { handover: SentHandover; expenses: Expense[]; advances: Advance[] } {
   const r = reply as Reply;
   if (!r || r.format !== REPLY_FORMAT || r.v !== 1) return { error: "This isn't an Event Bridge handover reply." };
   const h = sent.find((x) => x.id === r.handoverId);
   if (!h) return { error: "This reply is for a handover that wasn't made on this device, or for another event." };
-  if (contributors(expenses.filter((e) => h.expenseIds.includes(e.id))).has(r.reviewer.trim().toLowerCase()))
+  const who = r.reviewer.trim().toLowerCase();
+  const mine = advances.filter((a) => r.settlements?.[a.id]);
+  if (contributors(expenses.filter((e) => h.expenseIds.includes(e.id))).has(who) || advanceContributors(mine).has(who))
     return { error: "The reply was signed by someone who recorded these expenses, so it can't count as a review." };
   const changed = expenses
     .filter((e) => h.expenseIds.includes(e.id) && r.reviews[e.id])
@@ -139,7 +164,11 @@ export function applyReply(reply: unknown, sent: SentHandover[], expenses: Expen
         history: [...e.history, { at: r.signedAt, by: r.reviewer, action: "reviewed" as const, note: `${rv.state}${rv.note ? `: ${rv.note}` : ""}` }],
       };
     });
-  return { handover: { ...h, state: r.state, reviewer: r.reviewer, signedAt: r.signedAt }, expenses: changed };
+  const settled = mine.map((a) => ({
+    ...a,
+    history: [...a.history, { at: r.signedAt, by: r.reviewer, action: "reviewed" as const, note: `Settlement after review: ${dueText(r.settlements![a.id].due, a.staff)}` }],
+  }));
+  return { handover: { ...h, state: r.state, reviewer: r.reviewer, signedAt: r.signedAt }, expenses: changed, advances: settled };
 }
 
 const categoryLabel = (cats: { id: string; label: string }[], id: string) => cats.find((c) => c.id === id)?.label ?? id;
@@ -183,6 +212,7 @@ export function packSummaryDoc(p: PackData, brand: Brand, logoPng?: string): TDo
         ],
         margin: [0, 0, 0, 12],
       },
+      ...advancesBlock(p.advances ?? [], p.expenses, ink, muted, brand),
       {
         table: {
           headerRows: 1,
@@ -193,7 +223,7 @@ export function packSummaryDoc(p: PackData, brand: Brand, logoPng?: string): TDo
               `${formatDate(e.paidOn)}${e.paidAt ? ` ${e.paidAt}` : ""}`,
               { stack: [{ text: e.vendor }, { text: [e.description, maskUpi(e.payeeUpi)].filter(Boolean).join(" · "), color: muted, fontSize: 8 }] },
               categoryLabel(p.categories, e.category),
-              e.payer.kind === "company" ? "Company account" : e.payer.name,
+              payerLabel(e),
               cleanRef(e.upiRef) || "—",
               { text: formatINR(e.amount), alignment: "right" as const },
               { text: flagText(e), color: muted, fontSize: 8 },
@@ -205,6 +235,45 @@ export function packSummaryDoc(p: PackData, brand: Brand, logoPng?: string): TDo
       { text: "Each expense's proof is in the proof folder of this file, named by date, vendor and amount. Treat this file as confidential and delete it once the handover is signed off.", color: muted, fontSize: 8, margin: [0, 12, 0, 0] },
     ],
   };
+}
+
+/** "₹2,500 to return", "₹800 owed to ravi@…", "Settled" */
+export function dueText(due: number, staff: string): string {
+  return due > 0 ? `${formatINR(due)} to return` : due < 0 ? `${formatINR(-due)} owed to ${staff}` : "Settled";
+}
+
+/** The staff advances in the PDF summary: one row each, then every movement. */
+function advancesBlock(advances: Advance[], expenses: Expense[], ink: string, muted: string, brand: Brand) {
+  if (!advances.length) return [];
+  const head = (t: string[]) => t.map((x) => ({ text: x, bold: true, color: "#ffffff", fillColor: ink }));
+  return [
+    { text: "Staff advances", bold: true, margin: [0, 0, 0, 4] as [number, number, number, number] },
+    {
+      table: {
+        headerRows: 1,
+        widths: ["*", "*", 62, 62, 62, 62, 110],
+        body: [
+          head(["Held by", "For", "Given", "Spent", "Returned", "Repaid", "Settlement (before review)"]),
+          ...advances.map((a) => {
+            const st = settlement(a, expenses);
+            return [a.staff, a.purpose, formatINR(st.given), formatINR(st.spent), formatINR(st.returned), formatINR(st.reimbursed), a.closed ? "Closed" : dueText(st.due, a.staff)] as TableCell[];
+          }),
+        ] as TableCell[][],
+      },
+      layout: { hLineWidth: () => 0.5, vLineWidth: () => 0, hLineColor: () => `#${brand.colors.line}` },
+      margin: [0, 0, 0, 6] as [number, number, number, number],
+    },
+    {
+      ul: advances.flatMap((a) =>
+        a.movements.map((m) => ({
+          text: `${a.staff}: ${MOVEMENT_LABEL[m.kind]} ${formatINR(m.amount)} on ${formatDate(m.on)} by ${m.by}${m.upiRef ? ` · UPI ref ${cleanRef(m.upiRef)}` : ""}${m.reversed ? ` · reversed: ${m.reversed.reason}` : ""}`,
+          color: m.reversed ? muted : ink,
+          fontSize: 8,
+        })),
+      ),
+      margin: [0, 0, 0, 12] as [number, number, number, number],
+    },
+  ];
 }
 
 /** The handover receipt: who handed over, who reviewed, when, and the outcome. */
@@ -240,6 +309,12 @@ export function handoverReceiptDoc(h: ReceivedHandover, reply: Reply, brand: Bra
         ? [
             { text: "Queries and rejections", bold: true, margin: [0, 12, 0, 4] as [number, number, number, number] },
             { ul: issues.map((e) => `${e.vendor}, ${formatINR(e.amount)} (${formatDate(e.paidOn)}): ${h.reviews[e.id]?.state}${h.reviews[e.id]?.note ? `, ${h.reviews[e.id]!.note}` : ""}`) },
+          ]
+        : []),
+      ...((h.pack.advances ?? []).length
+        ? [
+            { text: "Staff advances after this review", bold: true, margin: [0, 12, 0, 4] as [number, number, number, number] },
+            { ul: (h.pack.advances ?? []).map((a) => `${a.staff} (${a.purpose}): ${dueText(reply.settlements?.[a.id]?.due ?? settlement(a, withReviews(h)).due, a.staff)}`) },
           ]
         : []),
     ],
