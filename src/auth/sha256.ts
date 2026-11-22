@@ -12,7 +12,11 @@ const K = new Uint32Array([
 ]);
 
 export function sha256(text: string): string {
-  const msg = new TextEncoder().encode(text);
+  return sha256Bytes(new TextEncoder().encode(text));
+}
+
+/** The same for raw bytes (an image's fingerprint). */
+export function sha256Bytes(msg: Uint8Array): string {
   const len = msg.length;
   const padded = new Uint8Array(((len + 9 + 63) >> 6) << 6);
   padded.set(msg);

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { loadConfig, type Loaded } from "./config/load";
 import { ConfigContext } from "./config/context";
 import { newProposal, useProposals } from "./state/proposals";
@@ -11,6 +11,8 @@ import Venues from "./pages/Venues";
 import Landing from "./pages/Landing";
 import Visualize from "./pages/Visualize";
 import Dashboard from "./pages/Dashboard";
+// staff-only and sizeable (the ledger, the dialogs, the handover), so it loads when first opened
+const Expenses = lazy(() => import("./pages/Expenses"));
 import ClientView from "./pages/ClientView";
 import { endSession, readSession, SERVER_SIGNIN, startSession, type Session } from "./auth/auth";
 import { ApiError, api } from "./lib/api";
@@ -20,9 +22,9 @@ import { ApiError, api } from "./lib/api";
  * #/ (landing), #/login, the signed-in #/dashboard (team overview) and feature apps #/studio (Proposal Studio), #/venues (Venue Directory) and
  * #/visualize (Visualize Proposal), and the public #/view/<token> where a client opens a shared proposal.
  */
-type Route = "landing" | "login" | "dashboard" | "studio" | "venues" | "visualize" | "view";
-type AppRoute = "dashboard" | "studio" | "venues" | "visualize";
-const APP_ROUTES: Route[] = ["dashboard", "studio", "venues", "visualize"];
+type Route = "landing" | "login" | "dashboard" | "expenses" | "studio" | "venues" | "visualize" | "view";
+type AppRoute = "dashboard" | "expenses" | "studio" | "venues" | "visualize";
+const APP_ROUTES: Route[] = ["dashboard", "expenses", "studio", "venues", "visualize"];
 const readRoute = (hash: string): Route => {
   const h = hash.replace(/^#\/?/, "").split("/")[0].toLowerCase();
   return h === "login" || h === "view" || APP_ROUTES.includes(h as Route) ? (h as Route) : "landing";
@@ -139,6 +141,11 @@ export default function App() {
             onBack={() => go("studio")}
             onReauth={() => reauth("visualize")}
           />
+        ) : route === "expenses" ? (
+          // over an open proposal too: "Expenses" in the Builder's top bar comes here, and Back returns to it
+          <Suspense fallback={<p className="hint" role="status" style={{ padding: 24 }}>Opening expenses…</p>}>
+            <Expenses path={hash.replace(/^#\/?/, "").split("/").slice(1)} proposals={store.list} account={session.email} onBack={() => history.back()} />
+          </Suspense>
         ) : open ? (
           // the open proposal survives the sign-in, so it reopens afterwards
           <Builder key={open.id} proposal={open} onChange={store.save} onClose={() => setOpenId(null)} onReauth={() => reauth(route === "venues" || route === "dashboard" ? route : "studio")} />

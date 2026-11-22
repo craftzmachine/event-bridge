@@ -80,6 +80,7 @@ export default function Builder({
           <span className="eyebrow">{occasionChosen ? proposalTitle(p, catalog) : "New proposal"}</span>
           <strong>{p.client.name || "Untitled client"}</strong>
         </div>
+        <a className="btn-ghost btn-sm topbar-link" href={`#/expenses/${p.id}`}>Expenses</a>
         <div className="topbar-total">
           <span>Grand Total</span>
           <strong>{formatINRShort(t.grandTotal)}</strong>

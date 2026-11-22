@@ -1,0 +1,322 @@
+// The handover of an event's expenses to another team member: what the pack contains, checking it on arrival, the
+// reviewer's decisions, and the reply that brings them back to the recorder. Pure, so it's tested in Node; the ZIP
+// itself is built and read in handoverPack.ts.
+import type { TableCell, TDocumentDefinitions } from "pdfmake/interfaces";
+import type { Brand } from "../types";
+import { canReview, cleanRef, contributors, flagsOf, maskUpi, payerLabel, summarise, type Expense, type ReviewState } from "./expenses";
+import { advanceContributors, MOVEMENT_LABEL, settlement, type Advance } from "./advances";
+import { formatDate, formatINR } from "./format";
+
+export const PACK_FORMAT = "event-bridge.expenses";
+export const REPLY_FORMAT = "event-bridge.handover-reply";
+
+export interface PackEvent {
+  id: string;
+  ref: string;
+  client: string;
+  title: string;
+  dates: string[];
+  venue: string;
+  functions: { id: string; label: string }[];
+}
+
+/** expenses.json inside the pack. v2 adds the event's staff advances; v1 packs are read with none. */
+export interface PackData {
+  format: typeof PACK_FORMAT;
+  v: 1 | 2;
+  id: string;
+  event: PackEvent;
+  from: string;
+  createdAt: string;
+  note: string;
+  categories: { id: string; label: string }[];
+  expenses: Expense[];
+  advances: Advance[];
+  /** fileId → path inside the ZIP and the image's SHA-256 */
+  files: Record<string, { path: string; sha256: string }>;
+}
+
+/** The recorder's record of a pack they sent. */
+export interface SentHandover {
+  id: string;
+  eventId: string;
+  from: string;
+  createdAt: string;
+  expenseIds: string[];
+  total: number;
+  state: "sent" | "reconciled" | "returned";
+  reviewer?: string;
+  signedAt?: string;
+}
+
+/** The reviewer's copy of a pack, with their decisions. */
+export interface ReceivedHandover {
+  id: string;
+  pack: PackData;
+  receivedAt: string;
+  reviewer: string;
+  reviews: Record<string, { state: ReviewState; note?: string }>;
+  state: "reviewing" | "reconciled" | "returned";
+  signedAt?: string;
+}
+
+export interface Reply {
+  format: typeof REPLY_FORMAT;
+  v: 1;
+  handoverId: string;
+  eventId: string;
+  eventRef: string;
+  reviewer: string;
+  signedAt: string;
+  state: "reconciled" | "returned";
+  reviews: Record<string, { state: ReviewState; note?: string }>;
+  /** each advance's settlement after this review: positive is due back, negative owed to the staff member */
+  settlements?: Record<string, { due: number }>;
+}
+
+export function packData(o: { id: string; event: PackEvent; from: string; note: string; categories: { id: string; label: string }[]; expenses: Expense[]; advances?: Advance[]; now?: Date }): PackData {
+  const files: PackData["files"] = {};
+  for (const e of o.expenses)
+    if (e.proof) files[e.proof.fileId] = { path: `proof/${proofName(e)}`, sha256: e.proof.sha256 };
+  const advances = o.advances ?? [];
+  return { format: PACK_FORMAT, v: 2, id: o.id, event: o.event, from: o.from, createdAt: (o.now ?? new Date()).toISOString(), note: o.note, categories: o.categories, expenses: o.expenses, advances, files };
+}
+
+/** The pack's expenses with the reviewer's decisions so far, for working out each advance's settlement. */
+export function withReviews(h: Pick<ReceivedHandover, "pack" | "reviews">): Expense[] {
+  return h.pack.expenses.map((e) => (h.reviews[e.id] ? { ...e, review: { ...e.review, state: h.reviews[e.id].state, note: h.reviews[e.id].note } } : e));
+}
+
+/** Nobody who recorded these expenses, or gave, held or moved the money of these advances, may review them. */
+export const canReviewPack = (p: Pick<PackData, "expenses" | "advances">, reviewer: string) =>
+  canReview(p.expenses, reviewer) && !advanceContributors(p.advances ?? []).has(reviewer.trim().toLowerCase());
+
+/** "2027-02-14_Flower-market_2450_ab12cd.webp": sortable by date, readable without the app */
+export function proofName(e: Expense): string {
+  const vendor = e.vendor.replace(/[^\w]+/g, "-").replace(/^-|-$/g, "").slice(0, 30) || "expense";
+  const ext = e.proof?.type.includes("png") ? "png" : e.proof?.type.includes("jpeg") || e.proof?.type.includes("jpg") ? "jpg" : "webp";
+  return `${e.paidOn}_${vendor}_${Math.round(e.amount)}_${e.id.slice(-6)}.${ext}`;
+}
+
+export type PackProblem = { fatal: boolean; text: string };
+
+/**
+ * Checks a pack on arrival: the right file, every image present and unchanged (its SHA-256 matches), and the
+ * reviewer isn't someone who recorded or edited these expenses.
+ */
+export function verifyPack(data: unknown, imageHashes: Record<string, string | undefined>, reviewer: string): { pack?: PackData; problems: PackProblem[] } {
+  const raw = data as PackData;
+  if (!raw || raw.format !== PACK_FORMAT || (raw.v !== 1 && raw.v !== 2) || !Array.isArray(raw.expenses) || !raw.event?.id || (raw.v === 2 && !Array.isArray(raw.advances)))
+    return { problems: [{ fatal: true, text: "This isn't an Event Bridge expenses handover file." }] };
+  const p: PackData = { ...raw, advances: raw.advances ?? [] };
+  const problems: PackProblem[] = [];
+  if (!canReview(p.expenses, reviewer))
+    problems.push({ fatal: true, text: "You recorded or edited some of these expenses, so another team member has to review them." });
+  else if (!canReviewPack(p, reviewer))
+    problems.push({ fatal: true, text: "You gave, held or moved money on one of these advances, so another team member has to review them." });
+  for (const e of p.expenses) {
+    if (!e.proof) continue;
+    const want = p.files[e.proof.fileId]?.sha256;
+    const got = imageHashes[e.proof.fileId];
+    if (!got) problems.push({ fatal: false, text: `The proof for ${e.vendor} (₹${e.amount}) is missing from the file.` });
+    else if (got !== want || got !== e.proof.sha256)
+      problems.push({ fatal: true, text: `The proof for ${e.vendor} (₹${e.amount}) was changed after the handover was made. Ask for a new handover file.` });
+  }
+  return { pack: p, problems };
+}
+
+/** The reviewer can sign off once every expense has a decision; any query or rejection returns it. */
+export function signOff(h: ReceivedHandover, now = new Date()): { ok: false; open: number } | { ok: true; state: "reconciled" | "returned"; reply: Reply } {
+  const live = h.pack.expenses.filter((e) => !e.removed);
+  const open = live.filter((e) => (h.reviews[e.id]?.state ?? "open") === "open").length;
+  if (open) return { ok: false, open };
+  const state = live.some((e) => h.reviews[e.id]?.state !== "checked") ? "returned" : "reconciled";
+  const reviewed = withReviews(h);
+  const settlements: Record<string, { due: number }> = {};
+  for (const a of h.pack.advances ?? []) settlements[a.id] = { due: settlement(a, reviewed).due };
+  return {
+    ok: true,
+    state,
+    reply: { format: REPLY_FORMAT, v: 1, handoverId: h.id, eventId: h.pack.event.id, eventRef: h.pack.event.ref, reviewer: h.reviewer, signedAt: now.toISOString(), state, reviews: h.reviews, settlements },
+  };
+}
+
+/**
+ * The recorder's side: the reviewer's decisions on each expense, with a "reviewed" history entry, and each advance's
+ * settlement noted in its history.
+ */
+export function applyReply(reply: unknown, sent: SentHandover[], expenses: Expense[], advances: Advance[] = []): { error: string } | { handover: SentHandover; expenses: Expense[]; advances: Advance[] } {
+  const r = reply as Reply;
+  if (!r || r.format !== REPLY_FORMAT || r.v !== 1) return { error: "This isn't an Event Bridge handover reply." };
+  const h = sent.find((x) => x.id === r.handoverId);
+  if (!h) return { error: "This reply is for a handover that wasn't made on this device, or for another event." };
+  const who = r.reviewer.trim().toLowerCase();
+  const mine = advances.filter((a) => r.settlements?.[a.id]);
+  if (contributors(expenses.filter((e) => h.expenseIds.includes(e.id))).has(who) || advanceContributors(mine).has(who))
+    return { error: "The reply was signed by someone who recorded these expenses, so it can't count as a review." };
+  const changed = expenses
+    .filter((e) => h.expenseIds.includes(e.id) && r.reviews[e.id])
+    .map((e) => {
+      const rv = r.reviews[e.id];
+      return {
+        ...e,
+        review: { state: rv.state, note: rv.note, by: r.reviewer, at: r.signedAt },
+        history: [...e.history, { at: r.signedAt, by: r.reviewer, action: "reviewed" as const, note: `${rv.state}${rv.note ? `: ${rv.note}` : ""}` }],
+      };
+    });
+  const settled = mine.map((a) => ({
+    ...a,
+    history: [...a.history, { at: r.signedAt, by: r.reviewer, action: "reviewed" as const, note: `Settlement after review: ${dueText(r.settlements![a.id].due, a.staff)}` }],
+  }));
+  return { handover: { ...h, state: r.state, reviewer: r.reviewer, signedAt: r.signedAt }, expenses: changed, advances: settled };
+}
+
+const categoryLabel = (cats: { id: string; label: string }[], id: string) => cats.find((c) => c.id === id)?.label ?? id;
+
+/** The PDF summary inside the pack: event, totals by category and payer, and the ledger (UPI IDs masked). */
+export function packSummaryDoc(p: PackData, brand: Brand, logoPng?: string): TDocumentDefinitions {
+  const s = summarise(p.expenses);
+  const live = p.expenses.filter((e) => !e.removed).sort((a, b) => (a.paidOn + (a.paidAt ?? "")).localeCompare(b.paidOn + (b.paidAt ?? "")));
+  const ink = `#${brand.colors.ink}`;
+  const accent = `#${brand.colors.accent}`;
+  const muted = "#7a7068";
+  const flagText = (e: Expense) =>
+    flagsOf(e, p.expenses)
+      .map((f) => ({ missingProof: "no proof", possibleDuplicate: "check duplicate", queried: "queried", rejected: "rejected" })[f])
+      .join(", ");
+  return {
+    pageSize: "A4",
+    pageOrientation: "landscape",
+    pageMargins: [32, 32, 32, 36],
+    info: { title: `Expenses ${p.event.ref}`, author: brand.company },
+    defaultStyle: { font: "Roboto", fontSize: 9, color: ink },
+    content: [
+      {
+        columns: [
+          logoPng ? { image: `data:image/png;base64,${logoPng}`, width: 80 } : { text: brand.company, bold: true },
+          {
+            stack: [
+              { text: "EXPENSES HANDOVER", bold: true, fontSize: 13, color: accent, characterSpacing: 2, alignment: "right" },
+              { text: `${p.event.title} · ${p.event.client} · quotation ${p.event.ref}`, alignment: "right", margin: [0, 3, 0, 0] },
+              { text: `Handed over by ${p.from} on ${formatDate(p.createdAt.slice(0, 10))}`, color: muted, alignment: "right" },
+            ],
+          },
+        ],
+      },
+      { text: `${s.count} expenses · total ${formatINR(s.total)} · ${s.missingProof} without proof · ${s.duplicates} to check for duplicates`, bold: true, margin: [0, 14, 0, 6] },
+      p.note ? { text: `Note: ${p.note}`, margin: [0, 0, 0, 8] } : { text: "" },
+      {
+        columns: [
+          { width: "*", stack: [{ text: "By category", bold: true, margin: [0, 0, 0, 4] }, ...s.byCategory.map((c) => ({ text: `${categoryLabel(p.categories, c.id)}: ${formatINR(c.total)} (${c.count})` }))] },
+          { width: "*", stack: [{ text: "Paid by (for reimbursement)", bold: true, margin: [0, 0, 0, 4] }, ...s.byPayer.map((x) => ({ text: `${x.label}: ${formatINR(x.total)}` }))] },
+        ],
+        margin: [0, 0, 0, 12],
+      },
+      ...advancesBlock(p.advances ?? [], p.expenses, ink, muted, brand),
+      {
+        table: {
+          headerRows: 1,
+          widths: [62, "*", 80, 76, 90, 66, 70],
+          body: [
+            ["Date", "Paid to / what", "Category", "Paid by", "UPI ref", "Amount", "Check"].map((t) => ({ text: t, bold: true, color: "#ffffff", fillColor: ink })),
+            ...live.map((e) => [
+              `${formatDate(e.paidOn)}${e.paidAt ? ` ${e.paidAt}` : ""}`,
+              { stack: [{ text: e.vendor }, { text: [e.description, maskUpi(e.payeeUpi)].filter(Boolean).join(" · "), color: muted, fontSize: 8 }] },
+              categoryLabel(p.categories, e.category),
+              payerLabel(e),
+              cleanRef(e.upiRef) || "—",
+              { text: formatINR(e.amount), alignment: "right" as const },
+              { text: flagText(e), color: muted, fontSize: 8 },
+            ] as TableCell[]),
+          ] as TableCell[][],
+        },
+        layout: { hLineWidth: () => 0.5, vLineWidth: () => 0, hLineColor: () => `#${brand.colors.line}` },
+      },
+      { text: "Each expense's proof is in the proof folder of this file, named by date, vendor and amount. Treat this file as confidential and delete it once the handover is signed off.", color: muted, fontSize: 8, margin: [0, 12, 0, 0] },
+    ],
+  };
+}
+
+/** "₹2,500 to return", "₹800 owed to ravi@…", "Settled" */
+export function dueText(due: number, staff: string): string {
+  return due > 0 ? `${formatINR(due)} to return` : due < 0 ? `${formatINR(-due)} owed to ${staff}` : "Settled";
+}
+
+/** The staff advances in the PDF summary: one row each, then every movement. */
+function advancesBlock(advances: Advance[], expenses: Expense[], ink: string, muted: string, brand: Brand) {
+  if (!advances.length) return [];
+  const head = (t: string[]) => t.map((x) => ({ text: x, bold: true, color: "#ffffff", fillColor: ink }));
+  return [
+    { text: "Staff advances", bold: true, margin: [0, 0, 0, 4] as [number, number, number, number] },
+    {
+      table: {
+        headerRows: 1,
+        widths: ["*", "*", 62, 62, 62, 62, 110],
+        body: [
+          head(["Held by", "For", "Given", "Spent", "Returned", "Repaid", "Settlement (before review)"]),
+          ...advances.map((a) => {
+            const st = settlement(a, expenses);
+            return [a.staff, a.purpose, formatINR(st.given), formatINR(st.spent), formatINR(st.returned), formatINR(st.reimbursed), a.closed ? "Closed" : dueText(st.due, a.staff)] as TableCell[];
+          }),
+        ] as TableCell[][],
+      },
+      layout: { hLineWidth: () => 0.5, vLineWidth: () => 0, hLineColor: () => `#${brand.colors.line}` },
+      margin: [0, 0, 0, 6] as [number, number, number, number],
+    },
+    {
+      ul: advances.flatMap((a) =>
+        a.movements.map((m) => ({
+          text: `${a.staff}: ${MOVEMENT_LABEL[m.kind]} ${formatINR(m.amount)} on ${formatDate(m.on)} by ${m.by}${m.upiRef ? ` · UPI ref ${cleanRef(m.upiRef)}` : ""}${m.reversed ? ` · reversed: ${m.reversed.reason}` : ""}`,
+          color: m.reversed ? muted : ink,
+          fontSize: 8,
+        })),
+      ),
+      margin: [0, 0, 0, 12] as [number, number, number, number],
+    },
+  ];
+}
+
+/** The handover receipt: who handed over, who reviewed, when, and the outcome. */
+export function handoverReceiptDoc(h: ReceivedHandover, reply: Reply, brand: Brand, logoPng?: string): TDocumentDefinitions {
+  const live = h.pack.expenses.filter((e) => !e.removed);
+  const s = summarise(live);
+  const count = (st: ReviewState) => live.filter((e) => h.reviews[e.id]?.state === st).length;
+  const issues = live.filter((e) => h.reviews[e.id]?.state !== "checked");
+  return {
+    pageSize: "A5",
+    pageMargins: [32, 32, 32, 36],
+    info: { title: `Handover ${h.pack.event.ref}`, author: brand.company },
+    defaultStyle: { font: "Roboto", fontSize: 10, color: `#${brand.colors.ink}` },
+    content: [
+      logoPng ? { image: `data:image/png;base64,${logoPng}`, width: 80, margin: [0, 0, 0, 10] } : { text: brand.company, bold: true },
+      { text: reply.state === "reconciled" ? "EXPENSES RECONCILED" : "EXPENSES RETURNED WITH QUERIES", bold: true, fontSize: 12, color: `#${brand.colors.accent}`, characterSpacing: 1.5 },
+      { text: `${h.pack.event.title} · ${h.pack.event.client} · quotation ${h.pack.event.ref}`, margin: [0, 6, 0, 10] },
+      {
+        table: {
+          widths: [110, "*"],
+          body: [
+            ["Handed over by", `${h.pack.from}, ${formatDate(h.pack.createdAt.slice(0, 10))}`],
+            ["Reviewed by", `${reply.reviewer}, ${formatDate(reply.signedAt.slice(0, 10))}`],
+            ["Expenses", `${s.count}, total ${formatINR(s.total)}`],
+            ["Checked", String(count("checked"))],
+            ["Queried", String(count("queried"))],
+            ["Rejected", String(count("rejected"))],
+          ],
+        },
+        layout: "lightHorizontalLines",
+      },
+      ...(issues.length
+        ? [
+            { text: "Queries and rejections", bold: true, margin: [0, 12, 0, 4] as [number, number, number, number] },
+            { ul: issues.map((e) => `${e.vendor}, ${formatINR(e.amount)} (${formatDate(e.paidOn)}): ${h.reviews[e.id]?.state}${h.reviews[e.id]?.note ? `, ${h.reviews[e.id]!.note}` : ""}`) },
+          ]
+        : []),
+      ...((h.pack.advances ?? []).length
+        ? [
+            { text: "Staff advances after this review", bold: true, margin: [0, 12, 0, 4] as [number, number, number, number] },
+            { ul: (h.pack.advances ?? []).map((a) => `${a.staff} (${a.purpose}): ${dueText(reply.settlements?.[a.id]?.due ?? settlement(a, withReviews(h)).due, a.staff)}`) },
+          ]
+        : []),
+    ],
+  };
+}
