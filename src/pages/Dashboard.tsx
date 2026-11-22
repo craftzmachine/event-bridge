@@ -8,7 +8,7 @@ import { followUps, type FollowUp } from "../lib/followups";
 import { statusLabel } from "../lib/status";
 import { formatDate, formatINR, formatINRShort } from "../lib/format";
 import { waLink, waNumber } from "../lib/whatsapp";
-import SiteNav from "../components/SiteNav";
+import PageHeader from "../components/PageHeader";
 import { listExpenses } from "../state/expenses";
 import { summarise, type Expense } from "../lib/expenses";
 
@@ -25,7 +25,7 @@ function versus(now: number, last: number, lastMonth: string) {
  * The team's overview at #/dashboard: this month's figures, who to follow up, the pipeline, upcoming events,
  * payments and what's selling. Built from this device's proposals, plus link activity when sharing is connected.
  */
-export default function Dashboard({ list, account, onSignOut, onOpen }: { list: Proposal[]; account: string; onSignOut: () => void; onOpen: (id: string) => void }) {
+export default function Dashboard({ list, onOpen }: { list: Proposal[]; account: string; onOpen: (id: string) => void }) {
   const { catalog, brand, venues } = useConfig();
   const [shares, setShares] = useState<Share[] | null>(null);
   const [linkInfo, setLinkInfo] = useState<"loading" | "ok" | "off">("loading");
@@ -70,16 +70,10 @@ export default function Dashboard({ list, account, onSignOut, onOpen }: { list: 
 
   return (
     <div className="dash">
-      <header className="dash-hero">
-        <SiteNav current="dashboard" account={account} onSignOut={onSignOut} />
-        <div className="dash-hero-text">
-          <h1>Dashboard</h1>
-          <p>
-            {month(now)} at a glance, from the {list.length} proposal{list.length === 1 ? "" : "s"} on this device
-            {linkInfo === "ok" ? ", with your clients' activity on shared links." : "."}
-          </p>
-        </div>
-      </header>
+      <PageHeader
+        title="Dashboard"
+        subtitle={`${month(now)} at a glance, from the ${list.length} proposal${list.length === 1 ? "" : "s"} on this device${linkInfo === "ok" ? ", with your clients' activity on shared links." : "."}`}
+      />
 
       <main className="dash-main">
         {list.length === 0 ? (

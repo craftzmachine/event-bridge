@@ -14,6 +14,8 @@ import Dashboard from "./pages/Dashboard";
 // staff-only and sizeable (the ledger, the dialogs, the handover), so it loads when first opened
 const Expenses = lazy(() => import("./pages/Expenses"));
 import ClientView from "./pages/ClientView";
+import AppShell from "./components/AppShell";
+import { navCurrent } from "./lib/nav";
 import { endSession, readSession, SERVER_SIGNIN, startSession, type Session } from "./auth/auth";
 import { ApiError, api } from "./lib/api";
 
@@ -136,38 +138,37 @@ export default function App() {
               go(returnTo);
             }}
           />
-        ) : route === "visualize" ? (
-          <Visualize
-            onBack={() => go("studio")}
-            onReauth={() => reauth("visualize")}
-          />
-        ) : route === "expenses" ? (
-          // over an open proposal too: "Expenses" in the Builder's top bar comes here, and Back returns to it
-          <Suspense fallback={<p className="hint" role="status" style={{ padding: 24 }}>Opening expenses…</p>}>
-            <Expenses path={hash.replace(/^#\/?/, "").split("/").slice(1)} proposals={store.list} account={session.email} onBack={() => history.back()} />
-          </Suspense>
-        ) : open ? (
-          // the open proposal survives the sign-in, so it reopens afterwards
+        ) : open && route !== "expenses" && route !== "visualize" ? (
+          // the open proposal survives the sign-in, so it reopens afterwards; it stays full-screen, outside the shell
           <Builder key={open.id} proposal={open} onChange={store.save} onClose={() => setOpenId(null)} onReauth={() => reauth(route === "venues" || route === "dashboard" ? route : "studio")} />
-        ) : route === "dashboard" ? (
-          <Dashboard list={store.list} account={session.email} onSignOut={signOut} onOpen={setOpenId} />
-        ) : route === "venues" ? (
-          <Venues onBack={() => go("studio")} onStartProposal={(v) => startProposal({ venue: v.name, location: v.area })} />
         ) : (
-          <Home
-            store={store}
-            account={session.email}
-            onSignOut={signOut}
-            onOpen={setOpenId}
-            onVenues={() => go("venues")}
-            onVisualize={() => go("visualize")}
-            onNew={() => startProposal()}
-            onNewFrom={(pk) => {
-              const p = proposalFromPackage(pk, config.brand, store.refs);
-              store.save(p);
-              setOpenId(p.id);
-            }}
-          />
+          <AppShell current={navCurrent(hash) ?? "studio"} account={session.email} onSignOut={signOut}>
+            {route === "visualize" ? (
+              <Visualize onReauth={() => reauth("visualize")} />
+            ) : route === "expenses" ? (
+              // over an open proposal too: "Expenses" in the Builder's top bar comes here
+              <Suspense fallback={<p className="hint" role="status" style={{ padding: 24 }}>Opening expenses…</p>}>
+                <Expenses path={hash.replace(/^#\/?/, "").split("/").slice(1)} proposals={store.list} account={session.email} />
+              </Suspense>
+            ) : route === "dashboard" ? (
+              <Dashboard list={store.list} account={session.email} onOpen={setOpenId} />
+            ) : route === "venues" ? (
+              <Venues onStartProposal={(v) => startProposal({ venue: v.name, location: v.area })} />
+            ) : (
+              <Home
+                store={store}
+                onOpen={setOpenId}
+                onVenues={() => go("venues")}
+                onVisualize={() => go("visualize")}
+                onNew={() => startProposal()}
+                onNewFrom={(pk) => {
+                  const p = proposalFromPackage(pk, config.brand, store.refs);
+                  store.save(p);
+                  setOpenId(p.id);
+                }}
+              />
+            )}
+          </AppShell>
         )}
       </ConfigContext.Provider>
     </AppearanceContext.Provider>
