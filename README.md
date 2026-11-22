@@ -1,39 +1,41 @@
 # Event Bridge — Parinay Weddings
 
-**Event Bridge** is the Parinay Weddings (Events IQ) team's workspace for planning celebrations. It carries the Parinay crest and brings the team's tools together as feature apps:
+**Event Bridge** is the Parinay Weddings (Events IQ) team's workspace for planning celebrations, from the first enquiry to the last expense. It carries the Parinay crest, and everything is reached from one **Dashboard**:
 
-- **Proposal Studio**: build tailored event proposals and export them as a branded Excel workbook or a client-ready PDF.
-- **Venue Directory**: a searchable list of venues in and around Thiruvananthapuram.
-- **Visualize Proposal**: share a finished PDF or Excel proposal with a client as a private, password-protected, view-only page.
+| App | What it's for |
+|---|---|
+| **Dashboard** | today at a glance: upcoming events, money waiting and received, and everything that needs attention |
+| **Events** | every wedding in play, each with a workspace: overview, checklist, questionnaires, payments, expenses |
+| **Proposal Studio** | build tailored proposals and export a branded Excel workbook or a client-ready PDF |
+| **CRM** | enquiries from first message to booking, and the clients behind your proposals |
+| **Tasks** | the team's tasks and every wedding's checklist, as a list, board or calendar |
+| **Vendors** | the rolodex: who to call, what they charge, what you've paid them |
+| **Questionnaires** | ask families what they want once, and keep the answers |
+| **Client Portal** | each family's private page: their proposal, to-dos, payments and questionnaires |
+| **Expenses** | event and company spending with proof, staff advances, and handovers for review |
+| **Venue Directory** | 29 halls, hotels and resorts in and around Thiruvananthapuram |
+| **Visualize Proposal** | share a PDF or Excel proposal as a private, password-protected, view-only page |
+
+New to it? Sign in and follow **Wedding Quest** (the gold button, bottom right): a two-minute spotlight tour and a list of missions that tick themselves off as you go.
 
 Proposals and their exports are branded **Parinay Weddings**, because that's what clients receive. Event Bridge is the name of the app the team uses.
 
 ## Navigation
 
+**There are no menus. The Dashboard is the way into everything.** After sign-in you land on it, and its **apps bar** opens each of the ten apps in the table above. Every other page has **← Dashboard** at the start of its breadcrumb. A slim top bar carries the crest (back to the Dashboard), the theme and font buttons, your email and **Sign out**. Opening a proposal still fills the screen with the Builder.
+
+The public landing page has only the brand and **Team sign in** (or **Dashboard** when signed in). It introduces Event Bridge with the team's photos, every app, and the starting packages.
+
 **Wedding Quest:** a light-hearted guide in the bottom-right corner of every signed-in page.
 - **First visit:** a welcome card on the Dashboard offers a spotlight tour of the Dashboard, Proposal Studio, the CRM and Events. You can replay it any time.
 - **Quest log:** missions like "Start your first proposal", "Catch an enquiry" or "Befriend a vendor" tick themselves off when you actually do them.
 - **Levels:** each quest earns XP, taking you from **Fresh Garland** to **Muhurtham Legend**. Progress is kept in this browser.
-
-**There are no menus. The Dashboard is the way into everything.** After sign-in you land on it, and its **apps** grid opens each app:
-- Events
-- Proposal Studio
-- CRM
-- Tasks
-- Vendors
-- Questionnaires
-- Client Portal
-- Expenses
-- Venue Directory
-- Visualize Proposal
-
-Each tile shows a live line, such as follow-ups due or tasks overdue. Every other page has **← Dashboard** at the start of its breadcrumb. A slim top bar carries the crest (back to the Dashboard), the theme and font buttons, your email and **Sign out**. Opening a proposal still fills the screen with the Builder.
-
-The public landing page has only the brand and **Team sign in** (or **Dashboard** when signed in).
+- **The tour:** stops at the apps bar, the four figures, upcoming events, "Needs attention", then Proposal Studio, the CRM and Events. Use **Next**/**Back**, the arrow keys, or **Skip tour**.
+- **Where:** open the quest log from the gold button any time; **Show me** next to a quest takes you to the right page.
 
 | Address | Page |
 |---|---|
-| `/#/` | landing page: what Event Bridge does, with Proposal Studio featured (public) |
+| `/#/` | landing page: what Event Bridge does, its apps and packages (public) |
 | `/#/login` | sign-in, with a **Back to home** link |
 | `/#/dashboard` | the team dashboard (needs sign-in) |
 | `/#/events` | every wedding in play; `/#/events/<proposal id>` for one wedding's workspace (needs sign-in) |
@@ -44,11 +46,11 @@ The public landing page has only the brand and **Team sign in** (or **Dashboard*
 | `/#/visualize` | Visualize Proposal: upload and share (needs sign-in) |
 | `/#/view/<code>` | a client's private proposal link (password-protected; `/#/view` lets them paste a link) |
 
-Opening a feature app while signed out goes to sign-in first, then straight back to that app.
+Opening an app while signed out goes to sign-in first, then straight back to that app; signing in from the landing page lands on the Dashboard.
 
 ## Proposal Studio
 
-1. **Sign in** with an authorised team account, then choose **Proposal Studio** from the menu.
+1. **Sign in** with an authorised team account, then open the **Proposal Studio** tile on the Dashboard (or **New proposal** at the top of the Dashboard).
 2. **Client & event**:
    - **The basics:** client name, one or more event dates (pick a date, then **+ Add date** for multi-day celebrations; each shows as a removable chip), contact, venue (with suggestions from the venue directory) and location. The quotation reference is filled in automatically.
    - **Guests and budget:** the guest count, and the family's budget. When the guests are more than the chosen directory venue's largest space holds, a warning says so, here and on the Review step.
@@ -87,25 +89,22 @@ Duplicating a proposal starts the copy as a draft, with the payment plan but no 
 
 **Sending the link**: after a private link is created, **Link on WhatsApp** and **Password on WhatsApp** open WhatsApp with each message ready, as two separate messages, addressed to the client's number when it looks like a mobile number. **Email the link** opens your email. Nothing is sent until you press Send.
 
-**Dashboard** (`#/dashboard`, where sign-in lands): this device's proposals at a glance.
+**Dashboard** (`#/dashboard`, where sign-in lands): the team's home, and the only way into the apps.
 - **Header:** a greeting with today's date, and **New proposal** and **Record expense**.
-- **Today strip:** functions this week, payments due, follow-ups and overdue checklist tasks; each jumps to its section or event.
-- **Next up:** the next four weddings, with a countdown and checklist and payment progress; each opens its event workspace.
-- **This month:** sent, accepted, win rate and payments received, against last month, plus the margin when costs exist.
-- **Follow up:** in this order:
-  1. changes the client asked for
-  2. overdue payments
-  3. events within 14 days that are still only sent
-  4. links ending within 3 days
-  5. links opened with no answer after 3 days
-  6. links not opened after 2 days
+- **Apps bar:** all ten apps, one click each.
+- **Four figures:** upcoming events (and functions in the next 7 days), awaiting decision (the value of proposals sent, and the win rate), received this month (and what's still to come, plus the margin when costs exist), and needs attention (red when something is overdue).
+- **Upcoming events:** the next functions with date, client, function, venue, guests and status, or **Calendar**: a month grid with each day's functions. Pick a day to list it. Each opens the event's workspace.
+- **Needs attention:** one list, most urgent first:
+  - overdue payments and overdue tasks
+  - proposal follow-ups: changes the client asked for, events within 14 days still only sent, links ending within 3 days, links opened with no answer after 3 days, links not opened after 2 days
+  - enquiry follow-ups from the CRM
+  - payments due in the next 14 days
+  - questionnaires waiting for answers
 
-  Each has **Open**, and **WhatsApp** where there's a number. The first three also show as **To do** on the Studio home. Link activity needs Visualize Proposal to be set up.
-- **Pipeline:** one bar of the proposals in play (draft, sent, accepted, in deepening gold), with a legend of counts and values and the win rate.
-- **Upcoming events:** the next 90 days as a list (with guests and a capacity warning), or **Calendar**: a month grid with each day's functions. Pick a day to list it.
-- **Payments:** what's due or overdue.
+  Each links to where it's dealt with, with **WhatsApp** where there's a number. The first proposal follow-ups also show as **To do** on the Studio home. Link activity needs Visualize Proposal to be set up.
+- **Pipeline:** one bar of the proposals in play (draft, sent, accepted, in deepening gold), with a legend of counts and values.
 - **What's selling:** wins by occasion.
-- **Expenses:** events with expenses recorded, those without proof first, and this month's company total.
+- **Spending this month:** on events and by the company, with how many lack proof.
 
 **CRM** (`#/crm`): enquiries from first message to booking.
 - **An enquiry holds:** where it came from, the occasion, date, guests, budget and venue in mind, and its stage: New, Contacted, Meeting, Proposal sent, Won, or Lost (with a reason).
@@ -154,7 +153,7 @@ Duplicating a proposal starts the copy as a draft, with the payment plan but no 
 - **Expenses:** the event's ledger.
 - **Proposal:** the quotation's totals and elements per function, with **Open in Studio**.
 
-**Event expenses** (`#/expenses`, **Expenses** in the main menu; also on each proposal card and in the Builder's top bar): what's spent on each wedding, with its proof, handed over to a colleague to check.
+**Event expenses** (`#/expenses`, the **Expenses** tile on the Dashboard; also on each proposal card, the event workspace and the Builder's top bar): what's spent on each wedding, with its proof, handed over to a colleague to check.
 - **Recording an expense:** **Add expense**.
   - **Proof:** attach the GPay screenshot or a photo of the receipt (**Take photo**, **Choose screenshot**, or paste with Ctrl+V). Images are scaled down and kept on this device.
   - **Details:** amount, date (and time), who was paid, what it was for, the category, the function, who paid (you, a colleague or the company account), the method, and the UPI transaction ID / UTR and payee UPI ID when paid by UPI.
@@ -173,7 +172,7 @@ Duplicating a proposal starts the copy as a draft, with the payment plan but no 
   - **By month:** it opens on this month; the month picker (or **All months**) filters the list and the figures, and the first figure also shows last month and the year so far.
   - **Categories:** Office & rent, Utilities & internet, Fuel & travel, Marketing & ads, Salaries & wages, Equipment, Professional fees, Bank charges and Other. Team-wide extras go in `brand.json` as `companyExpenseCategories`.
   - **Handover:** **Prepare handover** covers the chosen month (`Expenses_COMPANY-2026-11_<date>.zip`). After it's reconciled, **Clear from this device** removes only that handover's expenses.
-  - **Remembered:** the switch remembers your last choice on this device, so the Expenses menu opens where you left it.
+  - **Remembered:** the switch remembers your last choice on this device, so the Expenses tile opens where you left it.
 - **Staff advances** (money given to a team member for the event's purchases):
   - **Giving money:** **Give money** on the event's ledger: the team member's sign-in email, what it's for, the amount, how it was paid, a settle-by date (3 days after the last event date by default) and an optional limit for one expense.
   - **Spending it:** when that person adds an expense, **From my advance (₹x left)** is chosen for them. Going over the advance or the limit asks them to confirm; it's allowed, because events can't wait.
@@ -343,7 +342,7 @@ All 29 venues were researched online on 4 November 2026, using official sites fi
 
 The gold crest at `public/images/parinay-logo-gold.png` appears on the sign-in page, home page, top bar, proposal preview, and the Excel and PDF files. To replace it, swap the file, or point `logo` in `brand.json` at a new transparent PNG. The six themes (Dark, the default, and Parinay's antique gold on ivory and espresso among them), the fonts (Cinzel, Cormorant Garamond, Pinyon Script) and the Sans/Mono font modes are all defined in `src/styles/tokens.css`.
 
-The couple photo at `src/assets/_JKN4027.webp` is the site's background, softly tinted to match the current theme, and the landing page's hero image. To use a different photo, replace that file and keep the same name, or change all three references: the two `url(...)`s in `src/styles/app.css` (the "Site background photo" block and the "Refinement" block), and the import at the top of `src/pages/Landing.tsx`. Then rebuild. A landscape WebP or JPEG under about 200 KB keeps pages fast.
+The couple photo at `src/assets/_JKN4027.webp` is the site's background, softly tinted to match the current theme (the Dashboard sits on a plain surface instead), and one of the landing page's mosaic photos. To use a different photo, replace that file and keep the same name, or change all three references: the two `url(...)`s in `src/styles/app.css` (the "Site background photo" block and the "Refinement" block), and the import at the top of `src/pages/Landing.tsx`. Then rebuild. A landscape WebP or JPEG under about 200 KB keeps pages fast.
 
 The team's own photos in `src/assets/` appear elsewhere: the seaside mandap (`AMU02986.webp`) behind the Proposal Studio heading, the jasmine canopy (`AMU02965.webp`) beside the sign-in form, and the bride at a stone doorway (`JK_05098.webp`) as the landing page's main photo. The landing page also shows the canopy, the mandap and `_JKN4027.webp` in a mosaic. Several carry the photographer's credit in the image, so they're framed at their own proportions; don't crop them.
 
@@ -446,17 +445,17 @@ Until step 3 is done, Visualize says it isn't set up, and sign-in keeps using th
 
 | Path | What's there |
 |---|---|
-| `public/config/` | `catalog.json`, `brand.json` and `venues.json`: offerings, branding and venue directory, editable without a rebuild |
+| `public/config/` | `catalog.json`, `brand.json` and `venues.json` (offerings, branding, venue directory), plus `checklists.json`, `questionnaires.json`, `packages.json` and an optional `vendors.json`: all editable without a rebuild |
 | `public/images/` | logo, favicon, your own photos |
-| `src/assets/` | the site background and landing photo, and the team photos used on the Proposal Studio home, sign-in and landing pages, bundled into the build |
+| `src/assets/` | the site background and the team photos used on the landing page, Proposal Studio home and sign-in, bundled into the build |
 | `src/site.ts` | the site's name (Event Bridge) and tagline |
-| `src/pages/` | `Landing` (Event Bridge's public entry), `Login`, `Home` (Proposal Studio's saved proposals, import and **From Excel**), `Builder` (the four-step wizard), `Venues` (Venue Directory), `Visualize` (staff sharing), `ClientView` (the client's password gate and viewer) |
-| `api/` | Vercel Functions for Visualize Proposal: staff sign-in, shares, client viewing |
+| `src/pages/` | `Landing` (the public entry), `Login`, `Dashboard` (the hub), `Events` (events and each wedding's workspace), `Home` (Proposal Studio's saved proposals, import and **From Excel**), `Builder` (the four-step wizard), `Crm`, `Tasks`, `Vendors`, `Questionnaires`, `Portal` (client portals), `Expenses`, `Venues` (Venue Directory), `Visualize` (staff sharing), `ClientView` (the client's password gate, viewer and portal) |
+| `api/` | Vercel Functions for Visualize Proposal and client portals: staff sign-in, shares, client viewing, answers |
 | `server/` | the code behind them: sessions, rate limits, encryption, storage, PDF and Excel rendering, and their tests |
 | `scripts/` | `visualize-setup.mjs`: generates the secrets and hashes staff passwords |
-| `src/components/` | the main menu (`SiteNav`), the Excel import dialog (`ExcelImport`), preview, element cards, line editor, totals panel and other UI pieces |
-| `src/lib/` | totals, ₹ formatting, Excel and PDF export, Excel import, quotation references, venue search, the Visualize API client and screen-capture handling |
-| `src/state/` | saved proposals, theme and font preference |
+| `src/components/` | the app frame (`AppShell`), page headers, the landing header (`SiteNav`), Wedding Quest (`Quest`), the checklist, questionnaire form, client portal, expense and advance dialogs, the Excel import dialog, preview, element cards, line editor, totals panel and other UI pieces |
+| `src/lib/` | the rules, all tested: totals, ₹ formatting, exports and Excel import, quotation references, venues, dashboard figures, events, checklists, CRM, tasks, vendors, questionnaires, portals, expenses and advances, the calendar, Wedding Quest, the Visualize API client and screen-capture handling |
+| `src/state/` | what's kept on this device: proposals, CRM leads, team tasks, vendors, questionnaires, expenses (IndexedDB), theme and font |
 | `src/auth/` | allow-listed accounts and the 12-hour session |
 | `src/config/` | loading and validating the JSON config |
 | `src/styles/` | design tokens and all styles |
