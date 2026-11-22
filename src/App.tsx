@@ -166,7 +166,7 @@ export default function App() {
                 />
               </Suspense>
             ) : route === "dashboard" ? (
-              <Dashboard list={store.list} account={session.email} onOpen={setOpenId} />
+              <Dashboard list={store.list} account={session.email} onOpen={setOpenId} onNew={() => startProposal()} />
             ) : route === "venues" ? (
               <Venues onStartProposal={(v) => startProposal({ venue: v.name, location: v.area })} />
             ) : (
