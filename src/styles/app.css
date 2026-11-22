@@ -2090,3 +2090,8 @@ body::before {
   .crm-log-add { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
   .crm-log-add input[aria-label="What happened"] { grid-column: 1 / -1; order: -1; }
 }
+
+/* ---------- Tasks (#/tasks): reuses the checklist list and board; high priority and calendar entries ---------- */
+.ck-item.is-high .ck-title::after { content: " · high"; color: var(--danger-ink); font-size: 12px; font-weight: 600; }
+.task-cal-ev { width: 100%; border: 0; border-left: 2px solid var(--gold); font: inherit; font-size: 11.5px; color: var(--ink); text-align: left; cursor: pointer; }
+.ev-filters .seg { flex: none; }

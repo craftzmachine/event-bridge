@@ -11,7 +11,7 @@ import { waLink, waNumber } from "../lib/whatsapp";
 import { listExpenses } from "../state/expenses";
 import { monthOf, summarise, type Expense } from "../lib/expenses";
 import { COMPANY_BOOK_ID, monthLabel } from "../lib/books";
-import { overdueAcross, progress } from "../lib/checklist";
+import { progress } from "../lib/checklist";
 import { countdown, eventsFor } from "../lib/events";
 import { calendarMonth, gridRange, shiftMonth } from "../lib/calendar";
 import { schedule } from "../lib/payments";
@@ -21,6 +21,8 @@ import Icon from "../components/icons";
 import { APPS, type AppItem } from "../lib/nav";
 import { readLeads } from "../state/crm";
 import { followUpsDue, isOpen } from "../lib/crm";
+import { readTeamTasks } from "../state/tasks";
+import { allTasks, overdueRows } from "../lib/tasks";
 import { proposalStatus } from "../lib/status";
 
 const month = (d: Date) => d.toLocaleString("en-GB", { month: "long" });
@@ -103,10 +105,11 @@ export default function Dashboard({ list, account, onOpen, onNew }: { list: Prop
   const pay = paymentsOverview(list, brand, now);
   const margin = marginThisMonth(list, brand.gstPct, now);
   const sold = selling(list, catalog, brand.gstPct);
-  const lateTasks = overdueAcross(list, today);
   const upcomingEvents = eventsFor(list, "upcoming", today);
   const leads = useMemo(() => readLeads(), []);
   const leadsDue = followUpsDue(leads, today);
+  const teamTasks = useMemo(() => readTeamTasks(), []);
+  const lateRows = overdueRows(allTasks(teamTasks, list), today);
   const next = eventsFor(list, "upcoming", today).filter((p) => eventDates(p).length).slice(0, 4);
   const lastName = month(m.lastMonth);
 
@@ -154,6 +157,7 @@ export default function Dashboard({ list, account, onOpen, onNew }: { list: Prop
           live={{
             events: upcomingEvents.length ? `${upcomingEvents.length} coming up · ${week.length} function${week.length === 1 ? "" : "s"} this week` : "No events coming up",
             crm: `${leads.filter(isOpen).length} open enquir${leads.filter(isOpen).length === 1 ? "y" : "ies"}${leadsDue.length ? ` · ${leadsDue.length} to follow up` : ""}`,
+            tasks: lateRows.length ? `${lateRows.length} overdue` : "Nothing overdue",
             studio: `${list.length} proposal${list.length === 1 ? "" : "s"} · ${list.filter((p) => proposalStatus(p) === "draft").length} draft${list.filter((p) => proposalStatus(p) === "draft").length === 1 ? "" : "s"}`,
             expenses: `${formatINRShort(company.total)} company spending in ${monthLabel(monthOf(today))}`,
             venues: `${venues.venues.length} venues`,
@@ -183,10 +187,10 @@ export default function Dashboard({ list, account, onOpen, onNew }: { list: Prop
                 <strong>{todo.length + leadsDue.length}</strong>
                 <small>{todo[0] ? `${todo[0].client}: ${todo[0].title}` : leadsDue[0] ? `Enquiry: ${leadsDue[0].name}` : "Nothing waiting on you"}</small>
               </button>
-              <a className={`dash-today-card${lateTasks.length ? " is-alert" : ""}`} href={lateTasks[0] ? `#/events/${lateTasks[0].proposal.id}/checklist` : "#/events"}>
-                <span>Checklist overdue</span>
-                <strong>{lateTasks.length}</strong>
-                <small>{lateTasks[0] ? `${lateTasks[0].proposal.client.name || "Client"}: ${lateTasks[0].item.title}` : "Every task is on time"}</small>
+              <a className={`dash-today-card${lateRows.length ? " is-alert" : ""}`} href="#/tasks">
+                <span>Tasks overdue</span>
+                <strong>{lateRows.length}</strong>
+                <small>{lateRows[0] ? lateRows[0].title : "Every task is on time"}</small>
               </a>
             </section>
 

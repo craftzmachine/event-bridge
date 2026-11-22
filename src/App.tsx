@@ -17,6 +17,7 @@ const Expenses = lazy(() => import("./pages/Expenses"));
 const Events = lazy(() => import("./pages/Events"));
 const Vendors = lazy(() => import("./pages/Vendors"));
 const Crm = lazy(() => import("./pages/Crm"));
+const Tasks = lazy(() => import("./pages/Tasks"));
 import ClientView from "./pages/ClientView";
 import AppShell from "./components/AppShell";
 import { endSession, readSession, SERVER_SIGNIN, startSession, type Session } from "./auth/auth";
@@ -27,9 +28,9 @@ import { ApiError, api } from "./lib/api";
  * #/ (landing), #/login, the signed-in #/dashboard (team overview) and feature apps #/studio (Proposal Studio), #/venues (Venue Directory) and
  * #/visualize (Visualize Proposal), and the public #/view/<token> where a client opens a shared proposal.
  */
-type Route = "landing" | "login" | "dashboard" | "events" | "crm" | "vendors" | "expenses" | "studio" | "venues" | "visualize" | "view";
+type Route = "landing" | "login" | "dashboard" | "events" | "crm" | "tasks" | "vendors" | "expenses" | "studio" | "venues" | "visualize" | "view";
 type AppRoute = Exclude<Route, "landing" | "login" | "view">;
-const APP_ROUTES: Route[] = ["dashboard", "events", "crm", "vendors", "expenses", "studio", "venues", "visualize"];
+const APP_ROUTES: Route[] = ["dashboard", "events", "crm", "tasks", "vendors", "expenses", "studio", "venues", "visualize"];
 const readRoute = (hash: string): Route => {
   const h = hash.replace(/^#\/?/, "").split("/")[0].toLowerCase();
   return h === "login" || h === "view" || APP_ROUTES.includes(h as Route) ? (h as Route) : "landing";
@@ -141,7 +142,7 @@ export default function App() {
               go(returnTo);
             }}
           />
-        ) : open && route !== "expenses" && route !== "visualize" && route !== "events" ? (
+        ) : open && (route === "studio" || route === "dashboard" || route === "venues") ? (
           // the open proposal survives the sign-in, so it reopens afterwards; it stays full-screen, outside the shell
           <Builder key={open.id} proposal={open} onChange={store.save} onClose={() => setOpenId(null)} onReauth={() => reauth(route === "venues" || route === "dashboard" ? route : "studio")} />
         ) : (
@@ -176,6 +177,10 @@ export default function App() {
                     go("studio");
                   }}
                 />
+              </Suspense>
+            ) : route === "tasks" ? (
+              <Suspense fallback={<p className="hint" role="status" style={{ padding: 24 }}>Opening tasks…</p>}>
+                <Tasks store={store} account={session.email} />
               </Suspense>
             ) : route === "vendors" ? (
               <Suspense fallback={<p className="hint" role="status" style={{ padding: 24 }}>Opening vendors…</p>}>
