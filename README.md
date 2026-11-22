@@ -10,14 +10,21 @@ Proposals and their exports are branded **Parinay Weddings**, because that's wha
 
 ## Navigation
 
-The main menu sits on the landing page, the Proposal Studio home and the dashboard: **Home**, **Dashboard**, **Proposal Studio**, **Venue Directory** and **Visualize Proposal**, plus the theme and font buttons and **Team sign in** / **Sign out**. Below 1440 px wide it folds into a ☰ menu.
+**Signed in**, every page sits in the app shell:
+- **Wide screens:** a sidebar with **Dashboard**, **Events**, **Proposal Studio**, **Expenses**, **Venue Directory** and **Visualize Proposal**, the theme and font buttons, your email and **Sign out**. **Collapse** shrinks it to icons, and this device remembers it.
+- **Phones and tablets** (below 1024 px): a bottom tab bar (Home, Events, Studio, Expenses), with **More** for Venues, Visualize, appearance and sign-out.
+- **Page header:** each page starts with a breadcrumb (Dashboard › Events › client) and a header with its actions on the right.
+- **Builder:** opening a proposal still fills the screen, with its own top bar.
+
+The public landing page keeps its top menu (folding into ☰ below 1440 px), with **Team sign in**.
 
 | Address | Page |
 |---|---|
 | `/#/` | landing page: what Event Bridge does, with Proposal Studio featured (public) |
 | `/#/login` | sign-in, with a **Back to home** link |
 | `/#/dashboard` | the team dashboard (needs sign-in) |
-| `/#/expenses` | event expenses and handovers; `/#/expenses/<proposal id>` for one event (needs sign-in) |
+| `/#/events` | every wedding in play; `/#/events/<proposal id>` for one wedding's workspace (needs sign-in) |
+| `/#/expenses` | event expenses and handovers; `/#/expenses/<proposal id>` for one event, `/#/expenses/company` for the company's own (needs sign-in) |
 | `/#/studio` | Proposal Studio (needs sign-in) |
 | `/#/venues` | Venue Directory (needs sign-in) |
 | `/#/visualize` | Visualize Proposal: upload and share (needs sign-in) |
@@ -67,6 +74,9 @@ Duplicating a proposal starts the copy as a draft, with the payment plan but no 
 **Sending the link**: after a private link is created, **Link on WhatsApp** and **Password on WhatsApp** open WhatsApp with each message ready, as two separate messages, addressed to the client's number when it looks like a mobile number. **Email the link** opens your email. Nothing is sent until you press Send.
 
 **Dashboard** (`#/dashboard`, in the menu): this device's proposals at a glance.
+- **Header:** a greeting with today's date, and **New proposal** and **Record expense**.
+- **Today strip:** functions this week, payments due, follow-ups and overdue checklist tasks; each jumps to its section or event.
+- **Next up:** the next four weddings, with a countdown and checklist and payment progress; each opens its event workspace.
 - **This month:** sent, accepted, win rate and payments received, against last month, plus the margin when costs exist.
 - **Follow up:** in this order:
   1. changes the client asked for
@@ -77,11 +87,25 @@ Duplicating a proposal starts the copy as a draft, with the payment plan but no 
   6. links not opened after 2 days
 
   Each has **Open**, and **WhatsApp** where there's a number. The first three also show as **To do** on the Studio home. Link activity needs Visualize Proposal to be set up.
-- **Pipeline:** the value at each status.
-- **The next 90 days:** each function or event date, with guests and a capacity warning.
+- **Pipeline:** one bar of the proposals in play (draft, sent, accepted, in deepening gold), with a legend of counts and values and the win rate.
+- **Upcoming events:** the next 90 days as a list (with guests and a capacity warning), or **Calendar**: a month grid with each day's functions. Pick a day to list it.
 - **Payments:** what's due or overdue.
 - **What's selling:** wins by occasion.
-- **Expenses:** events with expenses recorded, those without proof first.
+- **Expenses:** events with expenses recorded, those without proof first, and this month's company total.
+
+**Events** (`#/events`, in the menu): every wedding in play, meaning accepted proposals and anything with a date. **Upcoming / Past / All**, with search, a countdown and checklist progress. Open one for its workspace (`#/events/<id>`), also linked from Studio cards (**Event**) and the Builder's top bar. It has these tabs:
+- **Overview:**
+  - when: the countdown and functions
+  - progress: checklist, payments received and spending against the quote, with money still with staff
+  - the client, with **WhatsApp**, guests, budget and their answer on a shared link
+  - the venue, with its capacity check
+- **Checklist:** the wedding's to-do list. **Start the checklist** fills it from the team's list in `public/config/checklists.json`, each task due a number of days before the first event date (negative for after) and owned by the team or the family. Edit that file to change the list for every new wedding (validated; `eventTypes`/`ceremonyStyles` limit a task, like catalogue elements).
+  - **Views:** **List** groups tasks as Overdue, This week, Later, No date and Done; **Board** has To do, Doing and Done columns, with buttons to move cards. Ticking a task records who and when.
+  - **Changing tasks:** **Add a task**, **Edit** and **Delete**.
+  - A duplicated proposal starts its checklist again, and the checklist never appears on anything the client sees.
+- **Payments:** the same payment plan and received payments as in Studio, editable here.
+- **Expenses:** the event's ledger.
+- **Proposal:** the quotation's totals and elements per function, with **Open in Studio**.
 
 **Event expenses** (`#/expenses`, **Expenses** in the main menu; also on each proposal card and in the Builder's top bar): what's spent on each wedding, with its proof, handed over to a colleague to check.
 - **Recording an expense:** **Add expense**.

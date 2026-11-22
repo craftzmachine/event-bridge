@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
-import { useConfig } from "../config/context";
 import { ApiError, api, upload } from "../lib/api";
-import AppearanceControls from "../components/AppearanceControls";
+import PageHeader from "../components/PageHeader";
 import PasswordField from "../components/PasswordField";
 import ShareResult, { useCopy } from "../components/ShareResult";
 import { EXPIRY_DAYS as EXPIRY, fileSize as mb, generatePassword, MAX_SHARE_BYTES as MAX_BYTES, shareLink, shortDate as when, type Share } from "../lib/shares";
@@ -19,8 +18,7 @@ function checkFile(f: File): string {
 type Access = "checking" | "ok" | "signin" | "setup" | "offline";
 
 /** Staff page for Visualize Proposal: upload a PDF or Excel file and send the client a private link. */
-export default function Visualize({ onBack, onReauth }: { onBack: () => void; onReauth: () => void }) {
-  const { brand } = useConfig();
+export default function Visualize({ onReauth }: { onReauth: () => void }) {
   const [access, setAccess] = useState<Access>("checking");
   const [accessMsg, setAccessMsg] = useState("");
   const [list, setList] = useState<Share[] | null>(null);
@@ -55,21 +53,9 @@ export default function Visualize({ onBack, onReauth }: { onBack: () => void; on
 
   return (
     <div className="viz-page">
-      <header className="topbar">
-        <button className="btn-ghost btn-sm" onClick={onBack} aria-label="Back to Proposal Studio">
-          ←<span className="hide-phone"> Proposals</span>
-        </button>
-        <img className="topbar-logo" src={`${import.meta.env.BASE_URL}${brand.logo}`} alt={brand.company} />
-        <div className="topbar-title">
-          <span className="eyebrow">Private sharing</span>
-          <strong>Visualize Proposal</strong>
-        </div>
-        <AppearanceControls />
-      </header>
+      <PageHeader crumbs={[{ label: "Dashboard", href: "#/dashboard" }, { label: "Visualize Proposal" }]} title="Share a proposal with your client" subtitle="Password-protected, view-only links" />
 
       <main className="viz-main">
-        <p className="eyebrow">Password-protected, view-only links</p>
-        <h1>Share a proposal with your client</h1>
         <p className="lede">
           Upload the PDF or Excel file. Your client opens the link, enters the password you give them, and reads it in the
           browser — without downloading or printing the file.

@@ -3,7 +3,7 @@ import type { Venue } from "../types";
 import { useConfig } from "../config/context";
 import { filterVenues, largestCapacity } from "../lib/venues";
 import Img from "../components/Img";
-import AppearanceControls from "../components/AppearanceControls";
+import PageHeader from "../components/PageHeader";
 
 const Stars = ({ n }: { n?: number }) =>
   n ? (
@@ -76,8 +76,8 @@ function FeaturedVenue({ v, typeLabel, onOpen, onStart }: { v: Venue; typeLabel:
   );
 }
 
-export default function Venues({ onBack, onStartProposal }: { onBack: () => void; onStartProposal: (v: Venue) => void }) {
-  const { venues: dir, brand } = useConfig();
+export default function Venues({ onStartProposal }: { onStartProposal: (v: Venue) => void }) {
+  const { venues: dir } = useConfig();
   const [q, setQ] = useState("");
   const [type, setType] = useState("all");
   const [area, setArea] = useState("all");
@@ -93,21 +93,9 @@ export default function Venues({ onBack, onStartProposal }: { onBack: () => void
 
   return (
     <div className="venues-page">
-      <header className="topbar">
-        <button className="btn-ghost btn-sm" onClick={onBack} aria-label="Back to proposals">
-          ←<span className="hide-phone"> Proposals</span>
-        </button>
-        <img className="topbar-logo" src={`${import.meta.env.BASE_URL}${brand.logo}`} alt={brand.company} />
-        <div className="topbar-title">
-          <span className="eyebrow">Directory</span>
-          <strong>Venues</strong>
-        </div>
-        <AppearanceControls />
-      </header>
+      <PageHeader crumbs={[{ label: "Dashboard", href: "#/dashboard" }, { label: "Venue Directory" }]} title="Hotels, resorts & venues" subtitle="Thiruvananthapuram & around" />
 
       <main className="venues-main">
-        <p className="eyebrow">Thiruvananthapuram &amp; around</p>
-        <h1>Hotels, resorts &amp; venues</h1>
         {dir.note && <p className="venues-note">{dir.note}</p>}
 
         <div className="venue-filters">

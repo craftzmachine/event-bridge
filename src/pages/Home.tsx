@@ -16,7 +16,6 @@ import { api } from "../lib/api";
 import ClientAnswer from "../components/ClientAnswer";
 import Img from "../components/Img";
 import Ornament from "../components/Ornament";
-import SiteNav from "../components/SiteNav";
 import ExcelImport from "../components/ExcelImport";
 import { SITE } from "../site";
 import heroPhoto from "../assets/AMU02986.webp";
@@ -25,8 +24,6 @@ type Store = ReturnType<typeof useProposals>;
 
 export default function Home({
   store,
-  account,
-  onSignOut,
   onOpen,
   onVenues,
   onVisualize,
@@ -34,8 +31,6 @@ export default function Home({
   onNewFrom,
 }: {
   store: Store;
-  account: string;
-  onSignOut: () => void;
   onOpen: (id: string) => void;
   onVenues: () => void;
   onVisualize: () => void;
@@ -115,7 +110,6 @@ export default function Home({
     <div className="home">
       <header className="home-hero">
         <Img src={heroPhoto} alt="" className="home-hero-img" />
-        <SiteNav current="studio" account={account} onSignOut={onSignOut} />
         <div className="home-hero-text">
           <img className="brand-logo" src={`${import.meta.env.BASE_URL}${brand.logo}`} alt={`${brand.company} — ${brand.tagline}`} />
           <h1>Craft a proposal worth saying <em>yes</em> to.</h1>
@@ -260,6 +254,7 @@ export default function Home({
                     {answers.get(p.id)?.kind === "approved" && proposalStatus(p) === "sent" && (
                       <button className="link-btn" onClick={() => store.save({ ...p, ...statusPatch(p, "accepted") })}>Mark accepted</button>
                     )}
+                    <a className="link-btn" href={`#/events/${p.id}`}>Event</a>
                     <a className="link-btn" href={`#/expenses/${p.id}`}>
                       Expenses{expenseCounts.get(p.id) ? ` (${expenseCounts.get(p.id)!.count})` : ""}
                     </a>

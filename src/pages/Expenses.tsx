@@ -31,7 +31,7 @@ import { eventDates, proposalTitle } from "../lib/proposal";
 import { proposalStatus, statusLabel } from "../lib/status";
 import { formatDate, formatINR, formatINRShort, todayISO } from "../lib/format";
 import { saveBlob } from "../lib/files";
-import AppearanceControls from "../components/AppearanceControls";
+import { Breadcrumbs } from "../components/PageHeader";
 import ExpenseDialog, { type ExpenseEventInfo } from "../components/ExpenseDialog";
 import AdvanceDialog from "../components/AdvanceDialog";
 import ProofThumb from "../components/ProofThumb";
@@ -88,7 +88,7 @@ function ViewSwitch({ value }: { value: "events" | "company" }) {
  * #/expenses: events with expenses and handovers waiting for review; #/expenses/<proposalId>: one event's ledger;
  * #/expenses/review/<handoverId>: reviewing a handover received from a colleague.
  */
-export default function Expenses({ path, proposals, account, onBack }: { path: string[]; proposals: Proposal[]; account: string; onBack: () => void }) {
+export default function Expenses({ path, proposals, account }: { path: string[]; proposals: Proposal[]; account: string }) {
   const { brand, catalog } = useConfig();
   const company = path[0] === COMPANY_BOOK_ID;
   const p = path[0] && path[0] !== "review" && !company ? proposals.find((x) => x.id === path[0]) : undefined;
@@ -99,16 +99,14 @@ export default function Expenses({ path, proposals, account, onBack }: { path: s
   }, [path[0]]);
   return (
     <div className="exp-page">
-      <header className="topbar">
-        <button className="btn-ghost btn-sm" onClick={onBack} aria-label="Back">←<span className="hide-phone"> Back</span></button>
-        <img className="topbar-logo" src={`${import.meta.env.BASE_URL}${brand.logo}`} alt={brand.company} />
-        <div className="topbar-title">
-          <span className="eyebrow">{company ? "Company expenses" : "Event expenses"}</span>
-          <strong>{book ? book.title : path[0] === "review" ? "Handover review" : "Expenses"}</strong>
-        </div>
-        <AppearanceControls />
-      </header>
       <main className="exp-main">
+        <Breadcrumbs
+          items={[
+            { label: "Dashboard", href: "#/dashboard" },
+            { label: "Expenses", href: "#/expenses" },
+            ...(book ? [{ label: book.title }] : path[0] === "review" ? [{ label: "Handover review" }] : []),
+          ]}
+        />
         {path[0] === "review" && path[1] ? (
           <Review id={path[1]} account={account} />
         ) : book ? (
@@ -252,6 +250,13 @@ function Index({ proposals, account }: { proposals: Proposal[]; account: string 
 }
 
 // ---- #/expenses/<proposalId> -----------------------------------------------------------------------------------
+
+/** One event's ledger, for the event workspace (#/events/<id>/expenses). */
+export function EventLedger({ p, account }: { p: Proposal; account: string }) {
+  const { catalog, brand } = useConfig();
+  const book = useMemo(() => bookFromProposal(p, catalog, brand), [p, catalog, brand]);
+  return <Ledger key={book.id} book={book} account={account} />;
+}
 
 function Ledger({ book, account }: { book: Book; account: string }) {
   const { brand } = useConfig();
