@@ -185,6 +185,8 @@ export interface ExpenseSummary {
   /** who paid, for reimbursement: "Company account", an advance, or the person's name */
   byPayer: { key: string; label: string; kind: PayerKind; total: number }[];
   byFunction: { fn: string | null; total: number }[];
+  /** "YYYY-MM", newest first */
+  byMonth: { month: string; total: number; count: number }[];
   missingProof: number;
   duplicates: number;
   queried: number;
@@ -218,13 +220,28 @@ export function summarise(list: Expense[]): ExpenseSummary {
       total: g.total,
     })),
     byFunction: group((e) => e.fn ?? "").map(([fn, g]) => ({ fn: fn || null, total: g.total })),
+    byMonth: group((e) => monthOf(e.paidOn))
+      .map(([month, g]) => ({ month, total: g.total, count: g.count }))
+      .sort((a, b) => b.month.localeCompare(a.month)),
     missingProof: live.filter((e) => !e.proof).length,
     duplicates: live.filter((e) => flagsOf(e, live).includes("possibleDuplicate")).length,
     queried: live.filter((e) => e.review.state === "queried").length,
   };
 }
 
+/** "2026-11-22" → "2026-11" */
+export const monthOf = (iso: string) => (iso ?? "").slice(0, 7);
+
+/** The months with expenses (removed ones included), newest first, plus `always` (e.g. this month). */
+export function monthsOf(list: Expense[], always?: string): string[] {
+  const s = new Set(list.map((e) => monthOf(e.paidOn)).filter((m) => /^\d{4}-\d{2}$/.test(m)));
+  if (always) s.add(always);
+  return [...s].sort().reverse();
+}
+
 export interface ExpenseFilter {
+  /** "YYYY-MM": only expenses paid that month */
+  month?: string;
   q?: string;
   category?: string;
   /** a payerKey */
@@ -236,6 +253,7 @@ export function filterExpenses(list: Expense[], f: ExpenseFilter): Expense[] {
   const q = norm(f.q);
   return list
     .filter((e) => (f.flag === "removed" ? !!e.removed : !e.removed))
+    .filter((e) => !f.month || monthOf(e.paidOn) === f.month)
     .filter((e) => !f.category || e.category === f.category)
     .filter((e) => !f.payer || payerKey(e) === f.payer)
     .filter((e) => !f.flag || f.flag === "removed" || flagsOf(e, list).includes(f.flag))

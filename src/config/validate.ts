@@ -124,6 +124,8 @@ export function validateBrand(b: unknown): string[] {
   }
   if (brand.expenseCategories !== undefined && (!Array.isArray(brand.expenseCategories) || brand.expenseCategories.some((c) => !c?.id || !c?.label)))
     errs.push(`brand.json "expenseCategories" must be a list of { "id", "label" }.`);
+  if (brand.companyExpenseCategories !== undefined && (!Array.isArray(brand.companyExpenseCategories) || brand.companyExpenseCategories.some((c) => !c?.id || !c?.label)))
+    errs.push(`brand.json "companyExpenseCategories" must be a list of { "id", "label" }.`);
   if (brand.advanceManagers !== undefined && (!Array.isArray(brand.advanceManagers) || brand.advanceManagers.some((m) => typeof m !== "string" || !m.includes("@"))))
     errs.push(`brand.json "advanceManagers" must be a list of sign-in email addresses.`);
   if (brand.balanceDueDays !== undefined &&!(Number.isInteger(brand.balanceDueDays) && brand.balanceDueDays >= 0))

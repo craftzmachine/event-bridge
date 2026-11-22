@@ -65,7 +65,16 @@ export const putAdvances = (list: Advance[]) => run<void>("advances", "readwrite
  * advances. Open advances stay, since money is still out.
  */
 export async function clearEvent(eventId: string) {
-  const list = await listExpenses(eventId);
+  await clearExpenses(eventId, (await listExpenses(eventId)).map((e) => e.id));
+}
+
+/**
+ * Removes these expenses of a book and their images from this device, and the book's closed advances. A company
+ * handover covers one month, so only its own expenses go; the rest of the company ledger stays.
+ */
+export async function clearExpenses(eventId: string, ids: string[]) {
+  const keep = new Set(ids);
+  const list = (await listExpenses(eventId)).filter((e) => keep.has(e.id));
   await run<void>("proofs", "readwrite", (s) => void list.forEach((e) => e.proof && s.delete(e.proof.fileId)));
   await run<void>("expenses", "readwrite", (s) => void list.forEach((e) => s.delete(e.id)));
   const closed = (await listAdvances(eventId)).filter((a) => a.closed);

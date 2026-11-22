@@ -97,6 +97,12 @@ Duplicating a proposal starts the copy as a draft, with the payment plan but no 
 - **The ledger:** spending so far (against the quote, for reference), what needs attention, totals by category and by who paid, and filters (category, payer, proof missing, possible duplicates, queried, removed) with search.
   - **History:** every edit is recorded with who and when, under **History** in the expense.
   - **Removing:** needs a reason, and the expense can be restored.
+- **Company expenses** (the **Events | Company** switch at the top of the Expenses page, or `#/expenses/company`): the company's own running costs, not tied to any proposal, such as rent, fuel, ads, wages and equipment.
+  - **The same ledger as an event:** proof, safeguards, history, staff advances and handovers all work the same way, but there's no event date check and no quote.
+  - **By month:** it opens on this month; the month picker (or **All months**) filters the list and the figures, and the first figure also shows last month and the year so far.
+  - **Categories:** Office & rent, Utilities & internet, Fuel & travel, Marketing & ads, Salaries & wages, Equipment, Professional fees, Bank charges and Other. Team-wide extras go in `brand.json` as `companyExpenseCategories`.
+  - **Handover:** **Prepare handover** covers the chosen month (`Expenses_COMPANY-2026-11_<date>.zip`). After it's reconciled, **Clear from this device** removes only that handover's expenses.
+  - **Remembered:** the switch remembers your last choice on this device, so the Expenses menu opens where you left it.
 - **Staff advances** (money given to a team member for the event's purchases):
   - **Giving money:** **Give money** on the event's ledger: the team member's sign-in email, what it's for, the amount, how it was paid, a settle-by date (3 days after the last event date by default) and an optional limit for one expense.
   - **Spending it:** when that person adds an expense, **From my advance (₹x left)** is chosen for them. Going over the advance or the limit asks them to confirm; it's allowed, because events can't wait.

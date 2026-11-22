@@ -45,7 +45,7 @@ Photos must show the actual venue and be licensed for commercial use: CC BY, CC 
 - `#/` → `Landing` (public)
 - `#/login` → `Login`
 - `#/dashboard` → `Dashboard` (team overview)
-- `#/expenses`, `#/expenses/<proposalId>`, `#/expenses/review/<handoverId>` → `Expenses` (event expenses and handovers)
+- `#/expenses`, `#/expenses/<proposalId>`, `#/expenses/company`, `#/expenses/review/<handoverId>` → `Expenses` (event and company expenses, and handovers)
 - `#/studio` → Proposal Studio (`Home`)
 - `#/venues` → `Venues` (the Venue Directory)
 - `#/visualize` → `Visualize` (staff sharing)
@@ -105,6 +105,10 @@ Photos must show the actual venue and be licensed for commercial use: CC BY, CC 
     - **Arrival:** `readPack` checks image hashes and `canReview`. The reviewer must not appear in any expense's `recordedBy` or history, other than as a reviewer.
     - **Sign-off and reply:** `signOff` builds the `Reply`, and `applyReply` records the review on the recorder's expenses.
     - **JSZip:** pass it bytes, not Blobs, which it accepts only in browsers.
+  - **Company expenses** (`src/lib/books.ts`, `books.test.ts`): a ledger, its advances and its handover belong to a `Book`, either `bookFromProposal(p, …)` or `companyBook(brand)` with the fixed id `COMPANY_BOOK_ID` ("company"), which takes the place of a proposal id in `eventId`.
+    - **Routes and switch:** `#/expenses/company`. `ViewSwitch` (Events | Company) remembers the choice in `event-bridge.expenses-view.v1`, and `#/expenses` then redirects (`location.replace`) to the company ledger.
+    - **Months:** the company ledger is month-scoped (`ExpenseFilter.month`, `monthsOf`, `summarise().byMonth`). Its handover packs only that month, with `packEvent(book, month)` giving the ref `COMPANY-<YYYY-MM>`, and `SentHandover.month` records it. "Clear" uses `clearExpenses(bookId, ids)`, never the whole book.
+    - **Categories:** `categoriesFor(kind, brand, custom)`: `COMPANY_CATEGORIES` plus `brand.companyExpenseCategories` (validated) for the company. `ExpenseDialog` starts a new expense in the first category offered.
   - **Staff advances** (`src/lib/advances.ts`, `advances.test.ts`; UI in `src/components/AdvanceDialog.tsx` and the `Advances` card in `Expenses.tsx`):
     - **Data:** an `Advance` holds `movements` (`issued`, `topup`, `returned`, `reimbursed`), each reversed with a reason, never deleted, plus a `history`. An expense paid from one has payer kind `advance` (name = the staff email) and `advanceId`. Show payers with `payerLabel` and group them with `payerKey`; the payer filter uses that key.
     - **Money:** `balanceOf` (the running "left": everything not rejected counts) and `settlement` (`due` = given − accepted − returned + reimbursed, where accepted also needs proof or a reviewer's check; queried or unreviewed expenses are `holds`). Positive `due` is owed back, negative is owed to the staff member.

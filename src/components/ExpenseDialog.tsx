@@ -77,7 +77,12 @@ export default function ExpenseDialog({
   const ref = useRef<HTMLDialogElement>(null);
   const camRef = useRef<HTMLInputElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
-  const [e, setE] = useState<Expense>(() => expense ?? blank(event, account, advances));
+  // a new expense starts in the first category offered (the company ledger has no "Purchases")
+  const [e, setE] = useState<Expense>(() => {
+    if (expense) return expense;
+    const b = blank(event, account, advances);
+    return categories.some((c) => c.id === b.category) ? b : { ...b, category: categories[0]?.id ?? "other" };
+  });
   const [proofBlob, setProofBlob] = useState<Blob | null>(null);
   const [busy, setBusy] = useState("");
   const [err, setErr] = useState("");
