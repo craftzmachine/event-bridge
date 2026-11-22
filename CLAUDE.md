@@ -129,12 +129,11 @@ Photos must show the actual venue and be licensed for commercial use: CC BY, CC 
 - **Dashboard** (`src/pages/Dashboard.tsx`, pure figures in `src/lib/dashboard.ts` and `src/lib/followups.ts`, `dashboard.test.ts`):
   - **Data:** this device's proposals plus `/api/shares` when available; `shareFor` picks a proposal's share.
   - **Pipeline:** one segmented bar of draft → sent → accepted in stepped strengths of `--gold` (an ordered scale), plus a legend with counts and values, so no categorical palette has to be validated across six themes. Lost proposals are left out of the bar.
-  - **Layout:** a greeting `PageHeader`, then:
-    - a today strip (functions this week, payments due, follow-ups, `overdueAcross` checklist tasks)
-    - Next up (`eventsFor`)
-    - the KPIs
-    - upcoming events as a list or a month calendar (`calendarMonth`/`gridRange`/`shiftMonth` in `src/lib/calendar.ts`, Monday-first; the calendar reuses `upcoming()` from the grid's first day)
-    - follow-ups, the pipeline, payments, selling and expenses
+  - **Layout:** a solid page (no site photo), a greeting `PageHeader`, then:
+    - a compact apps bar (`APPS`, icon and label)
+    - four figures: upcoming events, awaiting decision, received this month, needs attention
+    - upcoming events as a list or a month calendar (`calendarMonth`/`gridRange`/`shiftMonth` in `src/lib/calendar.ts`, Monday-first; the calendar reuses `upcoming()` from the grid's first day), beside one "Needs attention" list: overdue payments, overdue tasks, proposal follow-ups (overdue payments not repeated), enquiry follow-ups, payments due soon and unanswered questionnaires
+    - pipeline, what's selling and this month's spending
   - **Links:** client links go to the event workspace.
   - **Studio home:** shows the first three follow-ups as To do.
 - **Event expenses** (`src/pages/Expenses.tsx`, lazy-loaded; rules in `src/lib/expenses.ts`, handover in `src/lib/handover.ts` and `src/lib/handoverPack.ts`; `expenses.test.ts`):
