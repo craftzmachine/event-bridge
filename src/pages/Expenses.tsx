@@ -32,6 +32,7 @@ import { proposalStatus, statusLabel } from "../lib/status";
 import { formatDate, formatINR, formatINRShort, todayISO } from "../lib/format";
 import { saveBlob } from "../lib/files";
 import { Breadcrumbs } from "../components/PageHeader";
+import { vendorNames } from "../state/vendors";
 import ExpenseDialog, { type ExpenseEventInfo } from "../components/ExpenseDialog";
 import AdvanceDialog from "../components/AdvanceDialog";
 import ProofThumb from "../components/ProofThumb";
@@ -281,7 +282,8 @@ function Ledger({ book, account }: { book: Book; account: string }) {
   const shown = filterExpenses(all, filter);
   const catLabel = (id: string) => cats.all.find((c) => c.id === id)?.label ?? id;
   const fnLabel = (id?: string) => event.functions.find((f) => f.id === id)?.label;
-  const vendors = [...new Set(all.map((e) => e.vendor).filter(Boolean))].sort();
+  // past payees and the vendor rolodex
+  const vendors = [...new Set([...all.map((e) => e.vendor), ...vendorNames()].filter(Boolean))].sort((a, b) => a.localeCompare(b));
 
   return (
     <>

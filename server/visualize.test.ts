@@ -13,7 +13,9 @@ import { memoryFiles, memoryKv, redisCredentials } from "./store";
 import { run, type Deps, type Handler } from "./deps";
 import { validateUpload } from "./files";
 import { renderXlsx } from "./render/xlsx";
-import { shares, staffLogin, staffMe, unlock, viewDoc, viewLock, viewPage, viewRespond } from "./visualize";
+import { shares, staffLogin, staffMe, unlock, viewAnswers, viewDoc, viewLock, viewPage, viewRespond } from "./visualize";
+import { portalSnapshot } from "../src/lib/portal";
+import { DEFAULT_QUESTIONNAIRE, sendQuestionnaire } from "../src/lib/questionnaires";
 
 const require = createRequire(import.meta.url);
 const catalog: Catalog = JSON.parse(readFileSync("public/config/catalog.json", "utf8"));
@@ -135,7 +137,7 @@ describe("api routes", () => {
   it("export the shape Vercel runs as a Web handler: default { fetch }", async () => {
     // a bare default function is treated as the legacy Node (req, res) signature on Vercel and never answers
     const routes = import.meta.glob<{ default?: { fetch?: unknown } }>("../api/**/*.ts", { eager: true });
-    expect(Object.keys(routes)).toHaveLength(9);
+    expect(Object.keys(routes)).toHaveLength(10);
     for (const [file, mod] of Object.entries(routes)) expect(typeof mod.default?.fetch, file).toBe("function");
   });
 });
@@ -364,6 +366,111 @@ describe("sharing a proposal as a web page", () => {
     expect((await sharePage("{not json")).status).toBe(415);
     expect((await sharePage({ hello: "world" })).status).toBe(415);
     expect((await sharePage({ ...s, proposal: { ...s.proposal, notes: "x".repeat(300 * 1024) } })).status).toBe(415);
+  }, 30_000);
+});
+
+describe("client portal", () => {
+  const portal = (extra: Record<string, unknown> = {}) => {
+    const p = proposal();
+    p.lines[0].cost = 12345;
+    p.checklist = [
+      { id: "a", title: "Final guest count", owner: "client", state: "todo", due: "2027-01-30" },
+      { id: "b", title: "Team-only task", owner: "team", state: "todo" },
+    ];
+    p.questionnaires = [sendQuestionnaire(DEFAULT_QUESTIONNAIRE, () => "q1")];
+    return { ...portalSnapshot(p, catalog, brand, "dark", "2026-11-06"), ...extra };
+  };
+  async function sharePortal(body: unknown, password = "portal-pass-1", method = "POST", id = "") {
+    const form = new FormData();
+    form.set("portal", typeof body === "string" ? body : JSON.stringify(body));
+    form.set("client", "Ms. Priya Nair");
+    form.set("password", password);
+    form.set("expiryDays", "30");
+    return call(shares, `/api/shares${id ? `?id=${id}` : ""}`, { method, form, cookie: await signIn() });
+  }
+  const answer = (id: string, json: unknown, init: { cookie?: string; origin?: string | null } = {}) =>
+    call(viewAnswers, `/api/view/answers?id=${id}`, { method: "POST", json, cookie: init.cookie ?? viewCookie(), origin: init.origin });
+  const listed = async (id: string) => (await call(shares, "/api/shares", { cookie: await signIn() })).body.shares.find((x: { id: string }) => x.id === id);
+  const open = async (token: string, password = "portal-pass-1") => call(unlock, "/x", { method: "POST", json: { token, password } });
+
+  it("shares the family's page: the proposal without costs, only their tasks, payments and questionnaires", async () => {
+    const up = await sharePortal(portal({ secret: "drop me" }));
+    expect(up.status).toBe(201);
+    const s = up.body.share;
+    expect(s).toMatchObject({ kind: "portal", fileName: "Client portal", title: "Your wedding", answers: {} });
+    expect((await d.files.get(`shares/${s.id}/view.bin`))!.includes("Final guest count")).toBe(false);
+    expect((await call(viewDoc, `/api/view/doc?id=${s.id}`)).status).toBe(401);
+
+    await open(s.token);
+    const doc = await call(viewDoc, `/api/view/doc?id=${s.id}`, { cookie: viewCookie() });
+    expect(doc.status).toBe(200);
+    expect(doc.body).toMatchObject({ kind: "portal", answers: {} });
+    const pg = doc.body.page;
+    expect(pg.page.proposal.client.name).toBe("Ms. Priya Nair");
+    expect(pg.tasks).toEqual([{ title: "Final guest count", due: "2027-01-30", state: "todo" }]);
+    expect(pg.payments.milestones.length).toBeGreaterThan(0);
+    expect(pg.questionnaires[0].questions).toHaveLength(DEFAULT_QUESTIONNAIRE.questions.length);
+    expect(JSON.stringify(pg)).not.toMatch(/Team-only task|drop me|12345|"cost"/);
+  }, 30_000);
+
+  it("takes answers only for that portal's questionnaires, cleaned and stored encrypted, and shows them to staff", async () => {
+    const s = (await sharePortal(portal())).body.share;
+    await open(s.token);
+    const ok = await answer(s.id, { questionnaire: "q1", answers: { style: "Traditional", guests: "six hundred", food: "Both", notes: "Jasmine\u0007 please", hack: "x" } });
+    expect(ok.status).toBe(200);
+    expect(ok.body.answers).toEqual({ style: "Traditional", food: "Both", notes: "Jasmine please" });
+    expect((await answer(s.id, { questionnaire: "nope", answers: {} })).status).toBe(404);
+
+    const raw = JSON.stringify(await d.kv.get(`share:${s.id}`));
+    expect(raw).not.toContain("Traditional");
+    expect((await listed(s.id)).answers.q1).toMatchObject({ answers: { style: "Traditional" }, at: clock });
+    expect((await call(viewDoc, `/api/view/doc?id=${s.id}`, { cookie: viewCookie() })).body.answers.q1.answers.food).toBe("Both");
+
+    // a later answer replaces the earlier one
+    await answer(s.id, { questionnaire: "q1", answers: { style: "Intimate" } });
+    expect((await listed(s.id)).answers.q1.answers).toEqual({ style: "Intimate" });
+  }, 30_000);
+
+  it("refuses answers without a live session for that portal, from elsewhere, after revocation, or on another kind of share", async () => {
+    const a = (await sharePortal(portal(), "portal-pass-a")).body.share;
+    const b = (await sharePortal(portal(), "portal-pass-b")).body.share;
+    const body = { questionnaire: "q1", answers: { style: "Traditional" } };
+    expect((await answer(a.id, body, { cookie: "pb_view=nope" })).status).toBe(401);
+    await open(a.token, "portal-pass-a");
+    expect((await answer(b.id, body)).status).toBe(401);
+    expect((await answer(a.id, body, { origin: "https://evil.test" })).status).toBe(403);
+    const cookie = viewCookie();
+    await call(shares, `/api/shares?id=${a.id}`, { method: "DELETE", cookie: await signIn() });
+    expect((await answer(a.id, body, { cookie })).status).toBe(410);
+
+    const f = (await upload(pdf, "F.pdf", "Client F", "pdf-pass-f1")).body.share;
+    await open(f.token, "pdf-pass-f1");
+    expect((await answer(f.id, body)).status).toBe(404);
+  }, 30_000);
+
+  it("refreshes a portal in place: same link and password, answers kept", async () => {
+    const s = (await sharePortal(portal())).body.share;
+    await open(s.token);
+    await answer(s.id, { questionnaire: "q1", answers: { food: "Both" } });
+    const fresh = portal();
+    fresh.tasks = [{ title: "Send the guest list", due: "2027-01-15", state: "doing" }];
+    const put = await sharePortal(fresh, "ignored-pass", "PUT", s.id);
+    expect(put.status).toBe(200);
+    expect(put.body.share).toMatchObject({ id: s.id, token: s.token, updatedAt: clock });
+    const doc = await call(viewDoc, `/api/view/doc?id=${s.id}`, { cookie: viewCookie() });
+    expect(doc.body.page.tasks.map((t: { title: string }) => t.title)).toEqual(["Send the guest list"]);
+    expect(doc.body.answers.q1.answers).toEqual({ food: "Both" });
+
+    expect((await sharePortal(fresh, "x", "PUT", "0".repeat(32))).status).toBe(404);
+    const pg = (await upload(pdf, "G.pdf", "Client G", "pdf-pass-g1")).body.share;
+    expect((await sharePortal(fresh, "x", "PUT", pg.id)).status).toBe(404);
+  }, 30_000);
+
+  it("refuses a broken or foreign portal", async () => {
+    expect((await sharePortal("{nope")).status).toBe(415);
+    expect((await sharePortal({ v: 2 })).status).toBe(415);
+    expect((await sharePortal({ ...portal(), page: { hello: "world" } })).status).toBe(415);
+    expect((await sharePortal({ ...portal(), tasks: [{ title: "x".repeat(400 * 1024) }] })).status).toBe(415);
   }, 30_000);
 });
 

@@ -1,0 +1,96 @@
+{
+  "//": "Questionnaires the team sends to families. type: short, long, choice, multi, date, number or yesno; choice and multi need options. Edit freely; the app checks this file when it loads.",
+  "questionnaires": [
+    {
+      "id": "initial-planning",
+      "title": "Initial planning questionnaire",
+      "intro": "A few questions so we can plan the celebration you have in mind. Answer what you can; we'll talk through the rest.",
+      "questions": [
+        {
+          "id": "style",
+          "text": "How would you describe the wedding you imagine?",
+          "type": "choice",
+          "options": [
+            "Traditional",
+            "Elegant and classic",
+            "Modern and minimal",
+            "Grand and festive",
+            "Intimate"
+          ],
+          "required": true
+        },
+        {
+          "id": "muhurtham",
+          "text": "Muhurtham date, if fixed",
+          "type": "date"
+        },
+        {
+          "id": "muhurtham-time",
+          "text": "Muhurtham time, if fixed",
+          "type": "short",
+          "help": "For example 10:32 to 11:05"
+        },
+        {
+          "id": "guests",
+          "text": "How many guests do you expect?",
+          "type": "number",
+          "required": true
+        },
+        {
+          "id": "functions",
+          "text": "Which functions are you planning?",
+          "type": "multi",
+          "options": [
+            "Engagement",
+            "Haldi",
+            "Mehendi",
+            "Sangeet",
+            "Muhurtham",
+            "Reception"
+          ]
+        },
+        {
+          "id": "rituals",
+          "text": "Rituals or customs we must include",
+          "type": "long"
+        },
+        {
+          "id": "food",
+          "text": "Food preference",
+          "type": "choice",
+          "options": [
+            "Vegetarian",
+            "Non-vegetarian",
+            "Both"
+          ],
+          "required": true
+        },
+        {
+          "id": "sadya",
+          "text": "Would you like a traditional sadya?",
+          "type": "yesno"
+        },
+        {
+          "id": "colours",
+          "text": "Colours you love, or want to avoid",
+          "type": "short"
+        },
+        {
+          "id": "music",
+          "text": "Music you'd like (nadaswaram, chenda, a band, a DJ…)",
+          "type": "short"
+        },
+        {
+          "id": "access",
+          "text": "Anyone who needs step-free access, seating or other care?",
+          "type": "long"
+        },
+        {
+          "id": "notes",
+          "text": "Anything else we should know?",
+          "type": "long"
+        }
+      ]
+    }
+  ]
+}

@@ -6,7 +6,7 @@ export interface Share {
   token: string;
   client: string;
   title: string;
-  kind: "pdf" | "xlsx" | "page";
+  kind: "pdf" | "xlsx" | "page" | "portal";
   fileName: string;
   size: number;
   pages?: number;
@@ -21,6 +21,10 @@ export interface Share {
   proposalId?: string;
   /** the client's answer on the shared page */
   decision?: ShareDecision;
+  /** a portal's questionnaire answers: { [questionnaireId]: { answers, at } } */
+  answers?: Record<string, { answers: Record<string, string | string[]>; at: number }>;
+  /** when a portal's contents were last refreshed */
+  updatedAt?: number;
 }
 
 export interface ShareDecision {

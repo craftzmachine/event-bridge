@@ -166,6 +166,42 @@ export interface ProposalPackage {
   notes?: string;
 }
 
+export type QuestionType = "short" | "long" | "choice" | "multi" | "date" | "number" | "yesno";
+
+export interface Question {
+  id: string;
+  text: string;
+  type: QuestionType;
+  /** for choice and multi */
+  options?: string[];
+  required?: boolean;
+  help?: string;
+}
+
+export interface QuestionnaireTemplate {
+  id: string;
+  title: string;
+  intro?: string;
+  questions: Question[];
+  updatedAt?: string;
+  /** from public/config/questionnaires.json: shared with the team, read-only here */
+  team?: boolean;
+}
+
+/** A questionnaire sent to a wedding's family: its questions as sent, and their answers (a list for multi). */
+export interface SentQuestionnaire {
+  id: string;
+  templateId?: string;
+  title: string;
+  intro?: string;
+  questions: Question[];
+  answers: Record<string, string | string[]>;
+  sentAt: string;
+  answeredAt?: string;
+  /** who filled the answers in last: the team (from a call) or the family (in the portal) */
+  answeredBy?: "team" | "client";
+}
+
 /** One task on a wedding's checklist: due on a fixed date, or N days before the first event date (negative: after). */
 export interface ChecklistItem {
   id: string;
@@ -244,6 +280,10 @@ export interface Proposal {
   lines: Line[];
   /** the wedding's to-do list, timed back from the first event date; internal, never on client outputs */
   checklist?: ChecklistItem[];
+  /** questionnaires sent to the family, with their answers */
+  questionnaires?: SentQuestionnaire[];
+  /** the family's client portal (a Visualize Proposal share of kind "portal") */
+  portalShareId?: string;
   coordinationPct: number;
   /** null = no round-off; otherwise the Grand Total quoted to the client */
   grandTotal: number | null;

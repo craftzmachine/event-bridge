@@ -11,12 +11,20 @@ import { waLink, waNumber } from "../lib/whatsapp";
 import { listExpenses } from "../state/expenses";
 import { monthOf, summarise, type Expense } from "../lib/expenses";
 import { COMPANY_BOOK_ID, monthLabel } from "../lib/books";
-import { overdueAcross, progress } from "../lib/checklist";
+import { progress } from "../lib/checklist";
 import { countdown, eventsFor } from "../lib/events";
 import { calendarMonth, gridRange, shiftMonth } from "../lib/calendar";
 import { schedule } from "../lib/payments";
 import { eventDates, proposalTitle } from "../lib/proposal";
 import PageHeader from "../components/PageHeader";
+import Icon from "../components/icons";
+import { APPS, type AppItem } from "../lib/nav";
+import { readLeads } from "../state/crm";
+import { followUpsDue, isOpen } from "../lib/crm";
+import { readTeamTasks } from "../state/tasks";
+import { allTasks, overdueRows } from "../lib/tasks";
+import { awaitingAnswers } from "../lib/questionnaires";
+import { proposalStatus } from "../lib/status";
 
 const month = (d: Date) => d.toLocaleString("en-GB", { month: "long" });
 const pct = (x: number | null) => (x === null ? "—" : `${Math.round(x * 100)}%`);
@@ -26,6 +34,27 @@ const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 function versus(now: number, last: number, lastMonth: string) {
   if (Math.round(now) === Math.round(last)) return `the same as ${lastMonth}`;
   return `${formatINRShort(Math.abs(now - last))} ${now > last ? "more" : "less"} than ${lastMonth}`;
+}
+
+/** The way into every app: there's no menu, so each one is a tile here, with a live line. */
+function AppTiles({ live }: { live: Partial<Record<AppItem["id"], string>> }) {
+  return (
+    <section aria-labelledby="dash-apps-title">
+      <h2 id="dash-apps-title" className="sr-only">Apps</h2>
+      <ul className="dash-apps">
+        {APPS.map((a) => (
+          <li key={a.id}>
+            <a className="dash-app" href={a.href}>
+              <span className="dash-app-icon"><Icon name={a.icon} size={22} /></span>
+              <strong>{a.label}</strong>
+              <span>{a.description}</span>
+              {live[a.id] && <small>{live[a.id]}</small>}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
 }
 
 /** "Good morning, Planner": the part of the sign-in email before any dot, dash, digit or @ */
@@ -77,7 +106,11 @@ export default function Dashboard({ list, account, onOpen, onNew }: { list: Prop
   const pay = paymentsOverview(list, brand, now);
   const margin = marginThisMonth(list, brand.gstPct, now);
   const sold = selling(list, catalog, brand.gstPct);
-  const lateTasks = overdueAcross(list, today);
+  const upcomingEvents = eventsFor(list, "upcoming", today);
+  const leads = useMemo(() => readLeads(), []);
+  const leadsDue = followUpsDue(leads, today);
+  const teamTasks = useMemo(() => readTeamTasks(), []);
+  const lateRows = overdueRows(allTasks(teamTasks, list), today);
   const next = eventsFor(list, "upcoming", today).filter((p) => eventDates(p).length).slice(0, 4);
   const lastName = month(m.lastMonth);
 
@@ -121,6 +154,18 @@ export default function Dashboard({ list, account, onOpen, onNew }: { list: Prop
       />
 
       <main className="dash-main">
+        <AppTiles
+          live={{
+            events: upcomingEvents.length ? `${upcomingEvents.length} coming up · ${week.length} function${week.length === 1 ? "" : "s"} this week` : "No events coming up",
+            crm: `${leads.filter(isOpen).length} open enquir${leads.filter(isOpen).length === 1 ? "y" : "ies"}${leadsDue.length ? ` · ${leadsDue.length} to follow up` : ""}`,
+            questionnaires: awaitingAnswers(list).length ? `${awaitingAnswers(list).length} waiting for answers` : "None waiting",
+            tasks: lateRows.length ? `${lateRows.length} overdue` : "Nothing overdue",
+            studio: `${list.length} proposal${list.length === 1 ? "" : "s"} · ${list.filter((p) => proposalStatus(p) === "draft").length} draft${list.filter((p) => proposalStatus(p) === "draft").length === 1 ? "" : "s"}`,
+            expenses: `${formatINRShort(company.total)} company spending in ${monthLabel(monthOf(today))}`,
+            venues: `${venues.venues.length} venues`,
+            visualize: linkInfo === "ok" ? `${shares?.length ?? 0} shared link${shares?.length === 1 ? "" : "s"}` : "Needs the sharing server",
+          }}
+        />
         {list.length === 0 ? (
           <div className="empty-state">
             <p>No proposals on this device yet. Start one and it shows up here.</p>
@@ -141,13 +186,13 @@ export default function Dashboard({ list, account, onOpen, onNew }: { list: Prop
               </button>
               <button type="button" className="dash-today-card" onClick={() => scrollTo("dash-todo-title")}>
                 <span>Follow-ups</span>
-                <strong>{todo.length}</strong>
-                <small>{todo[0] ? `${todo[0].client}: ${todo[0].title}` : "Nothing waiting on you"}</small>
+                <strong>{todo.length + leadsDue.length}</strong>
+                <small>{todo[0] ? `${todo[0].client}: ${todo[0].title}` : leadsDue[0] ? `Enquiry: ${leadsDue[0].name}` : "Nothing waiting on you"}</small>
               </button>
-              <a className={`dash-today-card${lateTasks.length ? " is-alert" : ""}`} href={lateTasks[0] ? `#/events/${lateTasks[0].proposal.id}/checklist` : "#/events"}>
-                <span>Checklist overdue</span>
-                <strong>{lateTasks.length}</strong>
-                <small>{lateTasks[0] ? `${lateTasks[0].proposal.client.name || "Client"}: ${lateTasks[0].item.title}` : "Every task is on time"}</small>
+              <a className={`dash-today-card${lateRows.length ? " is-alert" : ""}`} href="#/tasks">
+                <span>Tasks overdue</span>
+                <strong>{lateRows.length}</strong>
+                <small>{lateRows[0] ? lateRows[0].title : "Every task is on time"}</small>
               </a>
             </section>
 
@@ -279,7 +324,23 @@ export default function Dashboard({ list, account, onOpen, onNew }: { list: Prop
 
             <div className="dash-grid">
               <section className="dash-card dash-todo" aria-labelledby="dash-todo-title">
-                <h2 id="dash-todo-title">Follow up <small>{todo.length || ""}</small></h2>
+                <h2 id="dash-todo-title">Follow up <small>{todo.length + leadsDue.length || ""}</small></h2>
+                {leadsDue.length > 0 && (
+                  <ul className="dash-todo-list">
+                    {leadsDue.slice(0, 5).map((l) => (
+                      <li key={l.id} className="is-lead">
+                        <div>
+                          <strong>Enquiry follow-up</strong>
+                          <span>{l.name} · due {formatDate(l.followUp!)}</span>
+                        </div>
+                        <div className="dash-todo-tools">
+                          <a className="btn-ghost btn-sm" href="#/crm">Open CRM</a>
+                          {waNumber(l.phone) && <a className="btn-ghost btn-sm" href={waLink(waNumber(l.phone), `Dear ${l.name}, this is ${brand.company}. `)} target="_blank" rel="noopener noreferrer">WhatsApp</a>}
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
                 {linkInfo === "off" && <p className="hint">Link activity isn't available here, because sharing isn't connected. These come from status, dates and payments only.</p>}
                 {todo.length === 0 ? (
                   <p className="dash-empty">Nothing waiting on you. Proposals that need a call, a revision or a payment reminder appear here.</p>

@@ -10,13 +10,21 @@ Proposals and their exports are branded **Parinay Weddings**, because that's wha
 
 ## Navigation
 
-**Signed in**, every page sits in the app shell:
-- **Wide screens:** a sidebar with **Dashboard**, **Events**, **Proposal Studio**, **Expenses**, **Venue Directory** and **Visualize Proposal**, the theme and font buttons, your email and **Sign out**. **Collapse** shrinks it to icons, and this device remembers it.
-- **Phones and tablets** (below 1024 px): a bottom tab bar (Home, Events, Studio, Expenses), with **More** for Venues, Visualize, appearance and sign-out.
-- **Page header:** each page starts with a breadcrumb (Dashboard › Events › client) and a header with its actions on the right.
-- **Builder:** opening a proposal still fills the screen, with its own top bar.
+**There are no menus. The Dashboard is the way into everything.** After sign-in you land on it, and its **apps** grid opens each app:
+- Events
+- Proposal Studio
+- CRM
+- Tasks
+- Vendors
+- Questionnaires
+- Client Portal
+- Expenses
+- Venue Directory
+- Visualize Proposal
 
-The public landing page keeps its top menu (folding into ☰ below 1440 px), with **Team sign in**.
+Each tile shows a live line, such as follow-ups due or tasks overdue. Every other page has **← Dashboard** at the start of its breadcrumb. A slim top bar carries the crest (back to the Dashboard), the theme and font buttons, your email and **Sign out**. Opening a proposal still fills the screen with the Builder.
+
+The public landing page has only the brand and **Team sign in** (or **Dashboard** when signed in).
 
 | Address | Page |
 |---|---|
@@ -24,6 +32,7 @@ The public landing page keeps its top menu (folding into ☰ below 1440 px), wit
 | `/#/login` | sign-in, with a **Back to home** link |
 | `/#/dashboard` | the team dashboard (needs sign-in) |
 | `/#/events` | every wedding in play; `/#/events/<proposal id>` for one wedding's workspace (needs sign-in) |
+| `/#/crm`, `/#/tasks`, `/#/vendors`, `/#/questionnaires`, `/#/portal` | the CRM, tasks, vendor rolodex, questionnaires and client portals (need sign-in) |
 | `/#/expenses` | event expenses and handovers; `/#/expenses/<proposal id>` for one event, `/#/expenses/company` for the company's own (needs sign-in) |
 | `/#/studio` | Proposal Studio (needs sign-in) |
 | `/#/venues` | Venue Directory (needs sign-in) |
@@ -56,7 +65,7 @@ Opening a feature app while signed out goes to sign-in first, then straight back
 
    **Export to Excel** (with a PDF in its ▾ menu) is still there for the editable workbook.
 
-**Venue Directory**: **Venue Directory** in the menu, or **Browse venues** in Proposal Studio, opens a searchable list of 29 hotels, resorts, convention centres and wedding halls in and around Thiruvananthapuram. Each venue shows its name, area, type, star rating, photo and event spaces. You can search, filter by type (hotels, resorts, event venues) and area, open the full details, or **Start proposal** to begin a quotation with the venue already filled in. The Venue field in step 1 also suggests directory venues.
+**Venue Directory**: the **Venue Directory** tile on the Dashboard, or **Browse venues** in Proposal Studio, opens a searchable list of 29 hotels, resorts, convention centres and wedding halls in and around Thiruvananthapuram. Each venue shows its name, area, type, star rating, photo and event spaces. You can search, filter by type (hotels, resorts, event venues) and area, open the full details, or **Start proposal** to begin a quotation with the venue already filled in. The Venue field in step 1 also suggests directory venues.
 
 **Quotation references** are generated automatically when a proposal is created or duplicated, in the form `YYYYDDMM-ABC`: year, day, month, then three random capital letters (3 Nov 2026 → `20260311-KQZ`). They are unique among the proposals on that device and cannot be edited. Drafts saved before this feature were given one dated from when they were created.
 
@@ -73,7 +82,7 @@ Duplicating a proposal starts the copy as a draft, with the payment plan but no 
 
 **Sending the link**: after a private link is created, **Link on WhatsApp** and **Password on WhatsApp** open WhatsApp with each message ready, as two separate messages, addressed to the client's number when it looks like a mobile number. **Email the link** opens your email. Nothing is sent until you press Send.
 
-**Dashboard** (`#/dashboard`, in the menu): this device's proposals at a glance.
+**Dashboard** (`#/dashboard`, where sign-in lands): this device's proposals at a glance.
 - **Header:** a greeting with today's date, and **New proposal** and **Record expense**.
 - **Today strip:** functions this week, payments due, follow-ups and overdue checklist tasks; each jumps to its section or event.
 - **Next up:** the next four weddings, with a countdown and checklist and payment progress; each opens its event workspace.
@@ -93,7 +102,40 @@ Duplicating a proposal starts the copy as a draft, with the payment plan but no 
 - **What's selling:** wins by occasion.
 - **Expenses:** events with expenses recorded, those without proof first, and this month's company total.
 
-**Events** (`#/events`, in the menu): every wedding in play, meaning accepted proposals and anything with a date. **Upcoming / Past / All**, with search, a countdown and checklist progress. Open one for its workspace (`#/events/<id>`), also linked from Studio cards (**Event**) and the Builder's top bar. It has these tabs:
+**CRM** (`#/crm`): enquiries from first message to booking.
+- **An enquiry holds:** where it came from, the occasion, date, guests, budget and venue in mind, and its stage: New, Contacted, Meeting, Proposal sent, Won, or Lost (with a reason).
+- **Following up:** a next follow-up date, and a log of calls, meetings, WhatsApp messages and notes.
+- **Views:** **Board** (move cards with the arrows), **List** (follow-ups first) and **Clients** (everyone behind your proposals, one per mobile number).
+- **Create proposal:** opens a new proposal filled in from the enquiry, and the enquiry then follows it: sent, accepted (Won) or lost.
+- **Saving:** kept in this browser; use **Export** and **Import** to move it.
+
+**Tasks** (`#/tasks`): the team's own tasks and every wedding's checklist together.
+- **Filters:** Mine, Whole team or Family's, and by event.
+- **Views:** a list grouped by Overdue, This week, Later and Done; a board; or a calendar.
+- **Linked:** ticking a checklist task here ticks it in the wedding's workspace.
+- **Team tasks** have a due date, who's doing it, an optional event, priority and notes. They're kept in this browser, with **Export** and **Import**.
+
+**Vendors** (`#/vendors`): the rolodex.
+- **For each vendor:** category, contact, phone (with **WhatsApp** and **Call**), UPI ID (shown masked), area, prices, a 1–5 rating, tags and notes.
+- **Finding them:** search and filter by category and area.
+- **Spend:** each card shows what's been paid to that vendor across events, from your expenses, and expenses suggest rolodex names.
+- **Saving:** kept in this browser with **Export** and **Import**. A shared team list can go in `public/config/vendors.json` (read-only in the app).
+
+**Questionnaires** (`#/questionnaires`): questions for the family, built once.
+- **Questions:** short answer, paragraph, one or several choices, date, number, or yes/no, each optionally required, with hints and reordering.
+- **Sending:** pick a wedding under **Send to a wedding**.
+- **Answers:** the team can fill them in from a call in the event's **Questionnaires** tab; the family answers in their client portal.
+- **Team list:** `public/config/questionnaires.json` holds the team's (it ships an initial planning questionnaire). Your own are kept in this browser.
+
+**Client Portal** (`#/portal`, needs Visualize Proposal set up): one private, password-protected page per family.
+- **What the family sees:** their proposal (to approve or ask for changes), their to-dos (checklist tasks marked for the family), the payment schedule and their questionnaires to answer.
+- **Create portal:** gives you the link and password to send.
+- **Update portal:** sends them the latest, on the same link with the same password.
+- **Turn off:** ends it.
+- **Their answers** come back into the wedding's questionnaires when you open the Portal page or the event.
+- **What it never shows:** your costs, the family's budget figure or the team's own tasks.
+
+**Events** (`#/events`, a Dashboard tile): every wedding in play, meaning accepted proposals and anything with a date. **Upcoming / Past / All**, with search, a countdown and checklist progress. Open one for its workspace (`#/events/<id>`), also linked from Studio cards (**Event**) and the Builder's top bar. It has these tabs:
 - **Overview:**
   - when: the countdown and functions
   - progress: checklist, payments received and spending against the quote, with money still with staff
@@ -298,7 +340,7 @@ The gold crest at `public/images/parinay-logo-gold.png` appears on the sign-in p
 
 The couple photo at `src/assets/_JKN4027.webp` is the site's background, softly tinted to match the current theme, and the landing page's hero image. To use a different photo, replace that file and keep the same name, or change all three references: the two `url(...)`s in `src/styles/app.css` (the "Site background photo" block and the "Refinement" block), and the import at the top of `src/pages/Landing.tsx`. Then rebuild. A landscape WebP or JPEG under about 200 KB keeps pages fast.
 
-The team's own photos in `src/assets/` appear elsewhere: the seaside mandap (`AMU02986.webp`) behind the Proposal Studio heading, the jasmine canopy (`AMU02965.webp`) beside the sign-in form, and the post box (`J_J09260.webp`) in the landing page's Visualize Proposal section. Two of them carry the photographer's credit in the image, so don't crop them.
+The team's own photos in `src/assets/` appear elsewhere: the seaside mandap (`AMU02986.webp`) behind the Proposal Studio heading, the jasmine canopy (`AMU02965.webp`) beside the sign-in form, and the bride at a stone doorway (`JK_05098.webp`) as the landing page's main photo. The landing page also shows the canopy, the mandap and `_JKN4027.webp` in a mosaic. Several carry the photographer's credit in the image, so they're framed at their own proportions; don't crop them.
 
 ### Images
 
@@ -334,7 +376,7 @@ The text stays sharp and searchable. pdfmake's bundled Roboto font includes the 
 
 Share a finished proposal with a client as a private page instead of an attachment.
 
-**For the team:** choose **Visualize Proposal** in the menu.
+**For the team:** choose the **Visualize Proposal** tile on the Dashboard.
 1. Drop in a PDF or `.xlsx` file (up to 4 MB; PDFs up to 30 pages).
 2. Enter the client's name and a title.
 3. Choose a password (or tap **Generate**) and how long the link lasts: 7, 30 or 90 days.

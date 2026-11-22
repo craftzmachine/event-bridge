@@ -1,7 +1,9 @@
-import type { Brand, Catalog, ChecklistTemplate, ProposalPackage, VenueDirectory } from "../types";
+import type { Brand, Catalog, ChecklistTemplate, ProposalPackage, QuestionnaireTemplate, VenueDirectory } from "../types";
+import { validateQuestionnaires } from "../lib/questionnaires";
 import { validateBrand, validateCatalog, validateChecklists, validatePackages, validateVenues } from "./validate";
+import { validateVendors, type Vendor } from "../lib/vendors";
 
-export type Loaded = { catalog: Catalog; brand: Brand; venues: VenueDirectory; packages: ProposalPackage[]; checklists?: ChecklistTemplate[] } | { errors: string[] };
+export type Loaded = { catalog: Catalog; brand: Brand; venues: VenueDirectory; packages: ProposalPackage[]; checklists?: ChecklistTemplate[]; teamVendors?: Vendor[]; teamQuestionnaires?: QuestionnaireTemplate[] } | { errors: string[] };
 
 async function getJson(path: string): Promise<unknown> {
   // no-store so an edited config shows up on the next reload, no rebuild needed
@@ -30,17 +32,23 @@ async function getOptionalJson(path: string, fallback: unknown): Promise<unknown
 
 export async function loadConfig(): Promise<Loaded> {
   try {
-    const [catalog, brand, venues, packages, checklists] = await Promise.all([
+    const [catalog, brand, venues, packages, checklists, vendors, questionnaires] = await Promise.all([
       getJson("config/catalog.json"),
       getJson("config/brand.json"),
       getJson("config/venues.json"),
       getOptionalJson("config/packages.json", { packages: [] }),
       // optional too: without it, checklists start from the built-in list
       getOptionalJson("config/checklists.json", null),
+      // the team's shared vendor list, optional
+      getOptionalJson("config/vendors.json", null),
+      // the team's questionnaires; without it, the built-in one
+      getOptionalJson("config/questionnaires.json", null),
     ]);
     const errors = [...validateCatalog(catalog), ...validateBrand(brand), ...validateVenues(venues)];
     if (!errors.length) errors.push(...validatePackages(packages, catalog as Catalog));
     if (checklists !== null) errors.push(...validateChecklists(checklists));
+    if (vendors !== null) errors.push(...validateVendors(vendors));
+    if (questionnaires !== null) errors.push(...validateQuestionnaires(questionnaires));
     if (errors.length) return { errors };
     return {
       catalog: catalog as Catalog,
@@ -48,6 +56,8 @@ export async function loadConfig(): Promise<Loaded> {
       venues: venues as VenueDirectory,
       packages: (packages as { packages: ProposalPackage[] }).packages,
       ...(checklists !== null ? { checklists: (checklists as { items: ChecklistTemplate[] }).items } : {}),
+      ...(questionnaires !== null ? { teamQuestionnaires: (questionnaires as { questionnaires: QuestionnaireTemplate[] }).questionnaires } : {}),
+      ...(vendors !== null ? { teamVendors: (vendors as { vendors: Vendor[] }).vendors.map((v) => ({ ...v, tags: v.tags ?? [], createdAt: "", updatedAt: "" })) } : {}),
     };
   } catch (e) {
     return { errors: [(e as Error).message] };

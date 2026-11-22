@@ -17,19 +17,22 @@ import { summarise, type Expense } from "../lib/expenses";
 import { balanceOf, type Advance } from "../lib/advances";
 import { api } from "../lib/api";
 import { clientAnswers, type Share } from "../lib/shares";
+import { mergePortalAnswers } from "../lib/portal";
 import PageHeader from "../components/PageHeader";
 import Checklist from "../components/Checklist";
 import PaymentsCard from "../components/PaymentsCard";
 import ClientAnswer from "../components/ClientAnswer";
+import SentQuestionnaires from "../components/SentQuestionnaires";
 
 // the event's ledger is part of the (lazy) expenses page
 const EventLedger = lazy(() => import("./Expenses").then((m) => ({ default: m.EventLedger })));
 
 type Store = ReturnType<typeof useProposals>;
-type Tab = "overview" | "checklist" | "payments" | "expenses" | "proposal";
+type Tab = "overview" | "checklist" | "questionnaires" | "payments" | "expenses" | "proposal";
 const TABS: { id: Tab; label: string }[] = [
   { id: "overview", label: "Overview" },
   { id: "checklist", label: "Checklist" },
+  { id: "questionnaires", label: "Questionnaires" },
   { id: "payments", label: "Payments" },
   { id: "expenses", label: "Expenses" },
   { id: "proposal", label: "Proposal" },
@@ -112,6 +115,19 @@ function Workspace({ p, tab, store, account, onOpen }: { p: Proposal; tab: Tab; 
   const dates = eventDates(p);
   const wa = waNumber(p.client.contact);
   const update = (fn: (cur: Proposal) => Proposal) => store.update(p.id, fn);
+  // answers the family gave in their client portal come into this wedding's questionnaires
+  const portalId = p.portalShareId;
+  useEffect(() => {
+    if (!portalId) {
+      return;
+    }
+    api<{ shares: Share[] }>("shares")
+      .then((r) => {
+        const s = r.shares.find((x) => x.id === portalId);
+        if (s?.answers) store.update(p.id, (cur) => mergePortalAnswers(cur, s.answers) ?? cur);
+      })
+      .catch(() => {});
+  }, [portalId, p.id]);
   const setPatch = (patch: Partial<Proposal> | ((cur: Proposal) => Partial<Proposal>)) => update((cur) => ({ ...cur, ...(typeof patch === "function" ? patch(cur) : patch) }));
 
   return (
@@ -136,6 +152,7 @@ function Workspace({ p, tab, store, account, onOpen }: { p: Proposal; tab: Tab; 
       <main className="ev-main">
         {tab === "overview" && <Overview p={p} today={today} />}
         {tab === "checklist" && <Checklist p={p} account={account} onUpdate={update} />}
+        {tab === "questionnaires" && <SentQuestionnaires p={p} onUpdate={update} />}
         {tab === "payments" && <PaymentsCard p={p} set={setPatch} />}
         {tab === "expenses" && (
           <Suspense fallback={<p className="hint" role="status">Opening expenses…</p>}>

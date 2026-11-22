@@ -16,6 +16,7 @@ import { api } from "../lib/api";
 import ClientAnswer from "../components/ClientAnswer";
 import Img from "../components/Img";
 import Ornament from "../components/Ornament";
+import { Breadcrumbs } from "../components/PageHeader";
 import ExcelImport from "../components/ExcelImport";
 import { SITE } from "../site";
 import heroPhoto from "../assets/AMU02986.webp";
@@ -108,6 +109,9 @@ export default function Home({
 
   return (
     <div className="home">
+      <div className="page-crumbs">
+        <Breadcrumbs items={[{ label: "Dashboard", href: "#/dashboard" }, { label: "Proposal Studio" }]} />
+      </div>
       <header className="home-hero">
         <Img src={heroPhoto} alt="" className="home-hero-img" />
         <div className="home-hero-text">

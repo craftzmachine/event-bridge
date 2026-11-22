@@ -123,6 +123,8 @@ export function useProposals() {
         statusAt: undefined,
         sentAt: undefined,
         shareId: undefined,
+        // the family's answers belong to the original
+        questionnaires: undefined,
         // the copy keeps the checklist's tasks, all to do again
         checklist: resetChecklist(p.checklist),
         // the copy keeps the payment plan, not the payments

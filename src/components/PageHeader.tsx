@@ -5,14 +5,18 @@ export interface Crumb {
   href?: string;
 }
 
-/** "Dashboard › Events › Ananya Menon": where this page sits, each step a link back. */
+/** "← Dashboard › Events › Ananya Menon": where this page sits, each step a link back. The Dashboard is the way into every app. */
 export function Breadcrumbs({ items }: { items: Crumb[] }) {
   return (
     <nav className="crumbs" aria-label="Breadcrumb">
       <ol>
         {items.map((c, i) => (
           <li key={`${c.label}-${i}`}>
-            {c.href && i < items.length - 1 ? <a href={c.href}>{c.label}</a> : <span aria-current={i === items.length - 1 ? "page" : undefined}>{c.label}</span>}
+            {c.href && i < items.length - 1 ? (
+              <a href={c.href} className={i === 0 && c.href === "#/dashboard" ? "crumbs-home" : undefined}>{i === 0 && c.href === "#/dashboard" ? `← ${c.label}` : c.label}</a>
+            ) : (
+              <span aria-current={i === items.length - 1 ? "page" : undefined}>{c.label}</span>
+            )}
           </li>
         ))}
       </ol>
