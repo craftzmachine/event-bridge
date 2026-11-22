@@ -1,0 +1,113 @@
+{
+  "//": "The wedding checklist every event starts from. offsetDays: days before the first event date (negative: after). owner: team or client (the family). Optional eventTypes / ceremonyStyles lists limit a task, like catalogue elements.",
+  "items": [
+    {
+      "id": "venue",
+      "title": "Venue booked and its advance paid",
+      "offsetDays": 180,
+      "owner": "team"
+    },
+    {
+      "id": "muhurtham",
+      "title": "Muhurtham date and time confirmed with the family",
+      "offsetDays": 150,
+      "owner": "client"
+    },
+    {
+      "id": "photo",
+      "title": "Photography and videography booked",
+      "offsetDays": 120,
+      "owner": "team"
+    },
+    {
+      "id": "guests-estimate",
+      "title": "Guest count estimate from the family",
+      "offsetDays": 120,
+      "owner": "client"
+    },
+    {
+      "id": "decor",
+      "title": "Décor theme and mood board agreed",
+      "offsetDays": 90,
+      "owner": "team"
+    },
+    {
+      "id": "menu",
+      "title": "Catering menu shortlisted",
+      "offsetDays": 90,
+      "owner": "team"
+    },
+    {
+      "id": "makeup",
+      "title": "Bridal makeup artist booked",
+      "offsetDays": 75,
+      "owner": "team"
+    },
+    {
+      "id": "invites",
+      "title": "Invitations printed and sent",
+      "offsetDays": 60,
+      "owner": "client"
+    },
+    {
+      "id": "music",
+      "title": "Nadaswaram and music booked",
+      "offsetDays": 45,
+      "owner": "team"
+    },
+    {
+      "id": "tasting",
+      "title": "Menu tasting with the family",
+      "offsetDays": 30,
+      "owner": "client"
+    },
+    {
+      "id": "stay",
+      "title": "Guest transport and stays arranged",
+      "offsetDays": 30,
+      "owner": "team"
+    },
+    {
+      "id": "guests-final",
+      "title": "Final guest count from the family",
+      "offsetDays": 14,
+      "owner": "client"
+    },
+    {
+      "id": "runsheet",
+      "title": "Event-day plan shared with the crew",
+      "offsetDays": 10,
+      "owner": "team"
+    },
+    {
+      "id": "payment",
+      "title": "Final payment collected",
+      "offsetDays": 7,
+      "owner": "team"
+    },
+    {
+      "id": "confirm",
+      "title": "Every vendor called to confirm",
+      "offsetDays": 2,
+      "owner": "team"
+    },
+    {
+      "id": "setup",
+      "title": "Décor setup and venue walkthrough",
+      "offsetDays": 1,
+      "owner": "team"
+    },
+    {
+      "id": "handover",
+      "title": "Venue handed back, teardown done",
+      "offsetDays": -1,
+      "owner": "team"
+    },
+    {
+      "id": "settle",
+      "title": "Expenses and staff advances settled",
+      "offsetDays": -3,
+      "owner": "team"
+    }
+  ]
+}

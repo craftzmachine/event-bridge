@@ -1961,3 +1961,32 @@ body::before {
   .ck-item { grid-template-columns: minmax(0, 1fr); }
   .ck-tools { grid-column: 1; grid-row: auto; padding-left: 26px; }
 }
+
+/* ---------- Event workspace (#/events): the events list and one wedding's tabs ---------- */
+.ev-page { display: flex; flex-direction: column; }
+.ev-main { width: 100%; max-width: 1240px; margin: 0 auto; padding: 18px var(--gutter) 72px; display: flex; flex-direction: column; gap: 18px; }
+.ev-filters { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.ev-filters input { flex: 1; min-width: 220px; min-height: 40px; }
+.ev-tabs { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; border-bottom: 1px solid var(--line); margin-top: 6px; }
+.ev-tabs a { padding: 10px 14px; border-bottom: 2px solid transparent; color: var(--ink-2); text-decoration: none; white-space: nowrap; font-size: 14.5px; }
+.ev-tabs a:hover { color: var(--ink); }
+.ev-tabs a[aria-current="page"] { color: var(--ink); font-weight: 600; border-bottom-color: var(--gold); }
+.ev-table td small { display: block; font-size: 12px; color: var(--stone); }
+.ev-prog { display: inline-flex; align-items: center; gap: 8px; font-variant-numeric: tabular-nums; }
+.ev-prog .ev-bar { width: 72px; }
+.ev-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.ev-grid .dash-card h2 { margin-top: 0; }
+.ev-count { display: block; font-family: var(--serif); font-size: clamp(30px, 3.4vw, 40px); font-weight: 500; line-height: 1.1; }
+.ev-fns { margin: 10px 0 0; padding-left: 18px; display: grid; gap: 4px; color: var(--ink-2); }
+.ev-progress, .ev-totals { margin: 0; display: grid; gap: 14px; }
+.ev-progress dt, .ev-totals dt { font-size: 12.5px; color: var(--stone); margin-bottom: 4px; }
+.ev-progress dd, .ev-totals dd { margin: 0; display: flex; flex-direction: column; gap: 6px; font-size: 14px; }
+.ev-totals { margin-bottom: 14px; }
+.ev-lines { margin: 0; display: flex; flex-direction: column; gap: 4px; color: var(--ink-2); font-size: 14px; }
+.ev-lines strong { color: var(--ink); font-size: 16px; }
+.ev-lines .warn { color: var(--danger-ink); }
+.topbar-link-next { margin-left: 0; }
+@media (max-width: 760px) {
+  .ev-grid { grid-template-columns: minmax(0, 1fr); }
+  .ev-filters input { min-width: 0; width: 100%; }
+}

@@ -251,6 +251,13 @@ function Index({ proposals, account }: { proposals: Proposal[]; account: string 
 
 // ---- #/expenses/<proposalId> -----------------------------------------------------------------------------------
 
+/** One event's ledger, for the event workspace (#/events/<id>/expenses). */
+export function EventLedger({ p, account }: { p: Proposal; account: string }) {
+  const { catalog, brand } = useConfig();
+  const book = useMemo(() => bookFromProposal(p, catalog, brand), [p, catalog, brand]);
+  return <Ledger key={book.id} book={book} account={account} />;
+}
+
 function Ledger({ book, account }: { book: Book; account: string }) {
   const { brand } = useConfig();
   const company = book.kind === "company";

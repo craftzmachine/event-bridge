@@ -23,8 +23,7 @@ export default function AppShell({ current, account, onSignOut, children }: { cu
   const { brand } = useConfig();
   const [collapsed, setCollapsed] = useState(readCollapsed);
   const [more, setMore] = useState(false);
-  // Events arrives with the event workspace
-  const items = NAV_ITEMS.filter((x) => x.id !== "events");
+  const items = NAV_ITEMS;
 
   const toggle = () =>
     setCollapsed((c) => {

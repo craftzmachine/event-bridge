@@ -84,7 +84,10 @@ describe("wedding checklist", () => {
     expect(snap).not.toContain("Venue booked");
   });
 
-  it("validates checklists.json", () => {
+  it("validates checklists.json, and the shipped file matches the built-in list", () => {
+    const shipped = JSON.parse(readFileSync("public/config/checklists.json", "utf8"));
+    expect(validateChecklists(shipped)).toEqual([]);
+    expect(shipped.items).toEqual(DEFAULT_CHECKLIST);
     expect(validateChecklists({ items: DEFAULT_CHECKLIST })).toEqual([]);
     expect(validateChecklists({})[0]).toMatch(/"items"/);
     const errs = validateChecklists({ items: [{ id: "a", title: "x", offsetDays: 1.5, owner: "me" }, { id: "a", title: "", offsetDays: 3, owner: "team", eventTypes: "x" }] });

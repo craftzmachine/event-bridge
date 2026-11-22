@@ -13,6 +13,8 @@ import Visualize from "./pages/Visualize";
 import Dashboard from "./pages/Dashboard";
 // staff-only and sizeable (the ledger, the dialogs, the handover), so it loads when first opened
 const Expenses = lazy(() => import("./pages/Expenses"));
+// the event workspace: one wedding's overview, checklist, payments and ledger
+const Events = lazy(() => import("./pages/Events"));
 import ClientView from "./pages/ClientView";
 import AppShell from "./components/AppShell";
 import { navCurrent } from "./lib/nav";
@@ -24,9 +26,9 @@ import { ApiError, api } from "./lib/api";
  * #/ (landing), #/login, the signed-in #/dashboard (team overview) and feature apps #/studio (Proposal Studio), #/venues (Venue Directory) and
  * #/visualize (Visualize Proposal), and the public #/view/<token> where a client opens a shared proposal.
  */
-type Route = "landing" | "login" | "dashboard" | "expenses" | "studio" | "venues" | "visualize" | "view";
-type AppRoute = "dashboard" | "expenses" | "studio" | "venues" | "visualize";
-const APP_ROUTES: Route[] = ["dashboard", "expenses", "studio", "venues", "visualize"];
+type Route = "landing" | "login" | "dashboard" | "events" | "expenses" | "studio" | "venues" | "visualize" | "view";
+type AppRoute = "dashboard" | "events" | "expenses" | "studio" | "venues" | "visualize";
+const APP_ROUTES: Route[] = ["dashboard", "events", "expenses", "studio", "venues", "visualize"];
 const readRoute = (hash: string): Route => {
   const h = hash.replace(/^#\/?/, "").split("/")[0].toLowerCase();
   return h === "login" || h === "view" || APP_ROUTES.includes(h as Route) ? (h as Route) : "landing";
@@ -138,7 +140,7 @@ export default function App() {
               go(returnTo);
             }}
           />
-        ) : open && route !== "expenses" && route !== "visualize" ? (
+        ) : open && route !== "expenses" && route !== "visualize" && route !== "events" ? (
           // the open proposal survives the sign-in, so it reopens afterwards; it stays full-screen, outside the shell
           <Builder key={open.id} proposal={open} onChange={store.save} onClose={() => setOpenId(null)} onReauth={() => reauth(route === "venues" || route === "dashboard" ? route : "studio")} />
         ) : (
@@ -149,6 +151,19 @@ export default function App() {
               // over an open proposal too: "Expenses" in the Builder's top bar comes here
               <Suspense fallback={<p className="hint" role="status" style={{ padding: 24 }}>Opening expenses…</p>}>
                 <Expenses path={hash.replace(/^#\/?/, "").split("/").slice(1)} proposals={store.list} account={session.email} />
+              </Suspense>
+            ) : route === "events" ? (
+              <Suspense fallback={<p className="hint" role="status" style={{ padding: 24 }}>Opening the event…</p>}>
+                <Events
+                  path={hash.replace(/^#\/?/, "").split("/").slice(1)}
+                  store={store}
+                  account={session.email}
+                  onOpen={(id) => {
+                    // the Builder opens over the Studio, so closing it lands there
+                    setOpenId(id);
+                    go("studio");
+                  }}
+                />
               </Suspense>
             ) : route === "dashboard" ? (
               <Dashboard list={store.list} account={session.email} onOpen={setOpenId} />

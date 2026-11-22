@@ -19,6 +19,8 @@ async function getOptionalJson(path: string, fallback: unknown): Promise<unknown
   const res = await fetch(`${import.meta.env.BASE_URL}${path}`, { cache: "no-store" });
   if (res.status === 404) return fallback;
   if (!res.ok) throw new Error(`Could not load ${path} (${res.status}).`);
+  // a host that answers every path with the app's page (the Vite dev server does) means the file isn't there
+  if ((res.headers.get("content-type") ?? "").includes("text/html")) return fallback;
   try {
     return await res.json();
   } catch (e) {

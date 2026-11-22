@@ -254,6 +254,7 @@ export default function Home({
                     {answers.get(p.id)?.kind === "approved" && proposalStatus(p) === "sent" && (
                       <button className="link-btn" onClick={() => store.save({ ...p, ...statusPatch(p, "accepted") })}>Mark accepted</button>
                     )}
+                    <a className="link-btn" href={`#/events/${p.id}`}>Event</a>
                     <a className="link-btn" href={`#/expenses/${p.id}`}>
                       Expenses{expenseCounts.get(p.id) ? ` (${expenseCounts.get(p.id)!.count})` : ""}
                     </a>
