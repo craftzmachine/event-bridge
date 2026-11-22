@@ -8,6 +8,8 @@ import AppearanceControls from "../components/AppearanceControls";
 import { shortDate, type ShareDecision } from "../lib/shares";
 import type { PageSnapshot } from "../lib/proposalPage";
 import ProposalPage from "../components/ProposalPage";
+import ClientPortal from "../components/ClientPortal";
+import type { PortalAnswers, PortalData } from "../lib/portal";
 
 const COMMENT_MAX = 1000; // the server keeps the first 1,000 characters
 
@@ -16,7 +18,7 @@ interface GridSheet { name: string; cols: number[]; rows: { h?: number; cells: (
 interface Doc {
   client: string;
   title: string;
-  kind: "pdf" | "xlsx" | "page";
+  kind: "pdf" | "xlsx" | "page" | "portal";
   expiresAt: number;
   sessionEndsAt: number;
   pages?: { w: number; h: number }[];
@@ -25,6 +27,8 @@ interface Doc {
   page?: PageSnapshot;
   /** the client's earlier answer, if any */
   decision?: ShareDecision | null;
+  /** a client portal's saved questionnaire answers */
+  answers?: PortalAnswers;
 }
 
 type Phase = "link" | "gate" | "loading" | "view" | "gone" | "offline";
@@ -319,8 +323,11 @@ function Viewer({ doc, id, logo, company, onSignOut, onFail }: { doc: Doc; id: s
   const [decision, setDecision] = useState<ShareDecision | null>(doc.decision ?? null);
 
   const endsAt = new Date(doc.sessionEndsAt).toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit" });
+  // a client portal carries the proposal page inside it, with the family's to-dos, payments and questionnaires
+  const portal = doc.kind === "portal" ? (doc.page as unknown as PortalData) : null;
+  const page = portal ? portal.page : doc.page;
   return (
-    <div className={`cv-viewer ${captured || away ? "is-shielded" : ""} ${doc.page ? "is-page" : ""}`} ref={root} data-page-theme={doc.page?.theme}>
+    <div className={`cv-viewer ${captured || away ? "is-shielded" : ""} ${page ? "is-page" : ""}`} ref={root} data-page-theme={page?.theme}>
       <header className="cv-bar">
         <img className="cv-bar-logo" src={logo} alt={company} />
         <div className="cv-bar-title">
@@ -336,9 +343,11 @@ function Viewer({ doc, id, logo, company, onSignOut, onFail }: { doc: Doc; id: s
             </div>
           )}
           <span className="cv-session hide-phone">View-only · session ends {endsAt}</span>
-          <button className="btn-ghost btn-sm" onClick={() => document.getElementById("cv-respond")?.scrollIntoView({ behavior: "smooth", block: "end" })}>
-            {decision?.kind === "approved" ? "Approved ✓" : "Respond"}
-          </button>
+          {!portal && (
+            <button className="btn-ghost btn-sm" onClick={() => document.getElementById("cv-respond")?.scrollIntoView({ behavior: "smooth", block: "end" })}>
+              {decision?.kind === "approved" ? "Approved ✓" : "Respond"}
+            </button>
+          )}
           <button className="btn-primary btn-sm" onClick={onSignOut}>Sign out</button>
         </div>
       </header>
@@ -350,6 +359,21 @@ function Viewer({ doc, id, logo, company, onSignOut, onFail }: { doc: Doc; id: s
               <PageCanvas key={n} id={id} n={n} w={p.w} h={p.h} total={doc.pages!.length} onFail={onFail} />
             ))}
           </div>
+        ) : portal ? (
+          <ClientPortal
+            id={id}
+            portal={portal}
+            answers={doc.answers ?? {}}
+            onFail={onFail}
+            proposal={
+              <>
+                <div className="cv-webpage">
+                  <ProposalPage snapshot={portal.page} />
+                </div>
+                <Respond id={id} decision={decision} onAnswered={setDecision} onFail={onFail} />
+              </>
+            }
+          />
         ) : doc.page ? (
           <div className="cv-webpage">
             <ProposalPage snapshot={doc.page} />
@@ -367,7 +391,7 @@ function Viewer({ doc, id, logo, company, onSignOut, onFail }: { doc: Doc; id: s
           </>
         ) : null}
         <Watermark text={`${doc.client} · Confidential`} />
-        <Respond id={id} decision={decision} onAnswered={setDecision} onFail={onFail} />
+        {!portal && <Respond id={id} decision={decision} onAnswered={setDecision} onFail={onFail} />}
       </main>
       {toast && <p className="cv-toast" role="status">{toast}</p>}
       {captured && (

@@ -2123,3 +2123,37 @@ body::before {
 @media (max-width: 760px) {
   .qs-answers { grid-template-columns: minmax(0, 1fr); }
 }
+
+/* ---------- Client portal: the family's tabs (.cp-*, inside the shared viewer) and the staff list (.pt-*) ---------- */
+.cp { display: flex; flex-direction: column; gap: 18px; width: 100%; max-width: 980px; margin: 0 auto; padding: 0 var(--gutter); }
+.cp-tabs { position: sticky; top: 64px; z-index: 4; display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; border-bottom: 1px solid var(--line); background: var(--paper); }
+.cp-tabs button { padding: 12px 14px; border: 0; border-bottom: 2px solid transparent; background: none; color: var(--ink-2); font-size: 15px; white-space: nowrap; }
+.cp-tabs button[aria-current="page"] { color: var(--ink); font-weight: 600; border-bottom-color: var(--gold); }
+.cp-tabs small { color: var(--gold-text); font-weight: 600; }
+.cp-panel, .cp-q { display: flex; flex-direction: column; gap: 12px; padding: 22px 24px; border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--card); }
+.cp-panel + .cp-panel, .cp-q + .cp-q { margin-top: 12px; }
+.cp-panel h2, .cp-q h2 { margin: 0; font-size: 26px; font-weight: 500; }
+.cp-empty, .cp-intro, .cp-sum, .cp-saved { margin: 0; color: var(--ink-2); }
+.cp-saved { font-size: 13px; color: var(--gold-text); }
+.cp-list { list-style: none; margin: 0; padding: 0; }
+.cp-list li { display: grid; grid-template-columns: 12px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 12px 0; border-top: 1px solid var(--line); }
+.cp-list strong { display: block; font-weight: 500; }
+.cp-list small { color: var(--stone); font-size: 13px; }
+.cp-dot { width: 10px; height: 10px; border-radius: 50%; border: 2px solid var(--gold); }
+.cp-list .is-done .cp-dot, .cp-list .is-paid .cp-dot { background: var(--gold); }
+.cp-list .is-done strong { color: var(--stone); text-decoration: line-through; }
+.cp-list .is-late small, .cp-list .is-overdue small { color: var(--danger-ink); }
+.cp-amt { font-variant-numeric: tabular-nums; font-weight: 600; }
+.cp-q-actions { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.cp-progress { font-size: 13px; color: var(--stone); }
+.cp-msg { margin: 0; color: var(--gold-text); }
+.pt-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
+.pt-card h2 { margin: 0; font-size: 22px; }
+.pt-card .hint { margin: 2px 0 0; }
+.pt-status, .pt-has { margin: 0; font-size: 13px; color: var(--ink-2); }
+.pt-has { color: var(--stone); }
+@media (max-width: 760px) {
+  .cp { padding: 0 10px; }
+  .cp-tabs { top: 56px; }
+  .cp-panel, .cp-q { padding: 16px; }
+}

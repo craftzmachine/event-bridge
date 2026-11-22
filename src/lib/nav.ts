@@ -18,6 +18,7 @@ export const APPS: AppItem[] = [
   { id: "tasks", label: "Tasks", description: "The team's tasks and every wedding's checklist, as a list, board or calendar", href: "#/tasks", icon: "check" },
   { id: "vendors", label: "Vendors", description: "The rolodex: who to call, what they charge, what you've paid", href: "#/vendors", icon: "book" },
   { id: "questionnaires", label: "Questionnaires", description: "Ask families what they want, once, and keep the answers", href: "#/questionnaires", icon: "list" },
+  { id: "portal", label: "Client Portal", description: "Each family's private page: proposal, to-dos, payments, questions", href: "#/portal", icon: "heart" },
   { id: "expenses", label: "Expenses", description: "Event and company spending, advances and handovers", href: "#/expenses", icon: "wallet" },
   { id: "venues", label: "Venue Directory", description: "Halls, hotels and resorts around Thiruvananthapuram", href: "#/venues", icon: "pin" },
   { id: "visualize", label: "Visualize Proposal", description: "Password-protected, view-only links for clients", href: "#/visualize", icon: "eye" },

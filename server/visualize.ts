@@ -6,9 +6,10 @@ import { endStaffSession, endViewSession, requireStaff, requireViewer, staffEmai
 import { validateUpload, type FileKind } from "./files.js";
 import { packPage, packPdf, packXlsx, unpack } from "./bundle.js";
 import { validatePage } from "./page.js";
+import { ANSWERS_MAX_BYTES, cleanAnswers, portalQuestions, validatePortal, type Answers } from "./portal.js";
 
-/** an uploaded PDF or Excel file, or a proposal shared as a web page */
-export type ShareKind = FileKind | "page";
+/** an uploaded PDF or Excel file, a proposal shared as a web page, or a family's client portal */
+export type ShareKind = FileKind | "page" | "portal";
 import { renderPdf } from "./render/pdf.js";
 import { renderXlsx } from "./render/xlsx.js";
 
@@ -43,7 +44,13 @@ export interface ShareRecord {
   proposalId?: string;
   /** the client's answer on the shared page; a later answer replaces an earlier one */
   decision?: Decision;
+  /** a portal's questionnaire answers, encrypted: JSON of { [questionnaireId]: { answers, at } } */
+  answersEnc?: string;
+  /** when staff last refreshed a portal's contents (same link, same password) */
+  updatedAt?: number;
 }
+
+export type PortalAnswers = Record<string, { answers: Answers; at: number }>;
 
 export interface Decision {
   kind: "approved" | "changes";
@@ -126,13 +133,27 @@ export async function staffLogout(req: Request, d: Deps) {
 
 // ---- shares (staff only) ----------------------------------------------------------------
 
+function readAnswers(d: Deps, r: ShareRecord): PortalAnswers {
+  if (!r.answersEnc) return {};
+  try {
+    return JSON.parse(decrypt(d.env.fileKey, Buffer.from(r.answersEnc, "base64")).toString()) as PortalAnswers;
+  } catch {
+    return {};
+  }
+}
+
 function forStaff(d: Deps, r: ShareRecord) {
-  const { tokenHash: _hash, tokenEnc, passwordHash: _pw, ...rest } = r;
-  return { ...rest, token: decrypt(d.env.fileKey, Buffer.from(tokenEnc, "base64")).toString(), expired: r.expiresAt <= d.now() };
+  const { tokenHash: _hash, tokenEnc, passwordHash: _pw, answersEnc: _answers, ...rest } = r;
+  return {
+    ...rest,
+    token: decrypt(d.env.fileKey, Buffer.from(tokenEnc, "base64")).toString(),
+    expired: r.expiresAt <= d.now(),
+    ...(r.kind === "portal" ? { answers: readAnswers(d, r) } : {}),
+  };
 }
 
 export async function shares(req: Request, d: Deps) {
-  assertMethod(req, "GET", "POST", "DELETE");
+  assertMethod(req, "GET", "POST", "PUT", "DELETE");
   const email = await requireStaff(req, d);
 
   if (req.method === "GET") {
@@ -157,7 +178,6 @@ export async function shares(req: Request, d: Deps) {
     return json(200, { ok: true });
   }
 
-  // POST: create a share
   const n = await d.kv.incr(`rl:upload:${keyedHash(d.env.sessionSecret, email)}`, 3600);
   if (n > UPLOADS_PER_HOUR) throw new HttpError(429, "Upload limit reached for this hour. Try again later.");
   let form: FormData;
@@ -166,14 +186,36 @@ export async function shares(req: Request, d: Deps) {
   } catch {
     throw new HttpError(400, "The upload didn't arrive complete. Please try again.");
   }
+
+  // PUT: refresh a client portal's contents, keeping its link, password, answers and the client's decision
+  if (req.method === "PUT") {
+    const id = new URL(req.url).searchParams.get("id");
+    const r = isId(id) ? await d.kv.get<ShareRecord>(shareKey(id)) : null;
+    if (!r || r.kind !== "portal") throw new HttpError(404, "That portal no longer exists. Create a new one.");
+    const check = validatePortal(String(form.get("portal") ?? ""));
+    if ("error" in check) throw new HttpError(415, check.error);
+    const data = Buffer.from(JSON.stringify(check.portal));
+    await d.files.put(filePath(r.id, "original"), encrypt(d.env.fileKey, data));
+    await d.files.put(filePath(r.id, "view"), encrypt(d.env.fileKey, packPage(check.portal)));
+    bundleCache.delete(r.id);
+    // re-read just before writing, so a view or an answer in between isn't lost
+    const latest = (await d.kv.get<ShareRecord>(shareKey(r.id))) ?? r;
+    const next: ShareRecord = { ...latest, size: data.length, updatedAt: d.now() };
+    await d.kv.set(shareKey(r.id), next);
+    return json(200, { share: forStaff(d, next) });
+  }
+
+  // POST: create a share
   const file = form.get("file");
-  // a web page share sends the proposal snapshot as a "page" field instead of a file
+  // a web page share sends the proposal snapshot as a "page" field instead of a file; a portal, a "portal" field
   const pageText = form.get("page");
-  const isPage = !(file instanceof File) && typeof pageText === "string";
+  const portalText = form.get("portal");
+  const isPortal = !(file instanceof File) && typeof portalText === "string";
+  const isPage = !(file instanceof File) && !isPortal && typeof pageText === "string";
   const client = String(form.get("client") ?? "").trim().slice(0, 120);
   const password = String(form.get("password") ?? "");
   const days = Number(form.get("expiryDays"));
-  if (!(file instanceof File) && !isPage) throw new HttpError(400, "Choose a PDF or Excel file to share.");
+  if (!(file instanceof File) && !isPage && !isPortal) throw new HttpError(400, "Choose a PDF or Excel file to share.");
   if (!client) throw new HttpError(400, "Enter the client's name.");
   if (password.length < 8 || password.length > 128) throw new HttpError(400, "The password must be 8–128 characters.");
   if (!EXPIRY_DAYS.includes(days as (typeof EXPIRY_DAYS)[number])) throw new HttpError(400, "Choose how long the link stays active.");
@@ -186,7 +228,14 @@ export async function shares(req: Request, d: Deps) {
   let kind: ShareKind;
   let fileName: string;
   let counts: Pick<ShareRecord, "pages" | "sheets"> = {};
-  if (isPage) {
+  if (isPortal) {
+    const check = validatePortal(portalText as string);
+    if ("error" in check) throw new HttpError(415, check.error);
+    data = Buffer.from(JSON.stringify(check.portal));
+    bundle = packPage(check.portal);
+    kind = "portal";
+    fileName = "Client portal";
+  } else if (isPage) {
     const check = validatePage(pageText as string);
     if ("error" in check) throw new HttpError(415, check.error);
     // the cleaned snapshot is both what's kept and what the client is shown
@@ -211,7 +260,7 @@ export async function shares(req: Request, d: Deps) {
       counts = { sheets: grid.sheets.length };
     }
   }
-  const title = (String(form.get("title") ?? "").trim() || (isPage ? "Proposal" : fileName.replace(/\.[^.]+$/, ""))).slice(0, 160);
+  const title = (String(form.get("title") ?? "").trim() || (isPortal ? "Your wedding" : isPage ? "Proposal" : fileName.replace(/\.[^.]+$/, ""))).slice(0, 160);
 
   const id = randomId();
   const token = randomToken();
@@ -311,6 +360,7 @@ export async function viewDoc(req: Request, d: Deps) {
     expiresAt: r.expiresAt,
     sessionEndsAt: Math.min(session.endsAt, r.expiresAt),
     decision: r.decision ?? null,
+    ...(r.kind === "portal" ? { answers: readAnswers(d, r) } : {}),
     ...(h.kind === "pdf" ? { pages: h.pages.map(({ w, h: ht }) => ({ w, h: ht })) } : h.kind === "xlsx" ? { grid: h.grid } : { page: h.page }),
   });
 }
@@ -340,6 +390,32 @@ export async function viewRespond(req: Request, d: Deps) {
   const latest = (await d.kv.get<ShareRecord>(shareKey(id))) ?? r;
   await d.kv.set(shareKey(id), { ...latest, decision });
   return json(200, { decision });
+}
+
+/**
+ * The family answers one of their portal's questionnaires. The same checks as viewRespond (a live session for this
+ * share, from this site, rate-limited); answers are cleaned against the questions as shared, capped, and stored
+ * encrypted. A later answer to the same questionnaire replaces the earlier one.
+ */
+export async function viewAnswers(req: Request, d: Deps) {
+  assertMethod(req, "POST");
+  assertSameOrigin(req);
+  await ipLimit(d, req, "answers");
+  const { r, bundle } = await viewable(req, d);
+  if (r.kind !== "portal" || bundle.header.kind !== "page") throw new HttpError(404, "This link doesn't take answers.");
+  const body = await readJson<{ questionnaire?: unknown; answers?: unknown }>(req);
+  const qid = typeof body.questionnaire === "string" ? body.questionnaire : "";
+  const questions = portalQuestions(bundle.header.page, qid);
+  if (!questions) throw new HttpError(404, "That questionnaire isn't part of this portal.");
+  const answers = cleanAnswers(questions, body.answers);
+  const at = d.now();
+  // re-read just before writing, so a view or another answer in between isn't lost
+  const latest = (await d.kv.get<ShareRecord>(shareKey(r.id))) ?? r;
+  const all = { ...readAnswers(d, latest), [qid]: { answers, at } };
+  const text = JSON.stringify(all);
+  if (Buffer.byteLength(text) > ANSWERS_MAX_BYTES) throw new HttpError(413, "These answers are too long. Please shorten them.");
+  await d.kv.set(shareKey(r.id), { ...latest, answersEnc: encrypt(d.env.fileKey, Buffer.from(text)).toString("base64") });
+  return json(200, { answers, at });
 }
 
 export async function viewLock(req: Request, d: Deps) {

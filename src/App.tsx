@@ -19,6 +19,7 @@ const Vendors = lazy(() => import("./pages/Vendors"));
 const Crm = lazy(() => import("./pages/Crm"));
 const Tasks = lazy(() => import("./pages/Tasks"));
 const Questionnaires = lazy(() => import("./pages/Questionnaires"));
+const Portal = lazy(() => import("./pages/Portal"));
 import ClientView from "./pages/ClientView";
 import AppShell from "./components/AppShell";
 import { endSession, readSession, SERVER_SIGNIN, startSession, type Session } from "./auth/auth";
@@ -29,9 +30,9 @@ import { ApiError, api } from "./lib/api";
  * #/ (landing), #/login, the signed-in #/dashboard (team overview) and feature apps #/studio (Proposal Studio), #/venues (Venue Directory) and
  * #/visualize (Visualize Proposal), and the public #/view/<token> where a client opens a shared proposal.
  */
-type Route = "landing" | "login" | "dashboard" | "events" | "crm" | "tasks" | "vendors" | "questionnaires" | "expenses" | "studio" | "venues" | "visualize" | "view";
+type Route = "landing" | "login" | "dashboard" | "events" | "crm" | "tasks" | "vendors" | "questionnaires" | "portal" | "expenses" | "studio" | "venues" | "visualize" | "view";
 type AppRoute = Exclude<Route, "landing" | "login" | "view">;
-const APP_ROUTES: Route[] = ["dashboard", "events", "crm", "tasks", "vendors", "questionnaires", "expenses", "studio", "venues", "visualize"];
+const APP_ROUTES: Route[] = ["dashboard", "events", "crm", "tasks", "vendors", "questionnaires", "portal", "expenses", "studio", "venues", "visualize"];
 const readRoute = (hash: string): Route => {
   const h = hash.replace(/^#\/?/, "").split("/")[0].toLowerCase();
   return h === "login" || h === "view" || APP_ROUTES.includes(h as Route) ? (h as Route) : "landing";
@@ -186,6 +187,10 @@ export default function App() {
             ) : route === "questionnaires" ? (
               <Suspense fallback={<p className="hint" role="status" style={{ padding: 24 }}>Opening questionnaires…</p>}>
                 <Questionnaires store={store} />
+              </Suspense>
+            ) : route === "portal" ? (
+              <Suspense fallback={<p className="hint" role="status" style={{ padding: 24 }}>Opening client portals…</p>}>
+                <Portal store={store} onReauth={() => reauth("portal")} />
               </Suspense>
             ) : route === "vendors" ? (
               <Suspense fallback={<p className="hint" role="status" style={{ padding: 24 }}>Opening vendors…</p>}>

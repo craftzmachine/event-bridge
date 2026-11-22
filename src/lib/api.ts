@@ -44,10 +44,10 @@ export async function api<T>(path: string, init: { method?: string; json?: unkno
 }
 
 /** Multipart upload with progress (fetch can't report upload progress). */
-export function upload<T>(path: string, form: FormData, onProgress: (fraction: number) => void): Promise<T> {
+export function upload<T>(path: string, form: FormData, onProgress: (fraction: number) => void, method: "POST" | "PUT" = "POST"): Promise<T> {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
-    xhr.open("POST", `./api/${path}`);
+    xhr.open(method, `./api/${path}`);
     xhr.withCredentials = true;
     xhr.timeout = UPLOAD_TIMEOUT_MS;
     xhr.upload.onprogress = (e) => e.lengthComputable && onProgress(e.loaded / e.total);

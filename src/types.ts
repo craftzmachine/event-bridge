@@ -282,6 +282,8 @@ export interface Proposal {
   checklist?: ChecklistItem[];
   /** questionnaires sent to the family, with their answers */
   questionnaires?: SentQuestionnaire[];
+  /** the family's client portal (a Visualize Proposal share of kind "portal") */
+  portalShareId?: string;
   coordinationPct: number;
   /** null = no round-off; otherwise the Grand Total quoted to the client */
   grandTotal: number | null;
