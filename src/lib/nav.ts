@@ -17,6 +17,7 @@ export const APPS: AppItem[] = [
   { id: "crm", label: "CRM", description: "Enquiries from first message to booking, and your clients", href: "#/crm", icon: "users" },
   { id: "tasks", label: "Tasks", description: "The team's tasks and every wedding's checklist, as a list, board or calendar", href: "#/tasks", icon: "check" },
   { id: "vendors", label: "Vendors", description: "The rolodex: who to call, what they charge, what you've paid", href: "#/vendors", icon: "book" },
+  { id: "questionnaires", label: "Questionnaires", description: "Ask families what they want, once, and keep the answers", href: "#/questionnaires", icon: "list" },
   { id: "expenses", label: "Expenses", description: "Event and company spending, advances and handovers", href: "#/expenses", icon: "wallet" },
   { id: "venues", label: "Venue Directory", description: "Halls, hotels and resorts around Thiruvananthapuram", href: "#/venues", icon: "pin" },
   { id: "visualize", label: "Visualize Proposal", description: "Password-protected, view-only links for clients", href: "#/visualize", icon: "eye" },

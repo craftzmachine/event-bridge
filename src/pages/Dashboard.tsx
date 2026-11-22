@@ -23,6 +23,7 @@ import { readLeads } from "../state/crm";
 import { followUpsDue, isOpen } from "../lib/crm";
 import { readTeamTasks } from "../state/tasks";
 import { allTasks, overdueRows } from "../lib/tasks";
+import { awaitingAnswers } from "../lib/questionnaires";
 import { proposalStatus } from "../lib/status";
 
 const month = (d: Date) => d.toLocaleString("en-GB", { month: "long" });
@@ -157,6 +158,7 @@ export default function Dashboard({ list, account, onOpen, onNew }: { list: Prop
           live={{
             events: upcomingEvents.length ? `${upcomingEvents.length} coming up · ${week.length} function${week.length === 1 ? "" : "s"} this week` : "No events coming up",
             crm: `${leads.filter(isOpen).length} open enquir${leads.filter(isOpen).length === 1 ? "y" : "ies"}${leadsDue.length ? ` · ${leadsDue.length} to follow up` : ""}`,
+            questionnaires: awaitingAnswers(list).length ? `${awaitingAnswers(list).length} waiting for answers` : "None waiting",
             tasks: lateRows.length ? `${lateRows.length} overdue` : "Nothing overdue",
             studio: `${list.length} proposal${list.length === 1 ? "" : "s"} · ${list.filter((p) => proposalStatus(p) === "draft").length} draft${list.filter((p) => proposalStatus(p) === "draft").length === 1 ? "" : "s"}`,
             expenses: `${formatINRShort(company.total)} company spending in ${monthLabel(monthOf(today))}`,
