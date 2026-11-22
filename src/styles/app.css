@@ -2059,3 +2059,34 @@ body::before {
 .vn-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: auto; padding-top: 10px; }
 .vn-actions .link-btn { margin-left: auto; padding: 0; }
 .ev-filters select { min-height: 40px; }
+
+/* ---------- CRM (#/crm, .crm-*): enquiries board, list and activity log ---------- */
+.crm-board { display: grid; grid-template-columns: repeat(6, minmax(220px, 1fr)); gap: 10px; overflow-x: auto; padding-bottom: 6px; }
+.crm-col { display: flex; flex-direction: column; gap: 8px; padding: 10px; border: 1px solid var(--line); border-radius: var(--r); background: color-mix(in srgb, var(--card) 70%, transparent); min-height: 140px; }
+.crm-col h3 { margin: 0 0 2px; font-size: 16px; }
+.crm-col h3 small { font-family: var(--sans); font-size: 12px; color: var(--stone); font-weight: 400; }
+.crm-col.is-won h3 { color: var(--gold-text); }
+.crm-col.is-lost h3 { color: var(--stone); }
+.crm-card { display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--card); }
+.crm-card.is-due { border-left: 3px solid var(--danger); }
+.crm-card-main { display: flex; flex-direction: column; gap: 2px; padding: 0; border: 0; background: none; color: var(--ink); text-align: left; }
+.crm-card-main strong { font-weight: 600; font-size: 14px; overflow-wrap: anywhere; }
+.crm-card-main span { font-size: 12px; color: var(--ink-2); }
+.crm-card-main small { font-size: 12px; color: var(--gold-text); }
+.crm-card.is-due .crm-card-main small { color: var(--danger-ink); }
+.crm-card-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.crm-card-tools .link-btn { padding: 0; font-size: 12.5px; margin-left: auto; }
+.crm-prop { display: block; padding: 0; text-align: left; }
+.dash-table td small { display: block; font-size: 12px; color: var(--stone); }
+.dash-table td.warn { color: var(--danger-ink); }
+.crm-log { display: flex; flex-direction: column; gap: 8px; }
+.crm-log-add { display: grid; grid-template-columns: 120px minmax(0, 1fr) 150px auto; gap: 6px; }
+.crm-log-add input, .crm-log-add select { min-height: 36px; min-width: 0; }
+.crm-log-list { margin: 0; padding-left: 18px; display: grid; gap: 4px; font-size: 13px; color: var(--ink-2); max-height: 200px; overflow-y: auto; }
+.crm-log-list small { color: var(--stone); }
+@media (max-width: 760px) {
+  .crm-board { grid-template-columns: repeat(6, minmax(78vw, 1fr)); scroll-snap-type: x mandatory; }
+  .crm-col { scroll-snap-align: start; }
+  .crm-log-add { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .crm-log-add input[aria-label="What happened"] { grid-column: 1 / -1; order: -1; }
+}
