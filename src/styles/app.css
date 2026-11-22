@@ -2043,3 +2043,19 @@ body::before {
   .dash-cal-day.has-events::after { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--gold); }
   .dash-cal-more { display: none; }
 }
+
+/* ---------- Vendor rolodex (#/vendors, .vn-*) ---------- */
+.vn-grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+.vn-card { display: flex; flex-direction: column; gap: 4px; padding: 16px 18px; border: 1px solid var(--line); border-radius: var(--r); background: var(--card); min-width: 0; }
+.vn-card strong { font-family: var(--serif); font-size: 21px; font-weight: 500; overflow-wrap: anywhere; }
+.vn-card > span { font-size: 13px; color: var(--ink-2); overflow-wrap: anywhere; }
+.vn-card-head { display: flex; justify-content: space-between; gap: 8px; font-size: 12px; }
+.vn-cat { color: var(--gold-text); font-weight: 600; }
+.vn-rating { color: var(--gold); letter-spacing: 1px; }
+.vn-rating span { color: color-mix(in srgb, var(--ink) 18%, transparent); }
+.vn-card .vn-price { color: var(--ink); }
+.vn-card .vn-muted { color: var(--stone); font-size: 12.5px; }
+.vn-card .vn-spend { margin-top: 4px; color: var(--gold-text); font-size: 12.5px; }
+.vn-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: auto; padding-top: 10px; }
+.vn-actions .link-btn { margin-left: auto; padding: 0; }
+.ev-filters select { min-height: 40px; }

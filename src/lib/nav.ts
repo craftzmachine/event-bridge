@@ -14,6 +14,7 @@ export interface AppItem {
 export const APPS: AppItem[] = [
   { id: "events", label: "Events", description: "Every wedding in play, each with its own workspace", href: "#/events", icon: "calendar" },
   { id: "studio", label: "Proposal Studio", description: "Build, price and send proposals", href: "#/studio", icon: "file" },
+  { id: "vendors", label: "Vendors", description: "The rolodex: who to call, what they charge, what you've paid", href: "#/vendors", icon: "book" },
   { id: "expenses", label: "Expenses", description: "Event and company spending, advances and handovers", href: "#/expenses", icon: "wallet" },
   { id: "venues", label: "Venue Directory", description: "Halls, hotels and resorts around Thiruvananthapuram", href: "#/venues", icon: "pin" },
   { id: "visualize", label: "Visualize Proposal", description: "Password-protected, view-only links for clients", href: "#/visualize", icon: "eye" },
