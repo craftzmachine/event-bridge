@@ -64,7 +64,7 @@ function Index({ list }: { list: Proposal[] }) {
   const shown = eventsFor(list, tab, today).filter((p) => matchesSearch(p, q));
   return (
     <div className="ev-page">
-      <PageHeader crumbs={[{ label: "Dashboard", href: "#/dashboard" }, { label: "Events" }]} title="Events" subtitle="Every wedding in play: accepted proposals and anything with a date." />
+      <PageHeader crumbs={[{ label: "Dashboard", href: "#/dashboard" }, { label: "Events" }]} title="Events" subtitle="Every wedding in play: accepted proposals and anything with a date." tour="events-page" />
       <main className="ev-main">
         <div className="ev-filters">
           <div className="seg" role="group" aria-label="Show">

@@ -141,7 +141,7 @@ export default function Dashboard({ list, account, onOpen, onNew }: { list: Prop
       />
 
       <main className="dash-main">
-        <nav className="dash-launch" aria-label="Apps">
+        <nav className="dash-launch" aria-label="Apps" data-tour="apps">
           {APPS.map((a) => (
             <a key={a.id} href={a.href} title={a.description}>
               <span className="dash-launch-icon"><Icon name={a.icon} size={20} /></span>
@@ -150,7 +150,7 @@ export default function Dashboard({ list, account, onOpen, onNew }: { list: Prop
           ))}
         </nav>
 
-        <section className="dash-stats" aria-label={`${month(now)} at a glance`}>
+        <section className="dash-stats" data-tour="stats" aria-label={`${month(now)} at a glance`}>
           <div className="dash-stat">
             <span>Upcoming events</span>
             <strong>{upcomingEvents.length}</strong>
@@ -181,7 +181,7 @@ export default function Dashboard({ list, account, onOpen, onNew }: { list: Prop
         ) : (
           <>
             <div className="dash-cols">
-              <section className="dash-panel" aria-labelledby="dash-events-title">
+              <section className="dash-panel" data-tour="events" aria-labelledby="dash-events-title">
                 <header className="dash-panel-head">
                   <h2 id="dash-events-title">{view === "calendar" ? monthLabel(calMonth) : day ? formatDate(day) : "Upcoming events"}</h2>
                   <div className="dash-section-tools">
@@ -255,7 +255,7 @@ export default function Dashboard({ list, account, onOpen, onNew }: { list: Prop
                 )}
               </section>
 
-              <section className="dash-panel" aria-labelledby="dash-att-title">
+              <section className="dash-panel" data-tour="attention" aria-labelledby="dash-att-title">
                 <header className="dash-panel-head">
                   <h2 id="dash-att-title">Needs attention</h2>
                   {attention.length > 0 && <small className="dash-count">{attention.length}</small>}

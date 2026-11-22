@@ -112,7 +112,7 @@ export default function Home({
       <div className="page-crumbs">
         <Breadcrumbs items={[{ label: "Dashboard", href: "#/dashboard" }, { label: "Proposal Studio" }]} />
       </div>
-      <header className="home-hero">
+      <header className="home-hero" data-tour="studio">
         <Img src={heroPhoto} alt="" className="home-hero-img" />
         <div className="home-hero-text">
           <img className="brand-logo" src={`${import.meta.env.BASE_URL}${brand.logo}`} alt={`${brand.company} — ${brand.tagline}`} />

@@ -58,6 +58,11 @@ Photos must show the actual venue and be licensed for commercial use: CC BY, CC 
   - **Apps:** `src/lib/nav.ts` `APPS` is the app catalogue (label, description, href, icon; tested). The Dashboard renders it as tiles with a live line each (`AppTiles`), and the landing page reuses it.
   - **Icons:** inline SVG in `src/components/icons.tsx`.
   - **Headers:** pages use `PageHeader` (breadcrumb, title, subtitle, actions slot) or `Breadcrumbs` from `src/components/PageHeader.tsx`. A first crumb pointing at `#/dashboard` renders as "← Dashboard", the way back.
+- **Wedding Quest** (`src/lib/quest.ts`, `src/components/Quest.tsx`, `quest.test.ts`): a playful guide mounted in `AppShell`.
+  - **Quest log:** a floating button (`.qx-fab`) opens it. `QUESTS` tick themselves off from real data (`QuestFacts`: proposals, leads, vendors, tasks, expenses, routes visited…), earn XP, and XP gives a title (`LEVELS`; the top level equals `TOTAL_XP`, which a test checks).
+  - **Tour:** `TOUR` steps go to a page and spotlight an element marked `data-tour="…"`. `PageHeader` takes a `tour` prop for that, so keep the targets when editing those pages.
+  - **First visit:** the welcome card shows on the Dashboard.
+  - **Storage:** progress is in `event-bridge.quest.v1`, and finished quests get confetti once.
 - **Landing header:** `src/components/SiteNav.tsx` is only the landing page's header: the brand, appearance, and Team sign in or Dashboard. There are no menu items.
 - **Builder:** a 4-step wizard (client, occasion, elements, review); steps are inner components of `src/pages/Builder.tsx`.
 

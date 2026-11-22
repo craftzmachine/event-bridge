@@ -2336,3 +2336,101 @@ body::before {
   .dash-ev-list a { grid-template-columns: 42px minmax(0, 1fr); }
   .dash-ev-side { display: none; }
 }
+
+/* ---------- Wedding Quest (.qx-*): the quest button, quest log, welcome card, spotlight tour and confetti ---------- */
+.qx-fab {
+  position: fixed; right: 20px; bottom: 20px; z-index: 45; display: inline-flex; align-items: center; gap: 10px; padding: 6px 16px 6px 6px;
+  border: 1px solid color-mix(in srgb, var(--gold) 55%, transparent); border-radius: 999px; background: var(--espresso); color: var(--on-espresso);
+  box-shadow: var(--shadow-lift); cursor: pointer; text-align: left;
+}
+.qx-fab:hover { border-color: var(--gold); transform: translateY(-1px); }
+.qx-ring {
+  display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; color: var(--gold-light);
+  background: radial-gradient(closest-side, var(--espresso) 78%, transparent 80%), conic-gradient(var(--gold) var(--p), color-mix(in srgb, var(--on-espresso) 18%, transparent) 0);
+}
+.qx-fab-text { display: flex; flex-direction: column; line-height: 1.2; }
+.qx-fab-text strong { font-family: var(--serif); font-size: 16px; font-weight: 500; }
+.qx-fab-text small { font-size: 11.5px; color: var(--gold-light); }
+.qx-scrim { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; padding: 16px; background: color-mix(in srgb, var(--espresso) 55%, transparent); }
+.qx-scrim-btn { border: 0; cursor: default; }
+.qx-welcome {
+  max-width: 460px; padding: 28px; border-radius: var(--r-lg); background: var(--card); color: var(--ink); text-align: center;
+  border: 1px solid color-mix(in srgb, var(--gold) 45%, transparent); animation: qx-pop 0.35s cubic-bezier(0.2, 0.9, 0.3, 1.3) both;
+}
+.qx-welcome h2 { margin: 6px 0 10px; font-size: 30px; font-weight: 500; }
+.qx-welcome p { margin: 0 0 10px; color: var(--ink-2); }
+.qx-emoji { font-size: 40px; display: inline-block; animation: qx-wobble 1.6s ease-in-out infinite; }
+.qx-small { font-size: 13px; color: var(--stone); }
+.qx-actions { display: flex; justify-content: flex-end; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+.qx-welcome .qx-actions { justify-content: center; }
+.qx-log {
+  position: fixed; top: 0; right: 0; bottom: 0; z-index: 61; width: min(440px, 100vw); display: flex; flex-direction: column; gap: 10px;
+  padding: 20px; overflow-y: auto; background: var(--card); color: var(--ink); border-left: 1px solid var(--line); animation: qx-slide 0.25s ease both;
+}
+.qx-log-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+.qx-log-head h2 { margin: 0; font-size: 28px; font-weight: 500; }
+.qx-log-head p { margin: 2px 0 0; color: var(--ink-2); font-size: 14px; }
+.qx-bar { display: block; height: 10px; border-radius: 999px; background: color-mix(in srgb, var(--ink) 10%, transparent); overflow: hidden; }
+.qx-bar b { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--gold), var(--gold-light)); transition: width 0.6s ease; }
+.qx-list { list-style: none; margin: 4px 0 0; padding: 0; }
+.qx-list li { display: grid; grid-template-columns: 26px minmax(0, 1fr) auto; gap: 10px; align-items: start; padding: 12px 0; border-top: 1px solid var(--line); }
+.qx-check { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; border: 1.5px solid var(--gold); color: var(--on-primary); font-size: 13px; font-weight: 700; }
+.qx-list li.is-done .qx-check { background: var(--gold); }
+.qx-list li.is-done .qx-q strong { color: var(--stone); text-decoration: line-through; text-decoration-color: var(--gold); }
+.qx-list li.is-next { background: color-mix(in srgb, var(--gold) 9%, transparent); border-radius: var(--r-sm); padding-left: 6px; padding-right: 6px; }
+.qx-q { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.qx-q strong { font-weight: 600; }
+.qx-q small { font-size: 12.5px; color: var(--ink-2); line-height: 1.4; }
+.qx-xp { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; font-size: 12px; font-weight: 700; color: var(--gold-text); white-space: nowrap; }
+.qx-xp .link-btn { padding: 0; font-size: 12.5px; }
+.qx-tour { position: fixed; inset: 0; z-index: 70; }
+.qx-dim { position: absolute; inset: 0; background: color-mix(in srgb, var(--espresso) 68%, transparent); }
+.qx-hole {
+  position: fixed; border-radius: var(--r); box-shadow: 0 0 0 9999px color-mix(in srgb, var(--espresso) 68%, transparent), 0 0 0 3px var(--gold);
+  pointer-events: none; transition: top 0.3s ease, left 0.3s ease, width 0.3s ease, height 0.3s ease;
+}
+.qx-card {
+  position: fixed; width: min(380px, calc(100vw - 24px)); padding: 18px 20px; border-radius: var(--r); background: var(--card); color: var(--ink);
+  border: 1px solid color-mix(in srgb, var(--gold) 50%, transparent); box-shadow: var(--shadow-lift); animation: qx-pop 0.3s ease both;
+}
+.qx-tour.is-centred .qx-card { top: 50%; left: 50%; transform: translate(-50%, -50%); animation: none; }
+.qx-card h2 { margin: 4px 0 8px; font-size: 24px; font-weight: 500; }
+.qx-card p { margin: 0; color: var(--ink-2); font-size: 14.5px; line-height: 1.55; }
+.qx-stepno { font-size: 12px; color: var(--gold-text); font-weight: 600; }
+.qx-card .qx-actions .link-btn { margin-right: auto; padding: 0; }
+.qx-cheer {
+  position: fixed; left: 50%; bottom: 90px; z-index: 72; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 2px;
+  padding: 14px 24px; border-radius: var(--r); background: var(--espresso); color: var(--on-espresso); text-align: center;
+  border: 1px solid var(--gold); box-shadow: var(--shadow-lift); animation: qx-pop 0.4s cubic-bezier(0.2, 0.9, 0.3, 1.4) both;
+}
+.qx-cheer strong { font-family: var(--serif); font-size: 22px; font-weight: 500; color: var(--gold-light); }
+.qx-cheer span { font-size: 14px; }
+.qx-levelup { font-weight: 700; color: var(--gold-light); }
+.qx-confetti { position: absolute; inset: 0; pointer-events: none; overflow: visible; }
+.qx-confetti i {
+  position: absolute; left: 50%; top: 50%; width: 7px; height: 11px; border-radius: 2px;
+  background: var(--gold); animation: qx-burst 1.2s cubic-bezier(0.2, 0.7, 0.3, 1) both;
+  --a: calc(var(--i) * 15deg); --d: calc(70px + (var(--i) * 7px));
+}
+.qx-confetti i:nth-child(3n) { background: var(--gold-light); }
+.qx-confetti i:nth-child(4n) { background: var(--primary); width: 6px; height: 6px; border-radius: 50%; }
+@keyframes qx-burst {
+  from { transform: translate(-50%, -50%) rotate(0deg); opacity: 1; }
+  to { transform: translate(-50%, -50%) rotate(var(--a)) translateY(calc(var(--d) * -1)) rotate(260deg); opacity: 0; }
+}
+@keyframes qx-pop { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }
+.qx-cheer { animation-name: qx-pop-x; }
+@keyframes qx-pop-x { from { opacity: 0; transform: translateX(-50%) scale(0.9); } to { opacity: 1; transform: translateX(-50%) scale(1); } }
+@keyframes qx-slide { from { transform: translateX(30px); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes qx-wobble { 0%, 100% { transform: rotate(0); } 25% { transform: rotate(-10deg); } 75% { transform: rotate(10deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .qx-welcome, .qx-card, .qx-cheer, .qx-log, .qx-emoji, .qx-confetti i { animation: none; }
+}
+@media (max-width: 760px) {
+  .qx-fab { right: 12px; bottom: 12px; padding: 5px; }
+  .qx-fab-text { display: none; }
+  .qx-cheer { bottom: 76px; width: calc(100vw - 32px); }
+}
+@media print {
+  .qx-fab { display: none; }
+}

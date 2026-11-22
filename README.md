@@ -10,6 +10,11 @@ Proposals and their exports are branded **Parinay Weddings**, because that's wha
 
 ## Navigation
 
+**Wedding Quest:** a light-hearted guide in the bottom-right corner of every signed-in page.
+- **First visit:** a welcome card on the Dashboard offers a spotlight tour of the Dashboard, Proposal Studio, the CRM and Events. You can replay it any time.
+- **Quest log:** missions like "Start your first proposal", "Catch an enquiry" or "Befriend a vendor" tick themselves off when you actually do them.
+- **Levels:** each quest earns XP, taking you from **Fresh Garland** to **Muhurtham Legend**. Progress is kept in this browser.
+
 **There are no menus. The Dashboard is the way into everything.** After sign-in you land on it, and its **apps** grid opens each app:
 - Events
 - Proposal Studio

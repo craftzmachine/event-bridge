@@ -148,7 +148,7 @@ export default function App() {
           // the open proposal survives the sign-in, so it reopens afterwards; it stays full-screen, outside the shell
           <Builder key={open.id} proposal={open} onChange={store.save} onClose={() => setOpenId(null)} onReauth={() => reauth(route === "venues" || route === "dashboard" ? route : "studio")} />
         ) : (
-          <AppShell account={session.email} onSignOut={signOut}>
+          <AppShell account={session.email} onSignOut={signOut} proposals={store.list} hash={hash}>
             {route === "visualize" ? (
               <Visualize onReauth={() => reauth("visualize")} />
             ) : route === "expenses" ? (
