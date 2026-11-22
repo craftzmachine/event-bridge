@@ -4,6 +4,7 @@ import { useConfig } from "../config/context";
 import { uid } from "../state/proposals";
 import {
   clearEvent,
+  clearExpenses,
   deleteReceived,
   getProof,
   getReceived,
@@ -22,13 +23,12 @@ import {
   useEventExpenses,
   writeCustomCategories,
 } from "../state/expenses";
-import { DEFAULT_CATEGORIES, eventWindow, filterExpenses, flagsOf, maskUpi, payerLabel, summarise, type Expense, type ExpenseFilter, type ReviewState } from "../lib/expenses";
+import { filterExpenses, flagsOf, maskUpi, monthOf, monthsOf, payerLabel, summarise, type Expense, type ExpenseFilter, type ReviewState } from "../lib/expenses";
+import { bookFromProposal, categoriesFor, COMPANY_BOOK_ID, companyBook, monthLabel, packEvent, previousMonth, type Book } from "../lib/books";
 import { advanceAlerts, advanceState, balanceOf, canManage, defaultSettleBy, settlement, STATE_LABEL, type Advance } from "../lib/advances";
 import { applyReply, canReviewPack, dueText, handoverReceiptDoc, packData, packSummaryDoc, signOff, withReviews, type PackData, type ReceivedHandover, type SentHandover } from "../lib/handover";
 import { eventDates, proposalTitle } from "../lib/proposal";
 import { proposalStatus, statusLabel } from "../lib/status";
-import { functionsOf } from "../lib/functions";
-import { computeTotals } from "../lib/totals";
 import { formatDate, formatINR, formatINRShort, todayISO } from "../lib/format";
 import { saveBlob } from "../lib/files";
 import AppearanceControls from "../components/AppearanceControls";
@@ -38,13 +38,10 @@ import ProofThumb from "../components/ProofThumb";
 
 const FLAG_LABEL = { missingProof: "Proof missing", possibleDuplicate: "Check duplicate", queried: "Queried", rejected: "Rejected" } as const;
 
-function useCategories() {
+function useCategories(kind: Book["kind"]) {
   const { brand } = useConfig();
   const [custom, setCustom] = useState(readCustomCategories);
-  const team = brand.expenseCategories ?? [];
-  const all = [...DEFAULT_CATEGORIES.filter((c) => c.id !== "other"), ...team, ...custom, DEFAULT_CATEGORIES.find((c) => c.id === "other")!].filter(
-    (c, i, a) => a.findIndex((x) => x.id === c.id) === i,
-  );
+  const all = categoriesFor(kind, brand, custom);
   const add = (label: string) => {
     const name = label.trim();
     const existing = all.find((c) => c.label.toLowerCase() === name.toLowerCase());
@@ -58,29 +55,64 @@ function useCategories() {
   return { all, add };
 }
 
+// which side of the Events | Company switch this device last used
+const VIEW_KEY = "event-bridge.expenses-view.v1";
+function readView(): "events" | "company" {
+  try {
+    return localStorage.getItem(VIEW_KEY) === "company" ? "company" : "events";
+  } catch {
+    return "events";
+  }
+}
+
+/** Events | Company: the event ledgers, or the company's own expenses. */
+function ViewSwitch({ value }: { value: "events" | "company" }) {
+  const go = (v: "events" | "company") => {
+    try {
+      localStorage.setItem(VIEW_KEY, v);
+    } catch {
+      /* storage blocked: the switch still works for this visit */
+    }
+    location.hash = v === "company" ? `/expenses/${COMPANY_BOOK_ID}` : "/expenses";
+  };
+  return (
+    <div className="seg exp-switch" role="group" aria-label="Show expenses for">
+      <button type="button" className={value === "events" ? "is-on" : ""} aria-pressed={value === "events"} onClick={() => go("events")}>Events</button>
+      <button type="button" className={value === "company" ? "is-on" : ""} aria-pressed={value === "company"} onClick={() => go("company")}>Company</button>
+    </div>
+  );
+}
+
 /**
+ * #/expenses/company: the company's own expenses (office, fuel, marketing…), not tied to any proposal.
  * #/expenses: events with expenses and handovers waiting for review; #/expenses/<proposalId>: one event's ledger;
  * #/expenses/review/<handoverId>: reviewing a handover received from a colleague.
  */
 export default function Expenses({ path, proposals, account, onBack }: { path: string[]; proposals: Proposal[]; account: string; onBack: () => void }) {
-  const { brand } = useConfig();
-  const p = path[0] && path[0] !== "review" ? proposals.find((x) => x.id === path[0]) : undefined;
+  const { brand, catalog } = useConfig();
+  const company = path[0] === COMPANY_BOOK_ID;
+  const p = path[0] && path[0] !== "review" && !company ? proposals.find((x) => x.id === path[0]) : undefined;
+  const book = useMemo(() => (company ? companyBook(brand) : p ? bookFromProposal(p, catalog, brand) : undefined), [company, p, catalog, brand]);
+  // whoever last chose Company lands on it
+  useEffect(() => {
+    if (!path[0] && readView() === "company") location.replace(`#/expenses/${COMPANY_BOOK_ID}`);
+  }, [path[0]]);
   return (
     <div className="exp-page">
       <header className="topbar">
         <button className="btn-ghost btn-sm" onClick={onBack} aria-label="Back">←<span className="hide-phone"> Back</span></button>
         <img className="topbar-logo" src={`${import.meta.env.BASE_URL}${brand.logo}`} alt={brand.company} />
         <div className="topbar-title">
-          <span className="eyebrow">Event expenses</span>
-          <strong>{p ? p.client.name || "Untitled client" : path[0] === "review" ? "Handover review" : "Expenses"}</strong>
+          <span className="eyebrow">{company ? "Company expenses" : "Event expenses"}</span>
+          <strong>{book ? book.title : path[0] === "review" ? "Handover review" : "Expenses"}</strong>
         </div>
         <AppearanceControls />
       </header>
       <main className="exp-main">
         {path[0] === "review" && path[1] ? (
           <Review id={path[1]} account={account} />
-        ) : p ? (
-          <Ledger p={p} account={account} />
+        ) : book ? (
+          <Ledger key={book.id} book={book} account={account} />
         ) : path[0] ? (
           <div className="empty-state"><p>That proposal isn't on this device. Expenses are kept on the device they were recorded on.</p><a className="btn-ghost" href="#/expenses">All events</a></div>
         ) : (
@@ -138,7 +170,11 @@ function Index({ proposals, account }: { proposals: Proposal[]; account: string 
   // money still with staff on each event: what's left on its open advances
   const withStaff = new Map<string, number>();
   for (const a of advances) if (!a.closed) withStaff.set(a.eventId, (withStaff.get(a.eventId) ?? 0) + Math.max(balanceOf(a, all).left, 0));
+  const companyOut = withStaff.get(COMPANY_BOOK_ID) ?? 0;
+  withStaff.delete(COMPANY_BOOK_ID);
   const outTotal = [...withStaff.values()].reduce((t, n) => t + n, 0);
+  const thisMonth = monthOf(todayISO());
+  const companyMonth = summarise((byEvent.get(COMPANY_BOOK_ID) ?? []).filter((e) => monthOf(e.paidOn) === thisMonth));
   // accepted events first, then any with expenses, then the rest
   const events = [...proposals]
     .filter((x) => proposalStatus(x) !== "lost" || byEvent.has(x.id))
@@ -148,9 +184,14 @@ function Index({ proposals, account }: { proposals: Proposal[]; account: string 
     <>
       <div className="exp-head">
         <div>
+          <ViewSwitch value="events" />
           <h1>Event expenses</h1>
           <p className="lede">Record what's spent on each wedding with its proof, then hand it over to a colleague to check.</p>
           {outTotal > 0 && <p className="adv-out">{formatINR(outTotal)} is with staff on open advances, across {withStaff.size} event{withStaff.size === 1 ? "" : "s"}.</p>}
+          <p className="adv-out">
+            <a className="link-btn" href={`#/expenses/${COMPANY_BOOK_ID}`}>Company expenses</a>: {formatINR(companyMonth.total)} in {monthLabel(thisMonth)}
+            {companyOut > 0 && `, and ${formatINR(companyOut)} with staff`}.
+          </p>
         </div>
         <div className="exp-head-tools">
           <button className="btn-ghost" onClick={() => fileRef.current?.click()}>Receive a handover</button>
@@ -212,34 +253,39 @@ function Index({ proposals, account }: { proposals: Proposal[]; account: string 
 
 // ---- #/expenses/<proposalId> -----------------------------------------------------------------------------------
 
-function Ledger({ p, account }: { p: Proposal; account: string }) {
-  const { catalog, brand } = useConfig();
-  const { list, error, refresh, save } = useEventExpenses(p.id);
-  const adv = useEventAdvances(p.id);
-  const cats = useCategories();
+function Ledger({ book, account }: { book: Book; account: string }) {
+  const { brand } = useConfig();
+  const company = book.kind === "company";
+  const { list, error, refresh, save } = useEventExpenses(book.id);
+  const adv = useEventAdvances(book.id);
+  const cats = useCategories(book.kind);
+  const thisMonth = monthOf(todayISO());
   const [editing, setEditing] = useState<Expense | "new" | null>(null);
   const [opened, setOpened] = useState<Advance | "new" | null>(null);
-  const [filter, setFilter] = useState<ExpenseFilter>({});
+  // the company ledger opens on this month; an event's shows everything
+  const [filter, setFilter] = useState<ExpenseFilter>(company ? { month: thisMonth } : {});
   const [handover, setHandover] = useState(false);
-  const event: ExpenseEventInfo = useMemo(
-    () => ({ id: p.id, ref: p.ref, functions: functionsOf(p).map(({ id, label }) => ({ id, label })), window: eventWindow(eventDates(p)) }),
-    [p],
-  );
+  const event: ExpenseEventInfo = useMemo(() => ({ id: book.id, ref: book.ref, functions: book.functions, window: book.window }), [book]);
   const all = list ?? [];
-  const s = summarise(all);
+  // the month's expenses (removed ones too, for the "Removed" filter and the handover's record)
+  const scoped = filter.month ? all.filter((e) => monthOf(e.paidOn) === filter.month) : all;
+  const s = summarise(scoped);
+  const months = summarise(all).byMonth;
+  const monthTotal = (m: string) => months.find((x) => x.month === m)?.total ?? 0;
+  const yearSoFar = months.filter((x) => x.month.slice(0, 4) === thisMonth.slice(0, 4) && x.month <= thisMonth).reduce((t, x) => t + x.total, 0);
   const shown = filterExpenses(all, filter);
   const catLabel = (id: string) => cats.all.find((c) => c.id === id)?.label ?? id;
   const fnLabel = (id?: string) => event.functions.find((f) => f.id === id)?.label;
   const vendors = [...new Set(all.map((e) => e.vendor).filter(Boolean))].sort();
-  const quoted = computeTotals(p, brand.gstPct).grandTotal;
 
   return (
     <>
       <div className="exp-head">
         <div>
-          <h1>{p.client.name || "Untitled client"}</h1>
+          {company && <ViewSwitch value="company" />}
+          <h1>{book.title}</h1>
           <p className="lede">
-            {proposalTitle(p, catalog) || "Occasion not set"} · {eventDates(p).length ? eventDates(p).map(formatDate).join(", ") : "date to be confirmed"} · quotation {p.ref}
+            {company ? book.subtitle : `${book.subtitle} · ${book.dates.length ? book.dates.map(formatDate).join(", ") : "date to be confirmed"} · quotation ${book.ref}`}
           </p>
         </div>
         <div className="exp-head-tools">
@@ -251,11 +297,21 @@ function Ledger({ p, account }: { p: Proposal; account: string }) {
       {error && <p className="error" role="alert">{error}</p>}
 
       <section className="dash-kpis" aria-label="Spending so far">
-        <div className="dash-kpi">
-          <span>Spent so far</span>
-          <strong>{formatINRShort(s.total)}</strong>
-          <small>{s.count} expense{s.count === 1 ? "" : "s"} · the quote is {formatINRShort(quoted)} (for reference)</small>
-        </div>
+        {company ? (
+          <div className="dash-kpi">
+            <span>{filter.month ? `Spent in ${monthLabel(filter.month)}` : "Spent, all months"}</span>
+            <strong>{formatINRShort(s.total)}</strong>
+            <small>
+              {s.count} expense{s.count === 1 ? "" : "s"} · {monthLabel(previousMonth(filter.month ?? thisMonth))} {formatINRShort(monthTotal(previousMonth(filter.month ?? thisMonth)))} · {thisMonth.slice(0, 4)} so far {formatINRShort(yearSoFar)}
+            </small>
+          </div>
+        ) : (
+          <div className="dash-kpi">
+            <span>Spent so far</span>
+            <strong>{formatINRShort(s.total)}</strong>
+            <small>{s.count} expense{s.count === 1 ? "" : "s"} · the quote is {formatINRShort(book.quoted ?? 0)} (for reference)</small>
+          </div>
+        )}
         <div className="dash-kpi">
           <span>Needs attention</span>
           <strong>{s.missingProof + s.duplicates + s.queried}</strong>
@@ -273,7 +329,13 @@ function Ledger({ p, account }: { p: Proposal; account: string }) {
 
       {adv.list.length > 0 && <Advances list={adv.list} expenses={all} account={account} onOpen={setOpened} />}
 
-      <div className="exp-filters">
+      <div className={`exp-filters${company ? " has-month" : ""}`}>
+        {company && (
+          <select aria-label="Month" value={filter.month ?? ""} onChange={(e) => setFilter({ ...filter, month: e.target.value || undefined })}>
+            {monthsOf(all, thisMonth).map((m) => <option key={m} value={m}>{monthLabel(m)}</option>)}
+            <option value="">All months</option>
+          </select>
+        )}
         <input type="search" placeholder="Search vendor, item, UPI ref, amount" aria-label="Search expenses" value={filter.q ?? ""} onChange={(e) => setFilter({ ...filter, q: e.target.value })} />
         <select aria-label="Category" value={filter.category ?? ""} onChange={(e) => setFilter({ ...filter, category: e.target.value || undefined })}>
           <option value="">All categories</option>
@@ -296,7 +358,11 @@ function Ledger({ p, account }: { p: Proposal; account: string }) {
         <p className="hint" role="status">Loading…</p>
       ) : shown.length === 0 ? (
         <div className="empty-state">
-          <p>{all.length ? "No expenses match." : "No expenses yet. Add the first one with its GPay screenshot or a photo of the receipt."}</p>
+          <p>
+            {all.length
+              ? company && filter.month && !scoped.length ? `No company expenses in ${monthLabel(filter.month)} yet.` : "No expenses match."
+              : company ? "No company expenses yet. Add rent, fuel, ads or wages with the bill or GPay screenshot." : "No expenses yet. Add the first one with its GPay screenshot or a photo of the receipt."}
+          </p>
         </div>
       ) : (
         <ul className="exp-list">
@@ -342,7 +408,7 @@ function Ledger({ p, account }: { p: Proposal; account: string }) {
       {opened && (
         <AdvanceDialog
           key={opened === "new" ? "new" : opened.id}
-          event={{ ...event, settleBy: defaultSettleBy(eventDates(p)) }}
+          event={{ ...event, settleBy: defaultSettleBy(book.dates) }}
           advance={opened === "new" ? undefined : opened}
           advances={adv.list}
           expenses={all}
@@ -353,7 +419,7 @@ function Ledger({ p, account }: { p: Proposal; account: string }) {
           onClose={() => setOpened(null)}
         />
       )}
-      {handover && <Handover p={p} list={all} advances={adv.list} account={account} categories={cats.all} onDone={() => { refresh(); adv.refresh(); }} onClose={() => setHandover(false)} />}
+      {handover && <Handover book={book} month={company ? filter.month : undefined} list={scoped} advances={adv.list} account={account} categories={cats.all} onDone={() => { refresh(); adv.refresh(); }} onClose={() => setHandover(false)} />}
     </>
   );
 }
@@ -405,8 +471,9 @@ function Advances({ list, expenses, account, onOpen }: { list: Advance[]; expens
 
 // ---- preparing a handover (the recorder) --------------------------------------------------------------------------
 
-function Handover({ p, list, advances, account, categories, onDone, onClose }: { p: Proposal; list: Expense[]; advances: Advance[]; account: string; categories: { id: string; label: string }[]; onDone: () => void; onClose: () => void }) {
-  const { catalog, brand } = useConfig();
+function Handover({ book, month, list, advances, account, categories, onDone, onClose }: { book: Book; month?: string; list: Expense[]; advances: Advance[]; account: string; categories: { id: string; label: string }[]; onDone: () => void; onClose: () => void }) {
+  const { brand } = useConfig();
+  const event = packEvent(book, month);
   const ref = useRef<HTMLDialogElement>(null);
   const replyRef = useRef<HTMLInputElement>(null);
   const [note, setNote] = useState("");
@@ -418,8 +485,9 @@ function Handover({ p, list, advances, account, categories, onDone, onClose }: {
   useEffect(() => {
     const d = ref.current;
     if (d && !d.open) d.showModal();
-    listSent(p.id).then(setSent).catch(() => {});
-  }, [p.id]);
+    // a company handover covers one month, so only that month's are shown
+    listSent(book.id).then((x) => setSent(book.kind === "company" ? x.filter((h) => h.month === month) : x)).catch(() => {});
+  }, [book.id, book.kind, month]);
 
   async function create() {
     setBusy("Making the handover file…");
@@ -428,7 +496,7 @@ function Handover({ p, list, advances, account, categories, onDone, onClose }: {
       const id = `h-${uid()}`;
       const pack: PackData = packData({
         id,
-        event: { id: p.id, ref: p.ref, client: p.client.name, title: proposalTitle(p, catalog) || "Event", dates: eventDates(p), venue: p.client.venue, functions: functionsOf(p).map(({ id, label }) => ({ id, label })) },
+        event,
         from: account,
         note: note.trim(),
         categories,
@@ -443,8 +511,8 @@ function Handover({ p, list, advances, account, categories, onDone, onClose }: {
       const [{ buildPack }, { renderPdf }] = await Promise.all([import("../lib/handoverPack"), import("../lib/exportPdf")]);
       const summary = await renderPdf(brand, (logo) => packSummaryDoc(pack, brand, logo));
       const zip = await buildPack(pack, images, summary);
-      saveBlob(zip, `Expenses_${p.ref}_${todayISO()}.zip`);
-      const h: SentHandover = { id, eventId: p.id, from: account, createdAt: pack.createdAt, expenseIds: live.map((e) => e.id), total: s.total, state: "sent" };
+      saveBlob(zip, `Expenses_${event.ref}_${todayISO()}.zip`);
+      const h: SentHandover = { id, eventId: book.id, from: account, createdAt: pack.createdAt, expenseIds: live.map((e) => e.id), total: s.total, state: "sent", month };
       await putSent(h);
       setSent((x) => [h, ...x]);
       setMsg("Downloaded. Send the file to the colleague who'll review it, then import their reply here.");
@@ -477,7 +545,7 @@ function Handover({ p, list, advances, account, categories, onDone, onClose }: {
   return (
     <dialog ref={ref} className="venue-dialog xi" onClose={onClose} aria-labelledby="ho-title">
       <header className="xi-head">
-        <h2 id="ho-title">Hand over the expenses</h2>
+        <h2 id="ho-title">{book.kind === "company" ? `Hand over ${month ? monthLabel(month) : "all company expenses"}` : "Hand over the expenses"}</h2>
         <button className="vd-close" onClick={onClose} aria-label="Close">×</button>
       </header>
       <div className="xi-body">
@@ -512,8 +580,13 @@ function Handover({ p, list, advances, account, categories, onDone, onClose }: {
           <input ref={replyRef} type="file" accept=".json,application/json" hidden onChange={(e) => importReply(e.target.files?.[0])} />
           {last?.state === "reconciled" && (
             <button className="btn-ghost" onClick={async () => {
-              if (!confirm("Remove this event's expenses and screenshots from this device? Keep the handover file as the record.")) return;
-              await clearEvent(p.id);
+              if (book.kind === "company") {
+                if (!confirm(`Remove the ${last.expenseIds.length} handed-over company expenses and their screenshots from this device? Keep the handover file as the record.`)) return;
+                await clearExpenses(book.id, last.expenseIds);
+              } else {
+                if (!confirm("Remove this event's expenses and screenshots from this device? Keep the handover file as the record.")) return;
+                await clearEvent(book.id);
+              }
               onDone();
               onClose();
             }}>Clear from this device</button>

@@ -1715,6 +1715,9 @@ body::before {
 .exp-split { font-size: 13px; color: var(--ink-2); line-height: 1.6; }
 .exp-filters { display: grid; grid-template-columns: minmax(0, 2fr) repeat(3, minmax(0, 1fr)); gap: 8px; }
 .exp-filters input, .exp-filters select { min-height: 40px; min-width: 0; }
+.exp-filters.has-month { grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) repeat(3, minmax(0, 1fr)); }
+.exp-switch { display: flex; width: max-content; margin-bottom: 12px; }
+.exp-switch button { min-width: 96px; font-size: 13.5px; }
 .exp-list, .exp-events, .exp-review { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
 .exp-list li { border-top: 1px solid var(--line); }
 .exp-list li:last-child { border-bottom: 1px solid var(--line); }
@@ -1779,8 +1782,10 @@ body::before {
 .exp-review-body input { margin-top: 6px; }
 .topbar-link { margin-left: auto; }
 @media (max-width: 760px) {
-  .exp-filters { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .exp-filters, .exp-filters.has-month { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
   .exp-filters input { grid-column: 1 / -1; }
+  .exp-switch { width: 100%; }
+  .exp-switch button { flex: 1; }
   .exp-grid { grid-template-columns: minmax(0, 1fr); }
   .exp-row { grid-template-columns: 44px minmax(0, 1fr) auto; gap: 10px; }
   .exp-row .proof-thumb { width: 44px; height: 44px; }

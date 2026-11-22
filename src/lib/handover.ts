@@ -44,6 +44,8 @@ export interface SentHandover {
   createdAt: string;
   expenseIds: string[];
   total: number;
+  /** "YYYY-MM": a company handover covers one month */
+  month?: string;
   state: "sent" | "reconciled" | "returned";
   reviewer?: string;
   signedAt?: string;

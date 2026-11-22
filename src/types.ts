@@ -63,6 +63,8 @@ export interface Brand {
   balanceDueDays?: number;
   /** expense categories for the whole team, added to the defaults (Purchases, Ceremonial, Travel…) */
   expenseCategories?: { id: string; label: string }[];
+  /** company expense categories, added to the defaults (Office & rent, Utilities, Fuel & travel…) */
+  companyExpenseCategories?: { id: string; label: string }[];
   /** sign-in emails allowed to give, settle and close staff advances; when missing, anyone signed in can */
   advanceManagers?: string[];
 }
