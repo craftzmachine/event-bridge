@@ -5,7 +5,7 @@ import SiteNav from "../components/SiteNav";
 import { computeTotals } from "../lib/totals";
 import { formatINRShort } from "../lib/format";
 import heroPhoto from "../assets/_JKN4027.webp";
-import letterPhoto from "../assets/J_J09260.webp";
+import letterPhoto from "../assets/JK_05098.webp";
 
 /**
  * Public entry point of Event Bridge: what the app is, and its feature apps — Proposal Studio first.

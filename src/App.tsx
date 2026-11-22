@@ -17,7 +17,6 @@ const Expenses = lazy(() => import("./pages/Expenses"));
 const Events = lazy(() => import("./pages/Events"));
 import ClientView from "./pages/ClientView";
 import AppShell from "./components/AppShell";
-import { navCurrent } from "./lib/nav";
 import { endSession, readSession, SERVER_SIGNIN, startSession, type Session } from "./auth/auth";
 import { ApiError, api } from "./lib/api";
 
@@ -39,7 +38,7 @@ const go = (r: Exclude<Route, "view">) => {
   window.location.hash = r === "landing" ? "/" : `/${r}`;
 };
 // where to land after signing in, when sign-in interrupted the way to a feature app
-let returnTo: AppRoute = "studio";
+let returnTo: AppRoute = "dashboard";
 
 export default function App() {
   const [config, setConfig] = useState<Loaded | null>(null);
@@ -89,7 +88,7 @@ export default function App() {
       returnTo = route as AppRoute;
       go("login");
     } else if (route === "login" && session) go(returnTo);
-    else if (session && route === returnTo) returnTo = "studio";
+    else if (session && route === returnTo) returnTo = "dashboard";
   }, [route, session]);
 
   // braces matter: newer browsers return a Promise from scrollTo, which React would treat as a cleanup
@@ -144,7 +143,7 @@ export default function App() {
           // the open proposal survives the sign-in, so it reopens afterwards; it stays full-screen, outside the shell
           <Builder key={open.id} proposal={open} onChange={store.save} onClose={() => setOpenId(null)} onReauth={() => reauth(route === "venues" || route === "dashboard" ? route : "studio")} />
         ) : (
-          <AppShell current={navCurrent(hash) ?? "studio"} account={session.email} onSignOut={signOut}>
+          <AppShell account={session.email} onSignOut={signOut}>
             {route === "visualize" ? (
               <Visualize onReauth={() => reauth("visualize")} />
             ) : route === "expenses" ? (

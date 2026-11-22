@@ -17,6 +17,9 @@ import { calendarMonth, gridRange, shiftMonth } from "../lib/calendar";
 import { schedule } from "../lib/payments";
 import { eventDates, proposalTitle } from "../lib/proposal";
 import PageHeader from "../components/PageHeader";
+import Icon from "../components/icons";
+import { APPS, type AppItem } from "../lib/nav";
+import { proposalStatus } from "../lib/status";
 
 const month = (d: Date) => d.toLocaleString("en-GB", { month: "long" });
 const pct = (x: number | null) => (x === null ? "—" : `${Math.round(x * 100)}%`);
@@ -26,6 +29,27 @@ const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 function versus(now: number, last: number, lastMonth: string) {
   if (Math.round(now) === Math.round(last)) return `the same as ${lastMonth}`;
   return `${formatINRShort(Math.abs(now - last))} ${now > last ? "more" : "less"} than ${lastMonth}`;
+}
+
+/** The way into every app: there's no menu, so each one is a tile here, with a live line. */
+function AppTiles({ live }: { live: Partial<Record<AppItem["id"], string>> }) {
+  return (
+    <section aria-labelledby="dash-apps-title">
+      <h2 id="dash-apps-title" className="sr-only">Apps</h2>
+      <ul className="dash-apps">
+        {APPS.map((a) => (
+          <li key={a.id}>
+            <a className="dash-app" href={a.href}>
+              <span className="dash-app-icon"><Icon name={a.icon} size={22} /></span>
+              <strong>{a.label}</strong>
+              <span>{a.description}</span>
+              {live[a.id] && <small>{live[a.id]}</small>}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
 }
 
 /** "Good morning, Planner": the part of the sign-in email before any dot, dash, digit or @ */
@@ -78,6 +102,7 @@ export default function Dashboard({ list, account, onOpen, onNew }: { list: Prop
   const margin = marginThisMonth(list, brand.gstPct, now);
   const sold = selling(list, catalog, brand.gstPct);
   const lateTasks = overdueAcross(list, today);
+  const upcomingEvents = eventsFor(list, "upcoming", today);
   const next = eventsFor(list, "upcoming", today).filter((p) => eventDates(p).length).slice(0, 4);
   const lastName = month(m.lastMonth);
 
@@ -121,6 +146,15 @@ export default function Dashboard({ list, account, onOpen, onNew }: { list: Prop
       />
 
       <main className="dash-main">
+        <AppTiles
+          live={{
+            events: upcomingEvents.length ? `${upcomingEvents.length} coming up · ${week.length} function${week.length === 1 ? "" : "s"} this week` : "No events coming up",
+            studio: `${list.length} proposal${list.length === 1 ? "" : "s"} · ${list.filter((p) => proposalStatus(p) === "draft").length} draft${list.filter((p) => proposalStatus(p) === "draft").length === 1 ? "" : "s"}`,
+            expenses: `${formatINRShort(company.total)} company spending in ${monthLabel(monthOf(today))}`,
+            venues: `${venues.venues.length} venues`,
+            visualize: linkInfo === "ok" ? `${shares?.length ?? 0} shared link${shares?.length === 1 ? "" : "s"}` : "Needs the sharing server",
+          }}
+        />
         {list.length === 0 ? (
           <div className="empty-state">
             <p>No proposals on this device yet. Start one and it shows up here.</p>
