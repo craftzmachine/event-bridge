@@ -1,7 +1,8 @@
 import { createContext, useContext } from "react";
-import type { Brand, Catalog, CatalogElement, ProposalPackage, VenueDirectory } from "../types";
+import type { Brand, Catalog, CatalogElement, ChecklistTemplate, ProposalPackage, VenueDirectory } from "../types";
 
-export const ConfigContext = createContext<{ catalog: Catalog; brand: Brand; venues: VenueDirectory; packages: ProposalPackage[] } | null>(null);
+/** `checklists`: the team's from checklists.json; missing means the built-in list (DEFAULT_CHECKLIST) */
+export const ConfigContext = createContext<{ catalog: Catalog; brand: Brand; venues: VenueDirectory; packages: ProposalPackage[]; checklists?: ChecklistTemplate[] } | null>(null);
 
 export function useConfig() {
   const c = useContext(ConfigContext);

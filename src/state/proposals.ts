@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import type { Brand, CatalogElement, Line, Proposal } from "../types";
 import { generateQuoteRef, QUOTE_REF_PATTERN } from "../lib/quoteRef";
+import { resetChecklist } from "../lib/checklist";
 import type { BackupState } from "../lib/backup";
 
 const KEY = "proposal-builder.proposals.v1";
@@ -102,6 +103,11 @@ export function useProposals() {
     setList((l) => (l.some((x) => x.id === p.id) ? l.map((x) => (x.id === p.id ? next : x)) : [next, ...l]));
   }, []);
   const remove = useCallback((id: string) => setList((l) => l.filter((x) => x.id !== id)), []);
+  /** A change built on the latest saved version, so quick successive edits (ticking tasks) don't overwrite each other. */
+  const update = useCallback((id: string, fn: (p: Proposal) => Proposal) => {
+    const at = new Date().toISOString();
+    setList((l) => l.map((x) => (x.id === id ? { ...fn(x), updatedAt: at } : x)));
+  }, []);
   const duplicate = useCallback(
     (p: Proposal) => {
       const now = new Date();
@@ -117,6 +123,8 @@ export function useProposals() {
         statusAt: undefined,
         sentAt: undefined,
         shareId: undefined,
+        // the copy keeps the checklist's tasks, all to do again
+        checklist: resetChecklist(p.checklist),
         // the copy keeps the payment plan, not the payments
         payments: p.payments?.plan ? { plan: p.payments.plan.map((m) => ({ ...m, due: "" })), received: [] } : undefined,
       };
@@ -134,7 +142,7 @@ export function useProposals() {
   }, []);
   const refs = list.map((p) => p.ref);
 
-  return { list, refs, save, remove, duplicate, importMany };
+  return { list, refs, save, update, remove, duplicate, importMany };
 }
 
 export function downloadJson(name: string, data: unknown) {

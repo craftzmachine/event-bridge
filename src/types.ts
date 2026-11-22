@@ -166,6 +166,31 @@ export interface ProposalPackage {
   notes?: string;
 }
 
+/** One task on a wedding's checklist: due on a fixed date, or N days before the first event date (negative: after). */
+export interface ChecklistItem {
+  id: string;
+  title: string;
+  /** YYYY-MM-DD; wins over offsetDays */
+  due?: string;
+  offsetDays?: number;
+  /** who has to do it: the team, or the family */
+  owner: "team" | "client";
+  state: "todo" | "doing" | "done";
+  done?: { at: string; by: string };
+  notes?: string;
+}
+
+/** A checklist task the team starts every wedding with (public/config/checklists.json, or the built-in list). */
+export interface ChecklistTemplate {
+  id: string;
+  title: string;
+  offsetDays: number;
+  owner: "team" | "client";
+  /** like catalogue elements: missing or ["*"] means every event type / ceremony style */
+  eventTypes?: string[];
+  ceremonyStyles?: string[];
+}
+
 /** One function of a multi-function celebration: Haldi, Mehendi, Muhurtham, Reception… */
 export interface EventFunction {
   id: string;
@@ -217,6 +242,8 @@ export interface Proposal {
   eventType: string | null;
   style: string | null;
   lines: Line[];
+  /** the wedding's to-do list, timed back from the first event date; internal, never on client outputs */
+  checklist?: ChecklistItem[];
   coordinationPct: number;
   /** null = no round-off; otherwise the Grand Total quoted to the client */
   grandTotal: number | null;

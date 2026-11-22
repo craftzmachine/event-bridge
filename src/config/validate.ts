@@ -1,4 +1,4 @@
-import type { Brand, Catalog, ProposalPackage, VenueDirectory } from "../types";
+import type { Brand, Catalog, ChecklistTemplate, ProposalPackage, VenueDirectory } from "../types";
 
 /** Returns readable problems with an edited catalog.json; empty when it is fine. */
 export function validateCatalog(c: unknown): string[] {
@@ -97,6 +97,26 @@ export function validatePackages(x: unknown, catalog: Catalog): string[] {
         errs.push(`${at} line ${j + 1} needs a "name", a numeric "qty" and a numeric "rate" (or null).`);
       else if (!cats.has(l.category)) errs.push(`${at} line "${l.name}" has unknown category "${l.category}".`);
     });
+  });
+  return errs;
+}
+
+/** checklists.json: { "items": [{ id, title, offsetDays, owner: "team" | "client", eventTypes?, ceremonyStyles? }] } */
+export function validateChecklists(x: unknown): string[] {
+  const list = (x as { items?: unknown })?.items;
+  if (!x || typeof x !== "object" || !Array.isArray(list)) return [`checklists.json needs an "items" list.`];
+  const errs: string[] = [];
+  const ids = new Set<string>();
+  (list as ChecklistTemplate[]).forEach((t, i) => {
+    const at = t?.id ? `Checklist task "${t.id}"` : `Checklist task #${i + 1}`;
+    if (!t?.id) errs.push(`${at} has no "id".`);
+    else if (ids.has(t.id)) errs.push(`Checklist task id "${t.id}" is used twice.`);
+    else ids.add(t.id);
+    if (!t?.title) errs.push(`${at} has no "title".`);
+    if (typeof t?.offsetDays !== "number" || !Number.isInteger(t.offsetDays)) errs.push(`${at} needs "offsetDays", whole days before the first event date (negative for after).`);
+    if (t?.owner !== "team" && t?.owner !== "client") errs.push(`${at} needs "owner": "team" or "client".`);
+    for (const k of ["eventTypes", "ceremonyStyles"] as const)
+      if (t?.[k] !== undefined && (!Array.isArray(t[k]) || t[k]!.some((v) => typeof v !== "string"))) errs.push(`${at} "${k}" must be a list of ids.`);
   });
   return errs;
 }
