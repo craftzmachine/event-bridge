@@ -20,6 +20,7 @@ import { clientAnswers, type Share } from "../lib/shares";
 import { mergePortalAnswers } from "../lib/portal";
 import PageHeader from "../components/PageHeader";
 import Checklist from "../components/Checklist";
+import CoordinationSheet from "../components/CoordinationSheet";
 import PaymentsCard from "../components/PaymentsCard";
 import ClientAnswer from "../components/ClientAnswer";
 import SentQuestionnaires from "../components/SentQuestionnaires";
@@ -28,10 +29,11 @@ import SentQuestionnaires from "../components/SentQuestionnaires";
 const EventLedger = lazy(() => import("./Expenses").then((m) => ({ default: m.EventLedger })));
 
 type Store = ReturnType<typeof useProposals>;
-type Tab = "overview" | "checklist" | "questionnaires" | "payments" | "expenses" | "proposal";
+type Tab = "overview" | "checklist" | "coordination" | "questionnaires" | "payments" | "expenses" | "proposal";
 const TABS: { id: Tab; label: string }[] = [
   { id: "overview", label: "Overview" },
   { id: "checklist", label: "Checklist" },
+  { id: "coordination", label: "Coordination" },
   { id: "questionnaires", label: "Questionnaires" },
   { id: "payments", label: "Payments" },
   { id: "expenses", label: "Expenses" },
@@ -152,6 +154,7 @@ function Workspace({ p, tab, store, account, onOpen }: { p: Proposal; tab: Tab; 
       <main className="ev-main">
         {tab === "overview" && <Overview p={p} today={today} />}
         {tab === "checklist" && <Checklist p={p} account={account} onUpdate={update} />}
+        {tab === "coordination" && <CoordinationSheet key={p.id} p={p} onUpdate={update} />}
         {tab === "questionnaires" && <SentQuestionnaires p={p} onUpdate={update} />}
         {tab === "payments" && <PaymentsCard p={p} set={setPatch} />}
         {tab === "expenses" && (

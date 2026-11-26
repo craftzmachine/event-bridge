@@ -103,7 +103,7 @@ Photos must show the actual venue and be licensed for commercial use: CC BY, CC 
 - **WhatsApp** (`src/lib/whatsapp.ts`): `waNumber` reads Indian mobiles typed with or without +91, and `waLink` builds a `wa.me` link. These only open WhatsApp; the app never sends anything.
 - **Events and their workspace** (`src/pages/Events.tsx`, lazy; `src/lib/events.ts`, `events.test.ts`):
   - **List:** `eventsFor(list, tab, today)` gives accepted or dated proposals that aren't lost (lost ones only under All), with upcoming soonest first and past most recent first. `countdown` gives "In 12 days", "On now", "3 days ago".
-  - **Tabs:** `#/events/<id>/<tab>`: overview, checklist, payments (the Builder's `PaymentsCard`, with a `set` that goes through `store.update`), expenses (`EventLedger`, exported by the lazy `Expenses.tsx`) and proposal.
+  - **Tabs:** `#/events/<id>/<tab>`: overview, checklist, coordination, payments (the Builder's `PaymentsCard`, with a `set` that goes through `store.update`), expenses (`EventLedger`, exported by the lazy `Expenses.tsx`) and proposal.
   - **Edits** from these pages use `useProposals().update(id, fn)`, which builds on the latest saved list (the functional-update lesson).
 - **Wedding checklist** (`Proposal.checklist`, `src/lib/checklist.ts`, `src/components/Checklist.tsx`, `checklist.test.ts`):
   - **Tasks:** each has `due` (a fixed date) or `offsetDays` before `eventDates(p)[0]` (negative for after), an owner (`team` | `client`) and a state (`todo` | `doing` | `done`, where `done` records who and when).
@@ -111,6 +111,12 @@ Photos must show the actual venue and be licensed for commercial use: CC BY, CC 
     - `getOptionalJson` treats an HTML answer as missing, because the Vite dev server serves the app page for unknown paths.
   - **Logic:** `bucketOf` (overdue, week, later, undated, done), `progress` and `overdueAcross`.
   - **Copies and clients:** `duplicate` resets the checklist (`resetChecklist`). `pageSnapshot` never includes it (tested).
+- **On-site coordination sheet** (`Proposal.coordination`, `src/lib/coordination.ts`, `src/components/CoordinationSheet.tsx`, PDF in `src/lib/exportCoordination.ts`, `coordination.test.ts`):
+  - **Source:** the team's Word form "On-Site Event Coordination & Responsibility Sheet". Its fixed wording (hostess stations, default cues, duties per kind, readiness, escalation, handover) lives as constants in `coordination.ts`; keep the UI and PDF in step with it.
+  - **Data:** one `CoordinationSheet` per function, keyed by `fnId` (`""` when the proposal has no functions; `sheetFunctions` gives the stand-in). Read with `sheetFor(p, fn)`, which fills in a new sheet from the proposal (`newSheet`: client, function and date, `venueLine`, guests; nothing else) or completes an older saved one. Write with `setSheet` inside `store.update`.
+  - **Kind:** `guessKind` picks the duties block (hindu, reception, sangeet, other) from the function's label and the ceremony style; the coordinator can change it.
+  - **PDF:** `buildCoordinationDoc` is pure (A4, one sheet per page run, blank fields as empty ruled cells, drawn checkboxes because Roboto has no ☐), lazy-loaded through `downloadCoordination` like the receipt.
+  - **Internal:** never in `pageSnapshot`/`portalSnapshot` (tested), and `duplicate` drops it.
 - **Office apps:** CRM, Tasks, Vendors and Questionnaires keep their lists in localStorage through `useStoredList` in `src/state/local.ts` (a functional `update`, JSON export/import with `downloadList`/`readListFile`). Like proposals, they stay on one device.
   - **Vendor rolodex** (`#/vendors`; `src/lib/vendors.ts`, `src/state/vendors.ts`, `vendors.test.ts`):
     - **Storage:** `event-bridge.vendors.v1`, plus the optional read-only team list `public/config/vendors.json` (`validateVendors`, `ConfigContext.teamVendors`).

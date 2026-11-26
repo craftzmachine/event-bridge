@@ -5,7 +5,7 @@
 | App | What it's for |
 |---|---|
 | **Dashboard** | today at a glance: upcoming events, money waiting and received, and everything that needs attention |
-| **Events** | every wedding in play, each with a workspace: overview, checklist, questionnaires, payments, expenses |
+| **Events** | every wedding in play, each with a workspace: overview, checklist, on-site coordination sheet, questionnaires, payments, expenses |
 | **Proposal Studio** | build tailored proposals and export a branded Excel workbook or a client-ready PDF |
 | **CRM** | enquiries from first message to booking, and the clients behind your proposals |
 | **Tasks** | the team's tasks and every wedding's checklist, as a list, board or calendar |
@@ -149,6 +149,7 @@ Duplicating a proposal starts the copy as a draft, with the payment plan but no 
   - **Views:** **List** groups tasks as Overdue, This week, Later, No date and Done; **Board** has To do, Doing and Done columns, with buttons to move cards. Ticking a task records who and when.
   - **Changing tasks:** **Add a task**, **Edit** and **Delete**.
   - A duplicated proposal starts its checklist again, and the checklist never appears on anything the client sees.
+- **Coordination:** the On-Site Event Coordination & Responsibility Sheet, one per function. The proposal fills in the client, function and date, venue and guest count; coordinators fill in the contacts, team (C1–C3), hostesses H1–H6, the timeline, readiness checks, the live issue log and the post-event handover. **Responsibilities for** picks the duties printed in section 5 (Hindu wedding, Reception, Sangeet or Other). **Export PDF** prints that function's sheet (or **Export all functions**) in the company branding, with blank fields left as ruled boxes to finish by hand. It's internal: never on anything the client sees, and a duplicated proposal starts without it.
 - **Payments:** the same payment plan and received payments as in Studio, editable here.
 - **Expenses:** the event's ledger.
 - **Proposal:** the quotation's totals and elements per function, with **Open in Studio**.
