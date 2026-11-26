@@ -228,6 +228,57 @@ export interface ChecklistTemplate {
 }
 
 /** One function of a multi-function celebration: Haldi, Mehendi, Muhurtham, Reception… */
+export type CoordinationKind = "hindu" | "reception" | "sangeet" | "other";
+export interface CoordPerson {
+  name: string;
+  phone: string;
+}
+export interface CoordCue {
+  id: string;
+  time: string;
+  action: string;
+  owner: string;
+  backup: string;
+  dependency: string;
+  actual: string;
+}
+export interface CoordIssue {
+  id: string;
+  time: string;
+  issue: string;
+  action: string;
+  closed: string;
+}
+/** The on-site coordination & responsibility sheet for one function. Every text field may be empty. */
+export interface CoordinationSheet {
+  /** the function it's for (EventFunction id), or "" for a proposal without functions */
+  fnId: string;
+  kind: CoordinationKind;
+  details: {
+    client: string;
+    functionDate: string;
+    spaces: string;
+    guests: string;
+    timings: string;
+    lead: CoordPerson;
+    family: CoordPerson;
+    officiant: CoordPerson;
+    venueManager: CoordPerson;
+    emergency: CoordPerson;
+  };
+  team: { c1: CoordPerson; c2: CoordPerson; c3: CoordPerson; backupLead: string; channel: string; briefing: string };
+  /** H1–H6, in order */
+  hostesses: { name: string; reporting: string; breaks: string; relief: string }[];
+  timeline: CoordCue[];
+  /** one per READINESS item, in order */
+  readiness: boolean[];
+  issues: CoordIssue[];
+  /** one per HANDOVER item, in order */
+  handover: boolean[];
+  review: { wentWell: string; gaps: string; corrective: string; signOff: string };
+  updatedAt?: string;
+}
+
 export interface EventFunction {
   id: string;
   label: string;
@@ -284,6 +335,8 @@ export interface Proposal {
   questionnaires?: SentQuestionnaire[];
   /** the family's client portal (a Visualize Proposal share of kind "portal") */
   portalShareId?: string;
+  /** on-site coordination sheets, one per function; internal, never on client outputs */
+  coordination?: CoordinationSheet[];
   coordinationPct: number;
   /** null = no round-off; otherwise the Grand Total quoted to the client */
   grandTotal: number | null;

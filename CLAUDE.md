@@ -58,6 +58,11 @@ Photos must show the actual venue and be licensed for commercial use: CC BY, CC 
   - **Apps:** `src/lib/nav.ts` `APPS` is the app catalogue (label, description, href, icon; tested). The Dashboard renders it as tiles with a live line each (`AppTiles`), and the landing page reuses it.
   - **Icons:** inline SVG in `src/components/icons.tsx`.
   - **Headers:** pages use `PageHeader` (breadcrumb, title, subtitle, actions slot) or `Breadcrumbs` from `src/components/PageHeader.tsx`. A first crumb pointing at `#/dashboard` renders as "← Dashboard", the way back.
+- **Wedding Quest** (`src/lib/quest.ts`, `src/components/Quest.tsx`, `quest.test.ts`): a playful guide mounted in `AppShell`.
+  - **Quest log:** a floating button (`.qx-fab`) opens it. `QUESTS` tick themselves off from real data (`QuestFacts`: proposals, leads, vendors, tasks, expenses, routes visited…), earn XP, and XP gives a title (`LEVELS`; the top level equals `TOTAL_XP`, which a test checks).
+  - **Tour:** `TOUR` steps go to a page and spotlight an element marked `data-tour="…"`. `PageHeader` takes a `tour` prop for that, so keep the targets when editing those pages.
+  - **First visit:** the welcome card shows on the Dashboard.
+  - **Storage:** progress is in `event-bridge.quest.v1`, and finished quests get confetti once.
 - **Landing header:** `src/components/SiteNav.tsx` is only the landing page's header: the brand, appearance, and Team sign in or Dashboard. There are no menu items.
 - **Builder:** a 4-step wizard (client, occasion, elements, review); steps are inner components of `src/pages/Builder.tsx`.
 
@@ -98,7 +103,7 @@ Photos must show the actual venue and be licensed for commercial use: CC BY, CC 
 - **WhatsApp** (`src/lib/whatsapp.ts`): `waNumber` reads Indian mobiles typed with or without +91, and `waLink` builds a `wa.me` link. These only open WhatsApp; the app never sends anything.
 - **Events and their workspace** (`src/pages/Events.tsx`, lazy; `src/lib/events.ts`, `events.test.ts`):
   - **List:** `eventsFor(list, tab, today)` gives accepted or dated proposals that aren't lost (lost ones only under All), with upcoming soonest first and past most recent first. `countdown` gives "In 12 days", "On now", "3 days ago".
-  - **Tabs:** `#/events/<id>/<tab>`: overview, checklist, payments (the Builder's `PaymentsCard`, with a `set` that goes through `store.update`), expenses (`EventLedger`, exported by the lazy `Expenses.tsx`) and proposal.
+  - **Tabs:** `#/events/<id>/<tab>`: overview, checklist, coordination, payments (the Builder's `PaymentsCard`, with a `set` that goes through `store.update`), expenses (`EventLedger`, exported by the lazy `Expenses.tsx`) and proposal.
   - **Edits** from these pages use `useProposals().update(id, fn)`, which builds on the latest saved list (the functional-update lesson).
 - **Wedding checklist** (`Proposal.checklist`, `src/lib/checklist.ts`, `src/components/Checklist.tsx`, `checklist.test.ts`):
   - **Tasks:** each has `due` (a fixed date) or `offsetDays` before `eventDates(p)[0]` (negative for after), an owner (`team` | `client`) and a state (`todo` | `doing` | `done`, where `done` records who and when).
@@ -106,6 +111,12 @@ Photos must show the actual venue and be licensed for commercial use: CC BY, CC 
     - `getOptionalJson` treats an HTML answer as missing, because the Vite dev server serves the app page for unknown paths.
   - **Logic:** `bucketOf` (overdue, week, later, undated, done), `progress` and `overdueAcross`.
   - **Copies and clients:** `duplicate` resets the checklist (`resetChecklist`). `pageSnapshot` never includes it (tested).
+- **On-site coordination sheet** (`Proposal.coordination`, `src/lib/coordination.ts`, `src/components/CoordinationSheet.tsx`, PDF in `src/lib/exportCoordination.ts`, `coordination.test.ts`):
+  - **Source:** the team's Word form "On-Site Event Coordination & Responsibility Sheet". Its fixed wording (hostess stations, default cues, duties per kind, readiness, escalation, handover) lives as constants in `coordination.ts`; keep the UI and PDF in step with it.
+  - **Data:** one `CoordinationSheet` per function, keyed by `fnId` (`""` when the proposal has no functions; `sheetFunctions` gives the stand-in). Read with `sheetFor(p, fn)`, which fills in a new sheet from the proposal (`newSheet`: client, function and date, `venueLine`, guests; nothing else) or completes an older saved one. Write with `setSheet` inside `store.update`.
+  - **Kind:** `guessKind` picks the duties block (hindu, reception, sangeet, other) from the function's label and the ceremony style; the coordinator can change it.
+  - **PDF:** `buildCoordinationDoc` is pure (A4, one sheet per page run, blank fields as empty ruled cells, drawn checkboxes because Roboto has no ☐), lazy-loaded through `downloadCoordination` like the receipt.
+  - **Internal:** never in `pageSnapshot`/`portalSnapshot` (tested), and `duplicate` drops it.
 - **Office apps:** CRM, Tasks, Vendors and Questionnaires keep their lists in localStorage through `useStoredList` in `src/state/local.ts` (a functional `update`, JSON export/import with `downloadList`/`readListFile`). Like proposals, they stay on one device.
   - **Vendor rolodex** (`#/vendors`; `src/lib/vendors.ts`, `src/state/vendors.ts`, `vendors.test.ts`):
     - **Storage:** `event-bridge.vendors.v1`, plus the optional read-only team list `public/config/vendors.json` (`validateVendors`, `ConfigContext.teamVendors`).
@@ -129,12 +140,11 @@ Photos must show the actual venue and be licensed for commercial use: CC BY, CC 
 - **Dashboard** (`src/pages/Dashboard.tsx`, pure figures in `src/lib/dashboard.ts` and `src/lib/followups.ts`, `dashboard.test.ts`):
   - **Data:** this device's proposals plus `/api/shares` when available; `shareFor` picks a proposal's share.
   - **Pipeline:** one segmented bar of draft → sent → accepted in stepped strengths of `--gold` (an ordered scale), plus a legend with counts and values, so no categorical palette has to be validated across six themes. Lost proposals are left out of the bar.
-  - **Layout:** a greeting `PageHeader`, then:
-    - a today strip (functions this week, payments due, follow-ups, `overdueAcross` checklist tasks)
-    - Next up (`eventsFor`)
-    - the KPIs
-    - upcoming events as a list or a month calendar (`calendarMonth`/`gridRange`/`shiftMonth` in `src/lib/calendar.ts`, Monday-first; the calendar reuses `upcoming()` from the grid's first day)
-    - follow-ups, the pipeline, payments, selling and expenses
+  - **Layout:** a solid page (no site photo), a greeting `PageHeader`, then:
+    - a compact apps bar (`APPS`, icon and label)
+    - four figures: upcoming events, awaiting decision, received this month, needs attention
+    - upcoming events as a list or a month calendar (`calendarMonth`/`gridRange`/`shiftMonth` in `src/lib/calendar.ts`, Monday-first; the calendar reuses `upcoming()` from the grid's first day), beside one "Needs attention" list: overdue payments, overdue tasks, proposal follow-ups (overdue payments not repeated), enquiry follow-ups, payments due soon and unanswered questionnaires
+    - pipeline, what's selling and this month's spending
   - **Links:** client links go to the event workspace.
   - **Studio home:** shows the first three follow-ups as To do.
 - **Event expenses** (`src/pages/Expenses.tsx`, lazy-loaded; rules in `src/lib/expenses.ts`, handover in `src/lib/handover.ts` and `src/lib/handoverPack.ts`; `expenses.test.ts`):

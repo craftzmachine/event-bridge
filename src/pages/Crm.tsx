@@ -101,6 +101,7 @@ export default function Crm({ store, account, onOpen }: { store: Store; account:
     <div className="ev-page">
       <PageHeader
         crumbs={[{ label: "Dashboard", href: "#/dashboard" }, { label: "CRM" }]}
+        tour="crm"
         title="Enquiries & clients"
         subtitle={`${open.length} open enquir${open.length === 1 ? "y" : "ies"} · ${due.length} to follow up today`}
         actions={

@@ -25,9 +25,9 @@ export function Breadcrumbs({ items }: { items: Crumb[] }) {
 }
 
 /** A page's head in the app shell: breadcrumb, title, a line about the page, and its actions on the right. */
-export default function PageHeader({ crumbs, title, subtitle, actions, children }: { crumbs?: Crumb[]; title: ReactNode; subtitle?: ReactNode; actions?: ReactNode; children?: ReactNode }) {
+export default function PageHeader({ crumbs, title, subtitle, actions, children, tour }: { crumbs?: Crumb[]; title: ReactNode; subtitle?: ReactNode; actions?: ReactNode; children?: ReactNode; tour?: string }) {
   return (
-    <header className="page-head">
+    <header className="page-head" data-tour={tour}>
       {crumbs && crumbs.length > 0 && <Breadcrumbs items={crumbs} />}
       <div className="page-head-row">
         <div className="page-head-text">
