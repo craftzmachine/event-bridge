@@ -17,6 +17,10 @@ export interface QuestFacts {
   vendors: number;
   teamTasks: number;
   expenses: number;
+  /** households on any guest list */
+  guests: number;
+  /** anyone seated on a floor plan */
+  seated: boolean;
   backedUp: boolean;
   /** routes opened at least once, e.g. "venues" */
   visited: string[];
@@ -46,6 +50,8 @@ export const QUESTS: Quest[] = [
   { id: "questions", title: "Ask the family", blurb: "Send a questionnaire, so 'veg or non-veg' is answered once, not in 47 WhatsApp messages.", xp: 30, href: "#/questionnaires", done: (f) => f.questionnairesSent > 0 },
   { id: "share", title: "Show it off", blurb: "Share a proposal as a private, password-protected link. No screenshots of screenshots.", xp: 40, href: "#/visualize", done: (f) => f.shared },
   { id: "portal", title: "Open a family portal", blurb: "Give a family their own page: proposal, to-dos, payments. Fewer 'just checking' calls.", xp: 40, href: "#/portal", done: (f) => f.portals > 0 },
+  { id: "guests", title: "Invite the clan", blurb: "Add a guest list to a wedding. Yes, the second cousins too. Especially the second cousins.", xp: 30, href: "#/events", done: (f) => f.guests > 0 },
+  { id: "seat", title: "Play musical chairs", blurb: "Draw a floor plan and seat someone. Keep the feuding uncles at opposite ends.", xp: 40, href: "#/events", done: (f) => f.seated },
   { id: "expense", title: "Follow the money", blurb: "Record one expense with its GPay screenshot. The accountant sheds a single happy tear.", xp: 30, href: "#/expenses", done: (f) => f.expenses > 0 },
   { id: "booked", title: "Seal the deal", blurb: "Mark a proposal accepted. Cue the nadaswaram.", xp: 60, href: "#/studio", done: (f) => f.accepted > 0 },
   { id: "backup", title: "Back it all up", blurb: "Proposals live in this browser. Press 'Back up all' in Proposal Studio before the laptop decides to 'update'.", xp: 25, href: "#/studio", done: (f) => f.backedUp },
@@ -57,7 +63,7 @@ export const LEVELS: { xp: number; title: string }[] = [
   { xp: 150, title: "Mehendi Maestro" },
   { xp: 260, title: "Sangeet Strategist" },
   { xp: 360, title: "Mandap Master" },
-  { xp: 455, title: "Muhurtham Legend" },
+  { xp: 525, title: "Muhurtham Legend" },
 ];
 
 export const TOTAL_XP = QUESTS.reduce((t, q) => t + q.xp, 0);

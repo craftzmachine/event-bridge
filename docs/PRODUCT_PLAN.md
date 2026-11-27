@@ -62,6 +62,10 @@ Prices are **indicative**, per company, in INR, excluding GST. Validate them wit
 | Internal cost sheet, margin and minimum-margin warning | — | ✓ | ✓ |
 | **Events** list and wedding workspace | ✓ | ✓ | ✓ |
 | Wedding checklist (list and board) | ✓ | ✓ | ✓ |
+| **Guests & RSVP**: guest list, personal RSVP links per function, meal choices | 300 guests | Unlimited (2,000 per wedding) | Unlimited |
+| Open RSVP link for family groups | — | ✓ | ✓ |
+| **Venue layout**: interactive floor plan per function, starters, venue plans | ✓ | ✓ | ✓ |
+| **Seating**: drag-and-drop, auto-seat, seating PDF with find-your-table list | — | ✓ | ✓ |
 | On-site coordination sheet (PDF) | — | ✓ | ✓ |
 | Payment schedule and receipts | ✓ | ✓ | ✓ |
 | **CRM**: enquiries, stages, follow-ups, activity log, clients | ✓ | ✓ | ✓ |

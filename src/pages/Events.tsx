@@ -24,14 +24,19 @@ import CoordinationSheet from "../components/CoordinationSheet";
 import PaymentsCard from "../components/PaymentsCard";
 import ClientAnswer from "../components/ClientAnswer";
 import SentQuestionnaires from "../components/SentQuestionnaires";
+import GuestList from "../components/GuestList";
+import VenuePlan from "../components/VenuePlan";
 
 // the event's ledger is part of the (lazy) expenses page
 const EventLedger = lazy(() => import("./Expenses").then((m) => ({ default: m.EventLedger })));
 
 type Store = ReturnType<typeof useProposals>;
-type Tab = "overview" | "checklist" | "coordination" | "questionnaires" | "payments" | "expenses" | "proposal";
+type Tab = "overview" | "guests" | "layout" | "seating" | "checklist" | "coordination" | "questionnaires" | "payments" | "expenses" | "proposal";
 const TABS: { id: Tab; label: string }[] = [
   { id: "overview", label: "Overview" },
+  { id: "guests", label: "Guests" },
+  { id: "layout", label: "Layout" },
+  { id: "seating", label: "Seating" },
   { id: "checklist", label: "Checklist" },
   { id: "coordination", label: "Coordination" },
   { id: "questionnaires", label: "Questionnaires" },
@@ -153,6 +158,8 @@ function Workspace({ p, tab, store, account, onOpen }: { p: Proposal; tab: Tab; 
       </PageHeader>
       <main className="ev-main">
         {tab === "overview" && <Overview p={p} today={today} />}
+        {tab === "guests" && <GuestList p={p} onUpdate={update} />}
+        {(tab === "layout" || tab === "seating") && <VenuePlan key={tab} p={p} mode={tab} onUpdate={update} />}
         {tab === "checklist" && <Checklist p={p} account={account} onUpdate={update} />}
         {tab === "coordination" && <CoordinationSheet key={p.id} p={p} onUpdate={update} />}
         {tab === "questionnaires" && <SentQuestionnaires p={p} onUpdate={update} />}

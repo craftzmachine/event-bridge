@@ -356,6 +356,82 @@ export interface Proposal {
   functions?: EventFunction[];
   /** the payment plan and what has been received; unset = the standard plan, nothing received */
   payments?: { plan?: Milestone[]; received: Payment[] };
+  /** the couple's guests and their RSVP link; internal, never on the shared proposal */
+  guestList?: GuestList;
+  /** floor plans, one per function id ("" without functions) */
+  layouts?: Record<string, VenueLayout>;
+  /** who sits where: function id → table item id → guest id per seat (null = empty seat) */
+  seating?: Record<string, Record<string, (string | null)[]>>;
+}
+
+export type GuestSide = "bride" | "groom" | "both" | "";
+export type RsvpStatus = "yes" | "no" | "maybe";
+
+export interface Guest {
+  id: string;
+  name: string;
+  phone?: string;
+  side: GuestSide;
+  /** Family, Friends, Work… free text, used to keep people together */
+  group?: string;
+  /** how many people the invitation is for (the household) */
+  invited: number;
+  /** function ids they're invited to ("" when the proposal has no functions) */
+  fns: string[];
+  /** personal RSVP code, part of their link */
+  code: string;
+  /** their answer per function */
+  reply?: Record<string, { status: RsvpStatus; count: number }>;
+  meal?: string;
+  dietary?: string;
+  note?: string;
+  /** when they last answered (ISO) */
+  repliedAt?: string;
+  /** "rsvp" when they added themselves through an open RSVP link */
+  source?: "team" | "rsvp";
+}
+
+export interface RsvpSettings {
+  /** the server's RSVP link id and token, once created */
+  shareId?: string;
+  token?: string;
+  /** last day to reply, YYYY-MM-DD */
+  deadline?: string;
+  meals: string[];
+  /** people not on the list may reply with their name and phone */
+  open: boolean;
+  message?: string;
+  /** a fingerprint of what was last sent to the server, to tell when the link needs updating */
+  synced?: string;
+}
+
+export interface GuestList {
+  guests: Guest[];
+  rsvp?: RsvpSettings;
+}
+
+export type LayoutKind = "round" | "rect" | "row" | "stage" | "mandap" | "dance" | "bar" | "buffet" | "entrance" | "dj" | "photo" | "wall" | "label";
+
+/** one thing on the floor plan, in metres from the room's top-left corner; x, y is its centre */
+export interface LayoutItem {
+  id: string;
+  kind: LayoutKind;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  /** degrees, clockwise */
+  rot: number;
+  /** seats at a table or chair row */
+  seats?: number;
+  label?: string;
+}
+
+export interface VenueLayout {
+  /** room size in metres */
+  w: number;
+  h: number;
+  items: LayoutItem[];
 }
 
 export type ProposalStatus = "draft" | "sent" | "accepted" | "lost";

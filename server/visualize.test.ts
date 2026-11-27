@@ -137,7 +137,7 @@ describe("api routes", () => {
   it("export the shape Vercel runs as a Web handler: default { fetch }", async () => {
     // a bare default function is treated as the legacy Node (req, res) signature on Vercel and never answers
     const routes = import.meta.glob<{ default?: { fetch?: unknown } }>("../api/**/*.ts", { eager: true });
-    expect(Object.keys(routes)).toHaveLength(10);
+    expect(Object.keys(routes)).toHaveLength(12);
     for (const [file, mod] of Object.entries(routes)) expect(typeof mod.default?.fetch, file).toBe("function");
   });
 });

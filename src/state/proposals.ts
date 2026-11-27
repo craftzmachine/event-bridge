@@ -127,6 +127,9 @@ export function useProposals() {
         questionnaires: undefined,
         // the on-site coordination sheets were for the original's day
         coordination: undefined,
+        // the guests, their RSVP link and the seating were the original couple's; the floor plans are kept
+        guestList: undefined,
+        seating: undefined,
         // the copy keeps the checklist's tasks, all to do again
         checklist: resetChecklist(p.checklist),
         // the copy keeps the payment plan, not the payments
