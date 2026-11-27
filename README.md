@@ -5,7 +5,7 @@
 | App | What it's for |
 |---|---|
 | **Dashboard** | today at a glance: upcoming events, money waiting and received, and everything that needs attention |
-| **Events** | every wedding in play, each with a workspace: overview, checklist, on-site coordination sheet, questionnaires, payments, expenses |
+| **Events** | every wedding in play, each with a workspace: overview, guests and RSVP, venue layout, seating, checklist, on-site coordination sheet, questionnaires, payments, expenses |
 | **Proposal Studio** | build tailored proposals and export a branded Excel workbook or a client-ready PDF |
 | **CRM** | enquiries from first message to booking, and the clients behind your proposals |
 | **Tasks** | the team's tasks and every wedding's checklist, as a list, board or calendar |

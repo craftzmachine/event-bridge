@@ -11,6 +11,8 @@ Event Bridge is a workspace for wedding planners: build and send proposals, run 
 |---|---|
 | [Proposal Studio](03-proposal-studio.md) | Build, price and send proposals as a web page, PDF or Excel file |
 | [Events and the wedding workspace](04-events.md) | Every wedding in play: checklist, coordination sheet, payments, expenses |
+| [Guests & RSVP](14-guests-rsvp.md) | The guest list, and a link guests answer on, per function |
+| [Venue layout & seating](15-layout-seating.md) | An interactive floor plan per function, seating, and a printable seating plan |
 | [Expenses](05-expenses.md) | Event and company spending with proof, staff advances and handovers |
 | [CRM](06-crm.md) | Enquiries from first message to booking, and your clients |
 | [Tasks](07-tasks.md) | The team's tasks and every wedding's checklist |
@@ -31,8 +33,9 @@ Event Bridge is a workspace for wedding planners: build and send proposals, run 
 2. After the meeting → **Create proposal** from the enquiry, price it in **Proposal Studio**, and **share** it as a private web page.
 3. The family approves → mark it **Accepted**. It now appears in **Events**.
 4. In the wedding's workspace → start the **checklist**, send a **questionnaire**, open a **Client Portal**, and record **payments** as they arrive.
-5. In the week of the wedding → fill in the **coordination sheet** for each function and print it.
-6. On site → staff record **expenses** with GPay screenshots against their **advance**.
-7. After the wedding → prepare the **handover**, have a colleague review it, and settle the advances.
+5. Add the **guests** and send everyone their **RSVP** link; draw the **floor plan** and **seat** the people who said yes.
+6. In the week of the wedding → fill in the **coordination sheet** for each function and print it.
+7. On site → staff record **expenses** with GPay screenshots against their **advance**.
+8. After the wedding → prepare the **handover**, have a colleague review it, and settle the advances.
 
 > Screenshots: each page notes where a screenshot helps (`[Screenshot: …]`). Add them to `docs/user-guide/images/` when preparing a customer-facing copy.

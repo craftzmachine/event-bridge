@@ -65,6 +65,8 @@ export default function Quest({ proposals, hash }: { proposals: Proposal[]; hash
       vendors: readList(VENDORS_KEY, isVendor).length,
       teamTasks: readTeamTasks().filter((t) => t.state === "done").length,
       expenses,
+      guests: proposals.reduce((t, p) => t + (p.guestList?.guests.length ?? 0), 0),
+      seated: proposals.some((p) => Object.values(p.seating ?? {}).some((plan) => Object.values(plan).some((seats) => seats.some(Boolean)))),
       backedUp: hasKey(BACKUP_KEY),
       visited: store.visited,
       tourDone: store.tourDone,

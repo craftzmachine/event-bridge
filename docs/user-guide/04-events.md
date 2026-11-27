@@ -15,6 +15,9 @@ Open a wedding to see its tabs. Each tab has its own link, so you can send a col
 ### Overview
 Client, dates, venue, guests and functions at a glance; a **WhatsApp** button for the client; a warning when the guests exceed the venue's capacity.
 
+### Guests, Layout and Seating
+The guest list and RSVP link, the floor plan for each function, and who sits where. See [Guests & RSVP](14-guests-rsvp.md) and [Venue layout & seating](15-layout-seating.md).
+
 ### Checklist
 1. Press **Start the checklist**. It fills from your team's checklist template.
 2. Each task is due a set number of days before the **first event date** (or on a fixed date), and belongs to the **team** or the **family**.

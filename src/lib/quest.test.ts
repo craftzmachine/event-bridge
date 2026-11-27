@@ -14,11 +14,13 @@ const none: QuestFacts = {
   vendors: 0,
   teamTasks: 0,
   expenses: 0,
+  guests: 0,
+  seated: false,
   backedUp: false,
   visited: [],
   tourDone: false,
 };
-const all: QuestFacts = { ...none, proposals: 3, builtProposal: true, accepted: 1, shared: true, checklists: 1, checklistDone: true, questionnairesSent: 1, portals: 1, leads: 2, vendors: 4, teamTasks: 1, expenses: 5, backedUp: true, visited: ["venues"], tourDone: true };
+const all: QuestFacts = { ...none, proposals: 3, builtProposal: true, accepted: 1, shared: true, checklists: 1, checklistDone: true, questionnairesSent: 1, portals: 1, leads: 2, vendors: 4, teamTasks: 1, expenses: 5, guests: 3, seated: true, backedUp: true, visited: ["venues"], tourDone: true };
 
 describe("wedding quest", () => {
   it("starts a new planner at zero, suggesting the tour first", () => {
