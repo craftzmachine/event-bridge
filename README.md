@@ -6,6 +6,7 @@
 |---|---|
 | **Dashboard** | today at a glance: upcoming events, money waiting and received, and everything that needs attention |
 | **Events** | every wedding in play, each with a workspace: overview, guests and RSVP, venue layout, seating, checklist, on-site coordination sheet, questionnaires, payments, expenses |
+| **Guests & Seating** | every wedding's guest list, RSVP replies, floor plans and seating, with a click into each one |
 | **Proposal Studio** | build tailored proposals and export a branded Excel workbook or a client-ready PDF |
 | **CRM** | enquiries from first message to booking, and the clients behind your proposals |
 | **Tasks** | the team's tasks and every wedding's checklist, as a list, board or calendar |
@@ -24,7 +25,7 @@ Proposals and their exports are branded **Parinay Weddings**, because that's wha
 
 ## Navigation
 
-**There are no menus. The Dashboard is the way into everything.** After sign-in you land on it, and its **apps bar** opens each of the ten apps in the table above. Every other page has **← Dashboard** at the start of its breadcrumb. A slim top bar carries the crest (back to the Dashboard), the theme and font buttons, **Settings** (the gear: company details, logo and catalogue), **Help**, your email and **Sign out**. Until the team has set things up, a **Set up Event Bridge** checklist on the Dashboard walks through company details, the catalogue, and the first enquiry, proposal and share.
+**There are no menus. The Dashboard is the way into everything.** After sign-in you land on it, and its **apps bar** opens each of the eleven apps in the table above. Every other page has **← Dashboard** at the start of its breadcrumb. A slim top bar carries the crest (back to the Dashboard), the theme and font buttons, **Settings** (the gear: company details, logo and catalogue), **Help**, your email and **Sign out**. Until the team has set things up, a **Set up Event Bridge** checklist on the Dashboard walks through company details, the catalogue, and the first enquiry, proposal and share.
 
 **Help** (`#/help`, also **Help & how-to** on the Dashboard): a searchable guide with numbered steps, tips and common questions for every app, plus getting started, Wedding Quest and data and privacy questions. `#/help/<topic>` (for example `#/help/expenses`) opens at one topic. Opening a proposal still fills the screen with the Builder.
 
@@ -43,6 +44,7 @@ The public landing page has only the brand and **Team sign in** (or **Dashboard*
 | `/#/login` | sign-in, with a **Back to home** link |
 | `/#/dashboard` | the team dashboard (needs sign-in) |
 | `/#/events` | every wedding in play; `/#/events/<proposal id>` for one wedding's workspace, `/#/events/<proposal id>/<tab>` for a tab such as `guests`, `layout` or `seating` (needs sign-in) |
+| `/#/guests` | Guests & Seating: every wedding's guests, replies, floor plans and seating (needs sign-in) |
 | `/#/crm`, `/#/tasks`, `/#/vendors`, `/#/questionnaires`, `/#/portal` | the CRM, tasks, vendor rolodex, questionnaires and client portals (need sign-in) |
 | `/#/expenses` | event expenses and handovers; `/#/expenses/<proposal id>` for one event, `/#/expenses/company` for the company's own (needs sign-in) |
 | `/#/studio` | Proposal Studio (needs sign-in) |
@@ -98,7 +100,7 @@ Duplicating a proposal starts the copy as a draft, with the payment plan but no 
 
 **Dashboard** (`#/dashboard`, where sign-in lands): the team's home, and the only way into the apps.
 - **Header:** a greeting with today's date, and **New proposal** and **Record expense**. **Record expense** opens the add-expense form right there: choose what it's **For** (Company or an event; it starts on the one you used last, or the next event), attach the proof and save.
-- **Apps bar:** all ten apps, one click each.
+- **Apps bar:** all eleven apps, one click each.
 - **Four figures:** upcoming events (and functions in the next 7 days), awaiting decision (the value of proposals sent, and the win rate), received this month (and what's still to come, plus the margin when costs exist), and needs attention (red when something is overdue).
 - **Upcoming events:** the next functions with date, client, function, venue, guests and status, or **Calendar**: a month grid with each day's functions. Pick a day to list it. Each opens the event's workspace.
 - **Needs attention:** one list, most urgent first:
@@ -230,7 +232,7 @@ It works on phones, tablets and laptops. On smaller screens the selection become
 
 ## Guests, RSVP, layout and seating
 
-Each wedding's workspace (**Events** → a wedding) has three tabs for the guests. Step-by-step guides: [Guests & RSVP](docs/user-guide/14-guests-rsvp.md) and [Venue layout & seating](docs/user-guide/15-layout-seating.md).
+Open **Guests & Seating** from the Dashboard: it lists every wedding (drafts too) with its guests, confirmed headcount and seating, and **Guests**, **Layout** and **Seating** buttons open that wedding's tab. The same three tabs are in each wedding's workspace (**Events** → a wedding). Step-by-step guides: [Guests & RSVP](docs/user-guide/14-guests-rsvp.md) and [Venue layout & seating](docs/user-guide/15-layout-seating.md).
 
 - **Guests:** households with party size, side, group and the functions they're invited to. Add them one by one or paste from Excel or Google Sheets. Cards count who's coming to each function, and **Use confirmed headcount** sets the proposal's guest count from the replies.
 - **RSVP link:** set a reply-by date and meal choices, then **Create RSVP link**. Each guest's **WhatsApp** button opens a message with their personal link. They see only their own invitation and answer per function (coming, not sure or not coming, how many, meal, dietary needs) until the reply-by date. An optional open link lets people who aren't on the list reply with their name and phone. Replies come back when the Guests tab opens. RSVP uses the same server setup as Visualize Proposal (see **Setting up Visualize Proposal**).

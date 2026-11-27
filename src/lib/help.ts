@@ -179,14 +179,10 @@ export const HELP: HelpTopic[] = [
     ],
     tips: ["From Proposal Studio, the Review step's Send it to the client does all of this in one go."],
   }),
-  {
-    id: "guests",
-    title: "Guests & RSVP",
-    icon: "users",
-    href: "#/events",
-    summary: "Keep each wedding's guest list and let guests answer, per function, from their phone.",
+  app("guests", {
+    summary: "Keep each wedding's guest list, let guests answer from their phone, then draw the floor plan and seat them.",
     steps: [
-      "Open a wedding from Events, then the Guests tab.",
+      "Open Guests & Seating from the Dashboard. Every wedding is listed with its guests, replies and seating; Guests, Layout and Seating open that wedding's tab. (They're also tabs in each wedding's workspace under Events.)",
       "Add guests one household at a time (name, phone, side, group, how many people), or Paste a list straight from Excel or Google Sheets.",
       "Untick the functions a household isn't invited to. Everyone starts invited to all of them.",
       "In RSVP link, set a reply-by date and meal choices, then Create RSVP link.",
@@ -199,7 +195,7 @@ export const HELP: HelpTopic[] = [
       "Use confirmed headcount sets the proposal's guest count from the replies, so per-guest items follow it.",
       "Guests never appear on the proposal or portal you share with the family.",
     ],
-  },
+  }),
   {
     id: "layout",
     title: "Venue layout & seating",

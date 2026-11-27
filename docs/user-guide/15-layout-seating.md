@@ -3,7 +3,7 @@
 Draw each function's floor plan, seat the guests at its tables, and print the seating plan for the venue team and the welcome desk.
 
 ## The floor plan (Layout tab)
-Open a wedding from **Events**, then **Layout**. With several functions, pick one at the top; **Copy the … plan** starts from another function's plan.
+Open **Guests & Seating** from the Dashboard and press **Layout** on a wedding (or open the wedding from **Events**, then **Layout**). With several functions, pick one at the top; **Copy the … plan** starts from another function's plan.
 
 ### Starting
 - **Reception rounds**: stage, dance floor, buffet, bar and round tables of 10.
