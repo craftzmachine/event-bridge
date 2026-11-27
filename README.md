@@ -24,11 +24,11 @@ Proposals and their exports are branded **Parinay Weddings**, because that's wha
 
 ## Navigation
 
-**There are no menus. The Dashboard is the way into everything.** After sign-in you land on it, and its **apps bar** opens each of the ten apps in the table above. Every other page has **← Dashboard** at the start of its breadcrumb. A slim top bar carries the crest (back to the Dashboard), the theme and font buttons, **Help**, your email and **Sign out**.
+**There are no menus. The Dashboard is the way into everything.** After sign-in you land on it, and its **apps bar** opens each of the ten apps in the table above. Every other page has **← Dashboard** at the start of its breadcrumb. A slim top bar carries the crest (back to the Dashboard), the theme and font buttons, **Settings** (the gear: company details, logo and catalogue), **Help**, your email and **Sign out**. Until the team has set things up, a **Set up Event Bridge** checklist on the Dashboard walks through company details, the catalogue, and the first enquiry, proposal and share.
 
 **Help** (`#/help`, also **Help & how-to** on the Dashboard): a searchable guide with numbered steps, tips and common questions for every app, plus getting started, Wedding Quest and data and privacy questions. `#/help/<topic>` (for example `#/help/expenses`) opens at one topic. Opening a proposal still fills the screen with the Builder.
 
-The public landing page has only the brand and **Team sign in** (or **Dashboard** when signed in). It introduces Event Bridge with the team's photos, every app, and the starting packages.
+The public landing page has only the brand and **Team sign in** (or **Dashboard** when signed in). It introduces Event Bridge with the team's photos, every app, the starting packages and **Plans and pricing** (Starter, Professional, Enterprise; prices and features live in `src/lib/plans.ts`, kept in step with `docs/PRODUCT_PLAN.md`).
 
 **Wedding Quest:** a light-hearted guide in the bottom-right corner of every signed-in page.
 - **First visit:** a welcome card on the Dashboard offers a spotlight tour of the Dashboard, Proposal Studio, the CRM and Events. You can replay it any time.
@@ -42,14 +42,16 @@ The public landing page has only the brand and **Team sign in** (or **Dashboard*
 | `/#/` | landing page: what Event Bridge does, its apps and packages (public) |
 | `/#/login` | sign-in, with a **Back to home** link |
 | `/#/dashboard` | the team dashboard (needs sign-in) |
-| `/#/events` | every wedding in play; `/#/events/<proposal id>` for one wedding's workspace (needs sign-in) |
+| `/#/events` | every wedding in play; `/#/events/<proposal id>` for one wedding's workspace, `/#/events/<proposal id>/<tab>` for a tab such as `guests`, `layout` or `seating` (needs sign-in) |
 | `/#/crm`, `/#/tasks`, `/#/vendors`, `/#/questionnaires`, `/#/portal` | the CRM, tasks, vendor rolodex, questionnaires and client portals (need sign-in) |
 | `/#/expenses` | event expenses and handovers; `/#/expenses/<proposal id>` for one event, `/#/expenses/company` for the company's own (needs sign-in) |
 | `/#/studio` | Proposal Studio (needs sign-in) |
 | `/#/venues` | Venue Directory (needs sign-in) |
 | `/#/visualize` | Visualize Proposal: upload and share (needs sign-in) |
+| `/#/settings` | company settings: details, logo, money defaults, terms and catalogue (needs sign-in) |
 | `/#/help` | Help: how to use each app; `/#/help/<topic>` opens at one (needs sign-in) |
 | `/#/view/<code>` | a client's private proposal link (password-protected; `/#/view` lets them paste a link) |
+| `/#/rsvp/<link>/<code>` | a guest's RSVP page (public; the code makes it personal to one household) |
 
 Opening an app while signed out goes to sign-in first, then straight back to that app; signing in from the landing page lands on the Dashboard.
 
@@ -226,6 +228,17 @@ It works on phones, tablets and laptops. On smaller screens the selection become
 - **Old `.xls` files** (Excel 97–2003) can't be read yet: save them as `.xlsx` in Excel first. Reading them would need the SheetJS library.
 
 
+## Guests, RSVP, layout and seating
+
+Each wedding's workspace (**Events** → a wedding) has three tabs for the guests. Step-by-step guides: [Guests & RSVP](docs/user-guide/14-guests-rsvp.md) and [Venue layout & seating](docs/user-guide/15-layout-seating.md).
+
+- **Guests:** households with party size, side, group and the functions they're invited to. Add them one by one or paste from Excel or Google Sheets. Cards count who's coming to each function, and **Use confirmed headcount** sets the proposal's guest count from the replies.
+- **RSVP link:** set a reply-by date and meal choices, then **Create RSVP link**. Each guest's **WhatsApp** button opens a message with their personal link. They see only their own invitation and answer per function (coming, not sure or not coming, how many, meal, dietary needs) until the reply-by date. An optional open link lets people who aren't on the list reply with their name and phone. Replies come back when the Guests tab opens. RSVP uses the same server setup as Visualize Proposal (see **Setting up Visualize Proposal**).
+- **Layout:** an interactive floor plan per function, drawn to scale in metres. Start from *Reception rounds*, *Banquet long tables* or *Mandap with chair rows* (sized for the guests), a plan saved for the venue, or an empty room. Add tables, chair rows, stage, mandap, dance floor, buffet, bar, DJ, photo booth, entrance, walls and labels. Drag, rotate and resize with snapping; select several and align them; undo and redo; arrow keys, R, Delete and Ctrl+D; drag the floor or pinch to pan and zoom. Overlaps are outlined in red, and the room panel compares the seats with the guests coming and the venue's capacity.
+- **Seating:** drag a household onto a table or a seat (or tap it, then tap a table). **Auto-seat** fills the rest, keeping households and groups together. It flags anyone seated who has since said no, households split over tables and people who lost a seat. **Download seating PDF** prints the floor plan, each table's guests and an A–Z "find your table" list.
+
+Guests, layouts and seating are internal: they never appear on the proposal, PDF or Client Portal the family receives. A duplicated proposal keeps the floor plans but not the guests or seating.
+
 ## Run
 
 Requires Node 20+.
@@ -233,7 +246,7 @@ Requires Node 20+.
 ```bash
 npm install
 npm run dev        # http://localhost:5173
-npm test           # totals, sign-in, exports, Excel import, references, event dates, venues, screen capture, Visualize Proposal security
+npm test           # totals, sign-in, exports, Excel import, references, event dates, venues, settings, guests, layout and seating, screen capture, Visualize Proposal and RSVP security
 npm run build      # static site in dist/
 npm run preview    # serve the production build locally (http://localhost:4173)
 ```
@@ -282,7 +295,9 @@ To undo, delete the variable and redeploy. If the server can't be reached while 
 
 ## Updating offerings — no code changes
 
-Everything the team sells and the venue directory live in JSON files in `public/config/` (copied as-is to `dist/config/`). Edit them, reload the page — no rebuild needed. If an edit has a mistake, the app shows a list of exactly what to fix instead of loading.
+**Settings page first.** Company details, logo, co-ordination and GST %, the balance due date, terms, categories and catalogue elements can be edited in the app under **Settings** (the gear in the top bar). They're saved on that device and laid over the files below; **Export settings** and **Import settings** copy them to colleagues' devices, and **Reset to original** goes back. See [Admin setup](docs/user-guide/admin-setup.md).
+
+The files set the defaults for every device. Everything the team sells and the venue directory live in JSON files in `public/config/` (copied as-is to `dist/config/`). Edit them, reload the page — no rebuild needed. If an edit has a mistake, the app shows a list of exactly what to fix instead of loading.
 
 ### `catalog.json`
 
@@ -444,7 +459,7 @@ It runs on Vercel's free Hobby plan at a sales team's volume: Blob 1 GB, with 10
    ```
 4. **Redeploy** (Deployments → ⋯ → Redeploy), then sign in, upload a test file, and open the link in a private window.
 
-Until step 3 is done, Visualize says it isn't set up, and sign-in keeps using the browser list.
+Until step 3 is done, Visualize Proposal and RSVP links say they aren't set up, and sign-in keeps using the browser list. The same storage holds RSVP links and replies; guests' names and replies are encrypted like shared files.
 
 **Trying it locally:** run `node scripts/visualize-setup.mjs --dev`. It writes a gitignored `.env.local` that keeps files and sessions in memory. Then `npm run dev` serves the API too.
 
@@ -456,15 +471,16 @@ Until step 3 is done, Visualize says it isn't set up, and sign-in keeps using th
 | `public/images/` | logo, favicon, your own photos |
 | `src/assets/` | the site background and the team photos used on the landing page, Proposal Studio home and sign-in, bundled into the build |
 | `src/site.ts` | the site's name (Event Bridge) and tagline |
-| `src/pages/` | `Landing` (the public entry), `Login`, `Dashboard` (the hub), `Events` (events and each wedding's workspace), `Home` (Proposal Studio's saved proposals, import and **From Excel**), `Builder` (the four-step wizard), `Crm`, `Tasks`, `Vendors`, `Questionnaires`, `Portal` (client portals), `Expenses`, `Venues` (Venue Directory), `Visualize` (staff sharing), `ClientView` (the client's password gate, viewer and portal) |
-| `api/` | Vercel Functions for Visualize Proposal and client portals: staff sign-in, shares, client viewing, answers |
+| `src/pages/` | `Landing` (the public entry), `Login`, `Dashboard` (the hub), `Events` (events and each wedding's workspace), `Home` (Proposal Studio's saved proposals, import and **From Excel**), `Builder` (the four-step wizard), `Crm`, `Tasks`, `Vendors`, `Questionnaires`, `Portal` (client portals), `Expenses`, `Venues` (Venue Directory), `Visualize` (staff sharing), `Settings` (company settings), `Help`, `ClientView` (the client's password gate, viewer and portal), `Rsvp` (a guest's RSVP page) |
+| `api/` | Vercel Functions for Visualize Proposal, client portals and RSVP: staff sign-in, shares, client viewing, answers, RSVP links (`api/staff/rsvp`) and guests' replies (`api/rsvp`) |
 | `server/` | the code behind them: sessions, rate limits, encryption, storage, PDF and Excel rendering, and their tests |
 | `scripts/` | `visualize-setup.mjs`: generates the secrets and hashes staff passwords |
-| `src/components/` | the app frame (`AppShell`), page headers, the landing header (`SiteNav`), Wedding Quest (`Quest`), the checklist, questionnaire form, client portal, expense and advance dialogs, the Excel import dialog, preview, element cards, line editor, totals panel and other UI pieces |
-| `src/lib/` | the rules, all tested: totals, ₹ formatting, exports and Excel import, quotation references, venues, dashboard figures, events, checklists, CRM, tasks, vendors, questionnaires, portals, expenses and advances, the calendar, Wedding Quest, the Visualize API client and screen-capture handling |
-| `src/state/` | what's kept on this device: proposals, CRM leads, team tasks, vendors, questionnaires, expenses (IndexedDB), theme and font |
+| `src/components/` | the app frame (`AppShell`), page headers, the landing header (`SiteNav`), Wedding Quest (`Quest`), the checklist, questionnaire form, client portal, guest list, the floor-plan editor and seating board (`LayoutEditor`, `SeatingBoard`, `layout/`), the setup checklist and empty states, expense and advance dialogs, the Excel import dialog, preview, element cards, line editor, totals panel and other UI pieces |
+| `src/lib/` | the rules, all tested: totals, ₹ formatting, exports and Excel import, quotation references, venues, dashboard figures, events, checklists, CRM, tasks, vendors, questionnaires, portals, guests and RSVP, floor plans and seating, company settings, plans and pricing, expenses and advances, the calendar, Wedding Quest, the Visualize API client and screen-capture handling |
+| `src/state/` | what's kept on this device: proposals, CRM leads, team tasks, vendors, questionnaires, company settings, saved venue plans, expenses (IndexedDB), theme and font |
 | `src/auth/` | allow-listed accounts and the 12-hour session |
 | `src/config/` | loading and validating the JSON config |
-| `src/styles/` | design tokens and all styles |
+| `src/styles/` | design tokens, the hand-written styles (`app.css`) and Tailwind v4 utilities mapped to the theme tokens (`tailwind.css`) |
+| `docs/` | the [user guide](docs/user-guide/README.md) for every app and the [product plan](docs/PRODUCT_PLAN.md) (pricing tiers and roadmap) |
 
-Built with Vite, React 18, TypeScript, ExcelJS, pdfmake and Vitest; Visualize Proposal adds Vercel Functions, a private Vercel Blob store, Upstash Redis, pdf.js and @napi-rs/canvas. Guidance for AI coding assistants is in `CLAUDE.md`.
+Built with Vite, React 18, TypeScript, Tailwind CSS 4, ExcelJS, pdfmake and Vitest; Visualize Proposal adds Vercel Functions, a private Vercel Blob store, Upstash Redis, pdf.js and @napi-rs/canvas. Guidance for AI coding assistants is in `CLAUDE.md`.
