@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import type { Brand, Catalog } from "../types";
 import { newProposal } from "../state/proposals";
 import { validateBrand } from "../config/validate";
-import { bookFromProposal, categoriesFor, COMPANY_BOOK_ID, companyBook, monthLabel, packEvent, previousMonth } from "./books";
+import { bookFromProposal, categoriesFor, COMPANY_BOOK_ID, companyBook, defaultLedger, ledgerChoices, monthLabel, packEvent, previousMonth } from "./books";
 import { filterExpenses, monthsOf, summarise, type Expense } from "./expenses";
 import { applyReply, packData, signOff, type ReceivedHandover, type SentHandover } from "./handover";
 import { buildPack, readPack } from "./handoverPack";
@@ -99,5 +99,23 @@ describe("books", () => {
     if ("error" in applied) throw new Error(applied.error);
     expect(applied.handover).toMatchObject({ state: "reconciled", month });
     expect(applied.expenses.map((e) => e.id)).toEqual(["a", "b"]);
+  });
+  it("offers quick add the events in play, the last ledger used, else the next event", () => {
+    const ev = (name: string, date: string, status?: "lost") => {
+      const p = newProposal(brand, new Set());
+      return { ...p, status, client: { ...p.client, name, date, dates: [date] } };
+    };
+    const soon = ev("Soon", "2026-12-05");
+    const later = ev("Later", "2027-01-10");
+    const past = ev("Past", "2026-10-01");
+    const lost = ev("Lost", "2026-12-20", "lost");
+    const choices = ledgerChoices([later, past, lost, soon], "2026-11-27");
+    expect(choices.upcoming.map((p) => p.client.name)).toEqual(["Soon", "Later"]);
+    expect(choices.past.map((p) => p.client.name)).toEqual(["Past"]);
+    expect(defaultLedger(choices, null, "2026-11-27")).toBe(soon.id);
+    expect(defaultLedger(choices, past.id, "2026-11-27")).toBe(past.id);
+    expect(defaultLedger(choices, COMPANY_BOOK_ID, "2026-11-27")).toBe(COMPANY_BOOK_ID);
+    expect(defaultLedger(choices, lost.id, "2026-11-27")).toBe(soon.id);
+    expect(defaultLedger({ upcoming: [], past: [] }, null, "2026-11-27")).toBe(COMPANY_BOOK_ID);
   });
 });

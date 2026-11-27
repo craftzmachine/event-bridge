@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { Proposal } from "../types";
 import { useConfig } from "../config/context";
 import { uid } from "../state/proposals";
@@ -24,11 +24,11 @@ import {
   writeCustomCategories,
 } from "../state/expenses";
 import { filterExpenses, flagsOf, maskUpi, monthOf, monthsOf, payerLabel, summarise, type Expense, type ExpenseFilter, type ReviewState } from "../lib/expenses";
-import { bookFromProposal, categoriesFor, COMPANY_BOOK_ID, companyBook, monthLabel, packEvent, previousMonth, type Book } from "../lib/books";
+import { bookFromProposal, categoriesFor, COMPANY_BOOK_ID, companyBook, defaultLedger, ledgerChoices, monthLabel, packEvent, previousMonth, type Book } from "../lib/books";
 import { advanceAlerts, advanceState, balanceOf, canManage, defaultSettleBy, settlement, STATE_LABEL, type Advance } from "../lib/advances";
 import { applyReply, canReviewPack, dueText, handoverReceiptDoc, packData, packSummaryDoc, signOff, withReviews, type PackData, type ReceivedHandover, type SentHandover } from "../lib/handover";
 import { eventDates, proposalTitle } from "../lib/proposal";
-import { proposalStatus, statusLabel } from "../lib/status";
+import { matchesSearch, proposalStatus, statusLabel } from "../lib/status";
 import { formatDate, formatINR, formatINRShort, todayISO } from "../lib/format";
 import { saveBlob } from "../lib/files";
 import { Breadcrumbs } from "../components/PageHeader";
@@ -39,7 +39,7 @@ import ProofThumb from "../components/ProofThumb";
 
 const FLAG_LABEL = { missingProof: "Proof missing", possibleDuplicate: "Check duplicate", queried: "Queried", rejected: "Rejected" } as const;
 
-function useCategories(kind: Book["kind"]) {
+export function useCategories(kind: Book["kind"]) {
   const { brand } = useConfig();
   const [custom, setCustom] = useState(readCustomCategories);
   const all = categoriesFor(kind, brand, custom);
@@ -56,31 +56,87 @@ function useCategories(kind: Book["kind"]) {
   return { all, add };
 }
 
-// which side of the Events | Company switch this device last used
-const VIEW_KEY = "event-bridge.expenses-view.v1";
-function readView(): "events" | "company" {
+// the ledger a quick-added expense went to last, so the next one starts there
+const LAST_BOOK_KEY = "event-bridge.expense-last-book.v1";
+function readLastBook(): string | null {
   try {
-    return localStorage.getItem(VIEW_KEY) === "company" ? "company" : "events";
+    return localStorage.getItem(LAST_BOOK_KEY);
   } catch {
-    return "events";
+    return null;
+  }
+}
+function writeLastBook(id: string) {
+  try {
+    localStorage.setItem(LAST_BOOK_KEY, id);
+  } catch {
+    /* storage blocked: the next quick add starts on the default */
   }
 }
 
-/** Events | Company: the event ledgers, or the company's own expenses. */
-function ViewSwitch({ value }: { value: "events" | "company" }) {
-  const go = (v: "events" | "company") => {
-    try {
-      localStorage.setItem(VIEW_KEY, v);
-    } catch {
-      /* storage blocked: the switch still works for this visit */
-    }
-    location.hash = v === "company" ? `/expenses/${COMPANY_BOOK_ID}` : "/expenses";
-  };
+/** Past payees and the vendor rolodex, for the "Paid to" suggestions. */
+const vendorList = (all: Expense[]) => [...new Set([...all.map((e) => e.vendor), ...vendorNames()].filter(Boolean))].sort((a, b) => a.localeCompare(b));
+
+const choiceLabel = (p: Proposal) => `${p.client.name || "Untitled client"} · ${eventDates(p).length ? formatDate(eventDates(p)[0]) : "date to be confirmed"}`;
+
+/**
+ * Add an expense from anywhere (the Dashboard, the Expenses home): the dialog opens with a "For" picker on top,
+ * starting on the last ledger used or the next event, and saves into that ledger with all its usual checks.
+ */
+export function QuickExpense({ proposals, account, onClose, onSaved }: { proposals: Proposal[]; account: string; onClose: () => void; onSaved?: (book: Book) => void }) {
+  const { brand, catalog } = useConfig();
+  const today = todayISO();
+  const choices = useMemo(() => ledgerChoices(proposals, today), [proposals, today]);
+  const [bookId, setBookId] = useState(() => defaultLedger(choices, readLastBook(), today));
+  const p = [...choices.upcoming, ...choices.past].find((x) => x.id === bookId);
+  const book = useMemo(() => (p ? bookFromProposal(p, catalog, brand) : companyBook(brand)), [p, catalog, brand]);
+  const picker = (
+    <label className="field exp-for">
+      <span>For</span>
+      <select value={book.id} onChange={(ev) => setBookId(ev.target.value)}>
+        <option value={COMPANY_BOOK_ID}>Company (office, fuel, ads, wages…)</option>
+        {choices.upcoming.length > 0 && (
+          <optgroup label="Upcoming events">
+            {choices.upcoming.map((x) => <option key={x.id} value={x.id}>{choiceLabel(x)}</option>)}
+          </optgroup>
+        )}
+        {choices.past.length > 0 && (
+          <optgroup label="Past events">
+            {choices.past.map((x) => <option key={x.id} value={x.id}>{choiceLabel(x)}</option>)}
+          </optgroup>
+        )}
+      </select>
+    </label>
+  );
+  return <QuickLedger key={book.id} book={book} account={account} picker={picker} onClose={onClose} onSaved={onSaved} />;
+}
+
+function QuickLedger({ book, account, picker, onClose, onSaved }: { book: Book; account: string; picker: ReactNode; onClose: () => void; onSaved?: (book: Book) => void }) {
+  const { list, save } = useEventExpenses(book.id);
+  const adv = useEventAdvances(book.id);
+  const cats = useCategories(book.kind);
+  const event: ExpenseEventInfo = useMemo(() => ({ id: book.id, ref: book.ref, functions: book.functions, window: book.window }), [book]);
+  // wait for the ledger, so the duplicate checks see its expenses
+  if (list === null) return null;
   return (
-    <div className="seg exp-switch" role="group" aria-label="Show expenses for">
-      <button type="button" className={value === "events" ? "is-on" : ""} aria-pressed={value === "events"} onClick={() => go("events")}>Events</button>
-      <button type="button" className={value === "company" ? "is-on" : ""} aria-pressed={value === "company"} onClick={() => go("company")}>Company</button>
-    </div>
+    <ExpenseDialog
+      event={event}
+      all={list}
+      advances={adv.list}
+      account={account}
+      categories={cats.all}
+      vendors={vendorList(list)}
+      onAddCategory={cats.add}
+      ledger={picker}
+      onSave={async (e) => {
+        await save(e);
+        writeLastBook(book.id);
+        onSaved?.(book);
+      }}
+      onOpenOther={() => {
+        location.hash = `/expenses/${book.id}`;
+      }}
+      onClose={onClose}
+    />
   );
 }
 
@@ -94,10 +150,6 @@ export default function Expenses({ path, proposals, account }: { path: string[];
   const company = path[0] === COMPANY_BOOK_ID;
   const p = path[0] && path[0] !== "review" && !company ? proposals.find((x) => x.id === path[0]) : undefined;
   const book = useMemo(() => (company ? companyBook(brand) : p ? bookFromProposal(p, catalog, brand) : undefined), [company, p, catalog, brand]);
-  // whoever last chose Company lands on it
-  useEffect(() => {
-    if (!path[0] && readView() === "company") location.replace(`#/expenses/${COMPANY_BOOK_ID}`);
-  }, [path[0]]);
   return (
     <div className="exp-page">
       <main className="exp-main">
@@ -113,7 +165,7 @@ export default function Expenses({ path, proposals, account }: { path: string[];
         ) : book ? (
           <Ledger key={book.id} book={book} account={account} />
         ) : path[0] ? (
-          <div className="empty-state"><p>That proposal isn't on this device. Expenses are kept on the device they were recorded on.</p><a className="btn-ghost" href="#/expenses">All events</a></div>
+          <div className="empty-state"><p>That proposal isn't on this device. Expenses are kept on the device they were recorded on.</p><a className="btn-ghost" href="#/expenses">All expenses</a></div>
         ) : (
           <Index proposals={proposals} account={account} />
         )}
@@ -131,6 +183,8 @@ function Index({ proposals, account }: { proposals: Proposal[]; account: string 
   const [advances, setAdvances] = useState<Advance[]>([]);
   const [msg, setMsg] = useState("");
   const [err, setErr] = useState("");
+  const [adding, setAdding] = useState(false);
+  const [q, setQ] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
   const refresh = () => {
     listExpenses().then(setAll).catch((e: Error) => setErr(e.message));
@@ -164,41 +218,60 @@ function Index({ proposals, account }: { proposals: Proposal[]; account: string 
     }
   }
 
+  const live = all.filter((e) => !e.removed);
   const byEvent = new Map<string, Expense[]>();
-  for (const e of all) if (!e.removed) byEvent.set(e.eventId, [...(byEvent.get(e.eventId) ?? []), e]);
-  // money still with staff on each event: what's left on its open advances
+  for (const e of live) byEvent.set(e.eventId, [...(byEvent.get(e.eventId) ?? []), e]);
+  // money still with staff on each ledger: what's left on its open advances
   const withStaff = new Map<string, number>();
   for (const a of advances) if (!a.closed) withStaff.set(a.eventId, (withStaff.get(a.eventId) ?? 0) + Math.max(balanceOf(a, all).left, 0));
-  const companyOut = withStaff.get(COMPANY_BOOK_ID) ?? 0;
-  withStaff.delete(COMPANY_BOOK_ID);
   const outTotal = [...withStaff.values()].reduce((t, n) => t + n, 0);
   const thisMonth = monthOf(todayISO());
-  const companyMonth = summarise((byEvent.get(COMPANY_BOOK_ID) ?? []).filter((e) => monthOf(e.paidOn) === thisMonth));
-  // accepted events first, then any with expenses, then the rest
+  const month = summarise(live.filter((e) => monthOf(e.paidOn) === thisMonth));
+  const noProof = summarise(live).missingProof;
+  const nameOf = (id: string) => (id === COMPANY_BOOK_ID ? "Company" : proposals.find((x) => x.id === id)?.client.name || "Untitled client");
+  const recent = [...live].sort((a, b) => (b.recordedAt || b.paidOn).localeCompare(a.recordedAt || a.paidOn)).slice(0, 8);
+  // events with expenses first, then accepted ones, then by date
   const events = [...proposals]
     .filter((x) => proposalStatus(x) !== "lost" || byEvent.has(x.id))
+    .filter((x) => matchesSearch(x, q))
     .sort((a, b) => Number(byEvent.has(b.id)) - Number(byEvent.has(a.id)) || Number(proposalStatus(b) === "accepted") - Number(proposalStatus(a) === "accepted") || (eventDates(a)[0] ?? "9").localeCompare(eventDates(b)[0] ?? "9"));
+  const showCompany = !q.trim() || "company office".includes(q.trim().toLowerCase());
+  const companyAll = summarise(byEvent.get(COMPANY_BOOK_ID) ?? []);
+  const companyMonth = summarise((byEvent.get(COMPANY_BOOK_ID) ?? []).filter((e) => monthOf(e.paidOn) === thisMonth));
 
   return (
     <>
       <div className="exp-head">
         <div>
-          <ViewSwitch value="events" />
-          <h1>Event expenses</h1>
-          <p className="lede">Record what's spent on each wedding with its proof, then hand it over to a colleague to check.</p>
-          {outTotal > 0 && <p className="adv-out">{formatINR(outTotal)} is with staff on open advances, across {withStaff.size} event{withStaff.size === 1 ? "" : "s"}.</p>}
-          <p className="adv-out">
-            <a className="link-btn" href={`#/expenses/${COMPANY_BOOK_ID}`}>Company expenses</a>: {formatINR(companyMonth.total)} in {monthLabel(thisMonth)}
-            {companyOut > 0 && `, and ${formatINR(companyOut)} with staff`}.
-          </p>
+          <h1>Expenses</h1>
+          <p className="lede">What's spent on each wedding and by the company, with its proof, ready to hand over to a colleague to check.</p>
         </div>
         <div className="exp-head-tools">
           <button className="btn-ghost" onClick={() => fileRef.current?.click()}>Receive a handover</button>
+          <button className="btn-primary" onClick={() => setAdding(true)}>Add expense</button>
           <input ref={fileRef} type="file" accept=".zip,application/zip" hidden onChange={(e) => receive(e.target.files?.[0])} />
         </div>
       </div>
       {msg && <p className="toast" role="status">{msg}</p>}
       {err && <p className="error" role="alert">{err}</p>}
+
+      <section className="dash-kpis exp-kpis" aria-label="At a glance">
+        <div className="dash-kpi">
+          <span>Spent in {monthLabel(thisMonth)}</span>
+          <strong>{formatINRShort(month.total)}</strong>
+          <small>{month.count} expense{month.count === 1 ? "" : "s"}, events and company</small>
+        </div>
+        <div className="dash-kpi">
+          <span>Without proof</span>
+          <strong>{noProof}</strong>
+          <small>{noProof ? "Attach the screenshot or receipt" : "Every expense has its proof"}</small>
+        </div>
+        <div className="dash-kpi">
+          <span>With staff</span>
+          <strong>{formatINRShort(outTotal)}</strong>
+          <small>Left on open advances</small>
+        </div>
+      </section>
 
       {received.length > 0 && (
         <section className="dash-card">
@@ -220,12 +293,51 @@ function Index({ proposals, account }: { proposals: Proposal[]; account: string 
         </section>
       )}
 
-      <section className="dash-card">
-        <h2>Events</h2>
-        {events.length === 0 ? (
-          <p className="dash-empty">No proposals on this device yet.</p>
-        ) : (
+      <div className="exp-home">
+        <section className="dash-card">
+          <h2>Recent</h2>
+          {recent.length === 0 ? (
+            <div className="exp-empty">
+              <p className="dash-empty">Nothing recorded yet. Add the first expense with its GPay screenshot or a photo of the receipt.</p>
+              <button className="btn-primary" onClick={() => setAdding(true)}>Add expense</button>
+            </div>
+          ) : (
+            <ul className="exp-events exp-recent">
+              {recent.map((e) => (
+                <li key={e.id}>
+                  <a href={`#/expenses/${e.eventId}`}>
+                    <strong>{e.vendor || "Unnamed payee"}</strong>
+                    <span>{[nameOf(e.eventId), e.description, formatDate(e.paidOn)].filter(Boolean).join(" · ")}</span>
+                  </a>
+                  <span className="exp-count">
+                    <strong>{formatINR(e.amount)}</strong>
+                    {!e.proof && <small className="warn"> · no proof</small>}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        <section className="dash-card">
+          <div className="exp-card-head">
+            <h2>Ledgers</h2>
+            <input type="search" placeholder="Search client, venue or quotation" aria-label="Search ledgers" value={q} onChange={(e) => setQ(e.target.value)} />
+          </div>
           <ul className="exp-events">
+            {showCompany && (
+              <li>
+                <a href={`#/expenses/${COMPANY_BOOK_ID}`}>
+                  <strong>Company</strong>
+                  <span>Office, fuel, ads, wages · {formatINRShort(companyMonth.total)} in {monthLabel(thisMonth)}</span>
+                </a>
+                <span className="exp-count">
+                  {companyAll.count ? `${companyAll.count} · ${formatINRShort(companyAll.total)}` : "No expenses"}
+                  {companyAll.missingProof > 0 && <small className="warn"> · {companyAll.missingProof} without proof</small>}
+                  {(withStaff.get(COMPANY_BOOK_ID) ?? 0) > 0 && <small> · {formatINRShort(withStaff.get(COMPANY_BOOK_ID)!)} with staff</small>}
+                </span>
+              </li>
+            )}
             {events.map((x) => {
               const list = byEvent.get(x.id) ?? [];
               const s = summarise(list);
@@ -244,8 +356,21 @@ function Index({ proposals, account }: { proposals: Proposal[]; account: string 
               );
             })}
           </ul>
-        )}
-      </section>
+          {!showCompany && events.length === 0 && <p className="dash-empty">No ledger matches “{q.trim()}”.</p>}
+        </section>
+      </div>
+
+      {adding && (
+        <QuickExpense
+          proposals={proposals}
+          account={account}
+          onClose={() => setAdding(false)}
+          onSaved={(b) => {
+            setMsg(`Saved to ${b.kind === "company" ? "Company expenses" : b.title}.`);
+            refresh();
+          }}
+        />
+      )}
     </>
   );
 }
@@ -283,13 +408,14 @@ function Ledger({ book, account }: { book: Book; account: string }) {
   const catLabel = (id: string) => cats.all.find((c) => c.id === id)?.label ?? id;
   const fnLabel = (id?: string) => event.functions.find((f) => f.id === id)?.label;
   // past payees and the vendor rolodex
-  const vendors = [...new Set([...all.map((e) => e.vendor), ...vendorNames()].filter(Boolean))].sort((a, b) => a.localeCompare(b));
+  const vendors = vendorList(all);
+  const [showFilters, setShowFilters] = useState(false);
+  const activeFilters = [filter.q, filter.category, filter.payer, filter.flag].filter(Boolean).length;
 
   return (
     <>
       <div className="exp-head">
         <div>
-          {company && <ViewSwitch value="company" />}
           <h1>{book.title}</h1>
           <p className="lede">
             {company ? book.subtitle : `${book.subtitle} · ${book.dates.length ? book.dates.map(formatDate).join(", ") : "date to be confirmed"} · quotation ${book.ref}`}
@@ -336,9 +462,12 @@ function Ledger({ book, account }: { book: Book; account: string }) {
 
       {adv.list.length > 0 && <Advances list={adv.list} expenses={all} account={account} onOpen={setOpened} />}
 
-      <div className={`exp-filters${company ? " has-month" : ""}`}>
+      <button type="button" className="btn-ghost btn-sm exp-filter-toggle" aria-expanded={showFilters} onClick={() => setShowFilters(!showFilters)}>
+        {showFilters ? "Hide filters" : `Filters${activeFilters ? ` (${activeFilters} on)` : ""}`}
+      </button>
+      <div className={`exp-filters${company ? " has-month" : ""}${showFilters ? " is-open" : ""}`}>
         {company && (
-          <select aria-label="Month" value={filter.month ?? ""} onChange={(e) => setFilter({ ...filter, month: e.target.value || undefined })}>
+          <select className="exp-month" aria-label="Month" value={filter.month ?? ""} onChange={(e) => setFilter({ ...filter, month: e.target.value || undefined })}>
             {monthsOf(all, thisMonth).map((m) => <option key={m} value={m}>{monthLabel(m)}</option>)}
             <option value="">All months</option>
           </select>
@@ -370,6 +499,7 @@ function Ledger({ book, account }: { book: Book; account: string }) {
               ? company && filter.month && !scoped.length ? `No company expenses in ${monthLabel(filter.month)} yet.` : "No expenses match."
               : company ? "No company expenses yet. Add rent, fuel, ads or wages with the bill or GPay screenshot." : "No expenses yet. Add the first one with its GPay screenshot or a photo of the receipt."}
           </p>
+          {!all.length && <button className="btn-primary" onClick={() => setEditing("new")}>Add expense</button>}
         </div>
       ) : (
         <ul className="exp-list">

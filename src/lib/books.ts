@@ -6,6 +6,7 @@ import { DEFAULT_CATEGORIES, eventWindow } from "./expenses";
 import { eventDates, proposalTitle } from "./proposal";
 import { functionsOf } from "./functions";
 import { computeTotals } from "./totals";
+import { eventsFor, isPast } from "./events";
 
 export const COMPANY_BOOK_ID = "company";
 export const COMPANY_REF = "COMPANY";
@@ -98,4 +99,19 @@ export function categoriesFor(kind: Book["kind"], brand: Pick<Brand, "expenseCat
   const team = (kind === "company" ? brand.companyExpenseCategories : brand.expenseCategories) ?? [];
   const other = defaults.find((c) => c.id === "other")!;
   return [...defaults.filter((c) => c.id !== "other"), ...team, ...custom, other].filter((c, i, a) => a.findIndex((x) => x.id === c.id) === i);
+}
+
+/**
+ * The events an expense can be recorded against (the Company book comes on top of these): upcoming events soonest
+ * first, then past ones most recent first. Lost proposals are left out.
+ */
+export function ledgerChoices(proposals: Proposal[], today: string): { upcoming: Proposal[]; past: Proposal[] } {
+  return { upcoming: eventsFor(proposals, "upcoming", today), past: eventsFor(proposals, "past", today) };
+}
+
+/** The book a quick-added expense starts in: the last one used if it's still offered, else the next event, else the company. */
+export function defaultLedger(choices: { upcoming: Proposal[]; past: Proposal[] }, last: string | null, today: string): string {
+  if (last === COMPANY_BOOK_ID) return last;
+  if (last && [...choices.upcoming, ...choices.past].some((p) => p.id === last)) return last;
+  return choices.upcoming.find((p) => !isPast(p, today))?.id ?? COMPANY_BOOK_ID;
 }

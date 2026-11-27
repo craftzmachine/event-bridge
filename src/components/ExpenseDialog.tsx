@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ClipboardEvent } from "react";
+import { useEffect, useRef, useState, type ClipboardEvent, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { uid } from "../state/proposals";
 import { putProof } from "../state/expenses";
@@ -60,6 +60,7 @@ export default function ExpenseDialog({
   onSave,
   onOpenOther,
   onClose,
+  ledger,
 }: {
   event: ExpenseEventInfo;
   expense?: Expense;
@@ -73,6 +74,8 @@ export default function ExpenseDialog({
   onSave: (e: Expense) => Promise<void>;
   onOpenOther: (id: string) => void;
   onClose: () => void;
+  /** a "For" picker shown first, when the dialog is opened without a ledger (quick add) */
+  ledger?: ReactNode;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
   const camRef = useRef<HTMLInputElement>(null);
@@ -177,6 +180,7 @@ export default function ExpenseDialog({
         <button className="vd-close" onClick={onClose} aria-label="Close" disabled={!!busy}>×</button>
       </header>
       <div className="xi-body">
+        {ledger}
         <section className="exp-proof" aria-label="Proof">
           {e.proof ? (
             <ProofThumb fileId={proofBlob ? undefined : e.proof.fileId} blob={proofBlob ?? undefined} alt={`Proof of payment to ${e.vendor || "the vendor"}`} full />
@@ -203,10 +207,6 @@ export default function ExpenseDialog({
             <span>Paid on</span>
             <input type="date" value={e.paidOn} onChange={(ev) => set({ paidOn: ev.target.value })} />
             {note("paidOn")}
-          </label>
-          <label className="field">
-            <span>Time <small>(optional)</small></span>
-            <input type="time" value={e.paidAt ?? ""} onChange={(ev) => set({ paidAt: ev.target.value || undefined })} />
           </label>
           <label className="field">
             <span>Paid to</span>
@@ -276,14 +276,27 @@ export default function ExpenseDialog({
                 <input value={e.upiRef ?? ""} inputMode="numeric" maxLength={30} placeholder="12 digits, from the screenshot" onChange={(ev) => set({ upiRef: ev.target.value })} />
                 {note("upiRef")}
               </label>
+            </>
+          )}
+        </div>
+
+        {/* the rarely needed fields, open when an edited expense already has them */}
+        <details className="exp-more" open={!!(expense?.paidAt || expense?.payeeUpi) || undefined}>
+          <summary>More details</summary>
+          <div className="exp-grid">
+            <label className="field">
+              <span>Time <small>(optional)</small></span>
+              <input type="time" value={e.paidAt ?? ""} onChange={(ev) => set({ paidAt: ev.target.value || undefined })} />
+            </label>
+            {(e.method === "gpay" || e.method === "upi" || e.method === "bank") && (
               <label className="field">
                 <span>Paid to UPI ID <small>(optional)</small></span>
                 <input value={e.payeeUpi ?? ""} maxLength={80} placeholder="name@bank" autoCapitalize="none" spellCheck={false} onChange={(ev) => set({ payeeUpi: ev.target.value })} />
                 {e.payeeUpi && <small className="hint">Shown to others as {maskUpi(e.payeeUpi)}.</small>}
               </label>
-            </>
-          )}
-        </div>
+            )}
+          </div>
+        </details>
 
         {warns.length > 0 && !blocks.length && (
           <label className="check exp-confirm">

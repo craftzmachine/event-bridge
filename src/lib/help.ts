@@ -141,8 +141,9 @@ export const HELP: HelpTopic[] = [
   app("expenses", {
     summary: "Record what's spent on each wedding and by the company, with proof, staff advances and handovers for review.",
     steps: [
-      "Choose Events or Company at the top, then open the event (or month) you're spending for.",
-      "Add expense: attach the GPay screenshot or a receipt photo (Take photo, Choose screenshot, or paste), then the amount, date, who was paid, the category, who paid and the UPI transaction ID.",
+      "Press Record expense on the Dashboard, or Add expense on the Expenses page. Choose what it's For: Company, or the event. It starts on the one you used last.",
+      "Attach the GPay screenshot or a receipt photo (Take photo, Choose screenshot, or paste), then the amount, date, who was paid, the category, who paid and the UPI transaction ID. Time and the payee's UPI ID are under More details.",
+      "The Expenses page shows this month's spending, recent expenses and every ledger (Company first). Open one to see its full list, filters and advances.",
       "Give money records a staff advance: who it's for, the amount and a settle-by date. Their expenses then come out of it, and the card shows what's left.",
       "When the event is done, Prepare handover checks for missing proof and duplicates, then creates a .zip file.",
       "Send the file to the colleague who'll check it. They open Expenses → Receive a handover, mark each expense Checked, Query or Reject, and Sign off.",
