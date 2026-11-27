@@ -24,6 +24,8 @@ const Portal = lazy(() => import("./pages/Portal"));
 const Help = lazy(() => import("./pages/Help"));
 // the company details and catalogue, edited in the app and saved on this device
 const Settings = lazy(() => import("./pages/Settings"));
+// a guest's RSVP page: public, so it loads on its own
+const Rsvp = lazy(() => import("./pages/Rsvp"));
 import ClientView from "./pages/ClientView";
 import AppShell from "./components/AppShell";
 import { endSession, readSession, SERVER_SIGNIN, startSession, type Session } from "./auth/auth";
@@ -34,16 +36,16 @@ import { ApiError, api } from "./lib/api";
  * #/ (landing), #/login, the signed-in #/dashboard (team overview) and feature apps #/studio (Proposal Studio), #/venues (Venue Directory) and
  * #/visualize (Visualize Proposal), and the public #/view/<token> where a client opens a shared proposal.
  */
-type Route = "landing" | "login" | "dashboard" | "events" | "crm" | "tasks" | "vendors" | "questionnaires" | "portal" | "expenses" | "studio" | "venues" | "visualize" | "help" | "settings" | "view";
-type AppRoute = Exclude<Route, "landing" | "login" | "view">;
+type Route = "landing" | "login" | "dashboard" | "events" | "crm" | "tasks" | "vendors" | "questionnaires" | "portal" | "expenses" | "studio" | "venues" | "visualize" | "help" | "settings" | "view" | "rsvp";
+type AppRoute = Exclude<Route, "landing" | "login" | "view" | "rsvp">;
 const APP_ROUTES: Route[] = ["dashboard", "events", "crm", "tasks", "vendors", "questionnaires", "portal", "expenses", "studio", "venues", "visualize", "help", "settings"];
 const readRoute = (hash: string): Route => {
   const h = hash.replace(/^#\/?/, "").split("/")[0].toLowerCase();
-  return h === "login" || h === "view" || APP_ROUTES.includes(h as Route) ? (h as Route) : "landing";
+  return h === "login" || h === "view" || h === "rsvp" || APP_ROUTES.includes(h as Route) ? (h as Route) : "landing";
 };
 // the link token stays in the hash, so it never reaches servers or referrers
 const viewToken = (hash: string) => hash.replace(/^#\/?/, "").split("/")[1] || undefined;
-const go = (r: Exclude<Route, "view">) => {
+const go = (r: Exclude<Route, "view" | "rsvp">) => {
   window.location.hash = r === "landing" ? "/" : `/${r}`;
 };
 // where to land after signing in, when sign-in interrupted the way to a feature app
@@ -137,7 +139,11 @@ export default function App() {
   return (
     <AppearanceContext.Provider value={appearance}>
       <ConfigContext.Provider value={config}>
-        {route === "view" ? (
+        {route === "rsvp" ? (
+          <Suspense fallback={<div className="boot">Loading…</div>}>
+            <Rsvp key={hash} token={viewToken(hash)} code={hash.replace(/^#\/?/, "").split("/")[2] || undefined} />
+          </Suspense>
+        ) : route === "view" ? (
           <ClientView key={viewToken(hash) ?? ""} token={viewToken(hash)} />
         ) : route === "landing" ? (
           <Landing account={session?.email} onSignOut={signOut} />
