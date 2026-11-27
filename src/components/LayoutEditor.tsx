@@ -1,20 +1,16 @@
-// The interactive venue floor plan for one function: add tables, stage, mandap and more; drag, rotate, resize;
-// undo and redo; start from a template sized for the guests or a plan saved for this venue. Drawn in SVG, in metres.
-import { useEffect, useMemo, useRef, useState, type PointerEvent as RPointerEvent } from "react";
+// The interactive venue floor plan for one function, on a Konva canvas (layout/PlanCanvas.tsx): drag tables with
+// smart guides, resize and rotate them with handles (seats follow the size), a toolbar over the selection, drag items
+// in from the palette, right-click menu, copy/paste, lock, undo/redo. Saved through onSave when a gesture ends.
+import { lazy, Suspense, useEffect, useMemo, useRef, useState, type PointerEvent as RPointerEvent } from "react";
 import type { LayoutItem, LayoutKind, Proposal, VenueLayout } from "../types";
 import { useConfig } from "../config/context";
-import { GRID, ITEMS_MAX, KINDS, PALETTE, ROOM_MAX, ROOM_MIN, STARTERS, bounds, clampToRoom, clashes, cloneItems, emptyLayout, isTable, layoutCapacity, newItem, snap, starterLayout } from "../lib/layout";
+import { GRID, ITEMS_MAX, KINDS, PALETTE, ROOM_MAX, ROOM_MIN, SEATS_MAX, STARTERS, clampToRoom, clashes, cloneItems, emptyLayout, isTable, layoutCapacity, newItem, resizeItem, snap, starterLayout } from "../lib/layout";
 import { confirmedHeadcount } from "../lib/guestList";
 import { venueCapacity } from "../lib/guests";
 import { removeTemplate, saveTemplate, templatesFor } from "../state/layouts";
-import { ItemShape, Room } from "./layout/FloorPlan";
-import { usePanZoom } from "./layout/usePanZoom";
+import type { CanvasHandle, MenuRequest } from "./layout/PlanCanvas";
 
-type Drag =
-  | { kind: "move"; start: { x: number; y: number }; orig: Map<string, { x: number; y: number }>; moved: boolean }
-  | { kind: "rotate"; id: string }
-  | { kind: "resize"; id: string }
-  | { kind: "marquee"; start: { x: number; y: number }; now: { x: number; y: number } };
+const PlanCanvas = lazy(() => import("./layout/PlanCanvas"));
 
 const r2 = (n: number) => Math.round(n * 100) / 100;
 const HISTORY = 80;
@@ -61,22 +57,28 @@ function Start({ p, onPick }: { p: Proposal; onPick: (l: VenueLayout) => void })
   );
 }
 
+type Menu = MenuRequest & { left: number; top: number };
+
 function Editor({ initial, p, onSave }: { initial: VenueLayout; p: Proposal; onSave: (l: VenueLayout | undefined) => void }) {
   const { venues } = useConfig();
   const [layout, setLayout] = useState(initial);
   const [sel, setSel] = useState<string[]>([]);
   const [past, setPast] = useState<VenueLayout[]>([]);
   const [future, setFuture] = useState<VenueLayout[]>([]);
-  const [drag, setDrag] = useState<Drag | null>(null);
   const [grid, setGrid] = useState(true);
   const [note, setNote] = useState("");
-  const pz = usePanZoom(layout);
+  const [menu, setMenu] = useState<Menu | null>(null);
+  const [ghost, setGhost] = useState<{ kind: LayoutKind; x: number; y: number } | null>(null);
+  const canvas = useRef<CanvasHandle>(null);
+  const wrap = useRef<HTMLDivElement>(null);
   const latest = useRef(layout);
   latest.current = layout;
+  const before = useRef<VenueLayout | null>(null);
+  const clipboard = useRef<LayoutItem[]>([]);
 
   /** a finished change: kept for undo and saved on the proposal */
-  const commit = (next: VenueLayout, before: VenueLayout = latest.current) => {
-    setPast((h) => [...h.slice(-HISTORY + 1), before]);
+  const commit = (next: VenueLayout, prev: VenueLayout = latest.current) => {
+    setPast((h) => [...h.slice(-HISTORY + 1), prev]);
     setFuture([]);
     setLayout(next);
     onSave(next);
@@ -97,38 +99,53 @@ function Editor({ initial, p, onSave }: { initial: VenueLayout; p: Proposal; onS
     setLayout(next);
     onSave(next);
   };
-  const patchItems = (ids: string[], fn: (it: LayoutItem) => LayoutItem) => commit({ ...layout, items: layout.items.map((it) => (ids.includes(it.id) ? clampToRoom(fn(it), layout) : it)) });
+  const setItems = (items: LayoutItem[]) => commit({ ...layout, items });
+  const patchItems = (ids: string[], fn: (it: LayoutItem) => LayoutItem) => setItems(layout.items.map((it) => (ids.includes(it.id) ? clampToRoom(fn(it), layout) : it)));
 
   const selected = layout.items.filter((i) => sel.includes(i.id));
   const one = selected.length === 1 ? selected[0] : null;
+  const movable = sel.filter((id) => !layout.items.find((i) => i.id === id)?.locked);
   const clash = useMemo(() => clashes(layout.items), [layout.items]);
   const capacity = layoutCapacity(layout);
   const coming = confirmedHeadcount(p);
-  const venue = p.client.venue ? venueCapacity(venues.venues, p.client.venue) : null;
-  const venueMax = venue?.capacity ?? null;
+  const venueMax = (p.client.venue ? venueCapacity(venues.venues, p.client.venue) : null)?.capacity ?? null;
 
-  const add = (kind: LayoutKind) => {
+  const addAt = (kind: LayoutKind, at?: { x: number; y: number }) => {
     if (layout.items.length >= ITEMS_MAX) return setNote(`A plan holds up to ${ITEMS_MAX} items.`);
-    const c = { x: pz.view.x + pz.view.w / 2, y: pz.view.y + pz.view.h / 2 };
-    const it = clampToRoom(newItem(kind, { x: Math.min(Math.max(c.x, 1), layout.w - 1), y: Math.min(Math.max(c.y, 1), layout.h - 1) }, layout.items), layout);
-    commit({ ...layout, items: [...layout.items, it] });
+    const c = at ?? canvas.current?.viewCentre() ?? { x: layout.w / 2, y: layout.h / 2 };
+    const it = clampToRoom(newItem(kind, { x: Math.min(Math.max(c.x, 0.5), layout.w - 0.5), y: Math.min(Math.max(c.y, 0.5), layout.h - 0.5) }, layout.items), layout);
+    setItems([...layout.items, it]);
     setSel([it.id]);
   };
-  const remove = () => {
-    if (!sel.length) return;
-    commit({ ...layout, items: layout.items.filter((i) => !sel.includes(i.id)) });
+  const remove = (ids = sel) => {
+    if (!ids.length) return;
+    setItems(layout.items.filter((i) => !ids.includes(i.id)));
     setSel([]);
   };
-  const duplicate = () => {
-    if (!selected.length) return;
-    const copies = cloneItems(selected, 1, 1).map((c, i) => ({ ...c, label: isTable(c) && selected[i].label?.startsWith("Table ") ? undefined : c.label }));
+  const paste = (src: LayoutItem[], at?: { x: number; y: number }) => {
+    if (!src.length) return;
+    const cx = src.reduce((t, i) => t + i.x, 0) / src.length;
+    const cy = src.reduce((t, i) => t + i.y, 0) / src.length;
+    const dx = at ? snap(at.x - cx) : 1;
+    const dy = at ? snap(at.y - cy) : 1;
     const items = [...layout.items];
-    for (const c of copies) items.push(clampToRoom({ ...c, label: c.label ?? newItem(c.kind, c, items).label }, layout));
-    commit({ ...layout, items });
-    setSel(items.slice(-copies.length).map((c) => c.id));
+    for (const c of cloneItems(src, dx, dy)) items.push(clampToRoom({ ...c, locked: false, label: isTable(c) && c.label?.startsWith("Table ") ? newItem(c.kind, c, items).label : c.label }, layout));
+    setItems(items);
+    setSel(items.slice(-src.length).map((c) => c.id));
   };
-  const nudge = (dx: number, dy: number) => patchItems(sel, (it) => ({ ...it, x: r2(it.x + dx), y: r2(it.y + dy) }));
-  const rotateBy = (d: number) => patchItems(sel, (it) => ({ ...it, rot: (((it.rot + d) % 360) + 360) % 360 }));
+  const duplicate = (ids = sel) => paste(layout.items.filter((i) => ids.includes(i.id)));
+  const nudge = (dx: number, dy: number) => patchItems(movable, (it) => ({ ...it, x: r2(it.x + dx), y: r2(it.y + dy) }));
+  const rotateBy = (d: number, ids = movable) => patchItems(ids, (it) => ({ ...it, rot: (((it.rot + d) % 360) + 360) % 360 }));
+  const setSeats = (it: LayoutItem, n: number) => patchItems([it.id], (x) => ({ ...x, seats: Math.max(1, Math.min(SEATS_MAX[x.kind] ?? 24, n)) }));
+  const toggleLock = (ids = sel) => {
+    const lock = layout.items.some((i) => ids.includes(i.id) && !i.locked);
+    setItems(layout.items.map((i) => (ids.includes(i.id) ? { ...i, locked: lock || undefined } : i)));
+  };
+  const reorder = (ids: string[], front: boolean) => {
+    const picked = layout.items.filter((i) => ids.includes(i.id));
+    const rest = layout.items.filter((i) => !ids.includes(i.id));
+    setItems(front ? [...rest, ...picked] : [...picked, ...rest]);
+  };
 
   // keyboard shortcuts while the editor has focus
   const onKey = (e: React.KeyboardEvent) => {
@@ -136,200 +153,140 @@ function Editor({ initial, p, onSave }: { initial: VenueLayout; p: Proposal; onS
     if (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.tagName === "SELECT") return;
     const mod = e.ctrlKey || e.metaKey;
     const step = e.shiftKey ? 1 : GRID;
-    if (mod && e.key.toLowerCase() === "z") (e.shiftKey ? redo : undo)();
-    else if (mod && e.key.toLowerCase() === "y") redo();
-    else if (mod && e.key.toLowerCase() === "d") duplicate();
-    else if (mod && e.key.toLowerCase() === "a") setSel(layout.items.map((i) => i.id));
-    else if (!sel.length) return;
+    const key = e.key.toLowerCase();
+    if (mod && key === "z") (e.shiftKey ? redo : undo)();
+    else if (mod && key === "y") redo();
+    else if (mod && key === "d") duplicate();
+    else if (mod && key === "c") clipboard.current = selected.map((i) => ({ ...i }));
+    else if (mod && key === "v") paste(clipboard.current);
+    else if (mod && key === "a") setSel(layout.items.map((i) => i.id));
+    else if (e.key === "Escape") {
+      setMenu(null);
+      setSel([]);
+    } else if (!sel.length) return;
     else if (e.key === "ArrowLeft") nudge(-step, 0);
     else if (e.key === "ArrowRight") nudge(step, 0);
     else if (e.key === "ArrowUp") nudge(0, -step);
     else if (e.key === "ArrowDown") nudge(0, step);
-    else if (e.key.toLowerCase() === "r") rotateBy(e.shiftKey ? -15 : 15);
-    else if (e.key === "Delete" || e.key === "Backspace") remove();
-    else if (e.key === "Escape") setSel([]);
+    else if (key === "r") rotateBy(e.shiftKey ? -15 : 15);
+    else if (e.key === "Delete" || e.key === "Backspace") remove(movable);
+    else if (one && isTable(one) && (e.key === "+" || e.key === "=")) setSeats(one, (one.seats ?? 0) + 1);
+    else if (one && isTable(one) && e.key === "-") setSeats(one, (one.seats ?? 0) - 1);
     else return;
     e.preventDefault();
   };
 
-  // ---- pointer: items move, handles rotate/resize, the floor pans or (with Shift) selects a box ----
-  const onItemDown = (e: RPointerEvent<SVGGElement>, it: LayoutItem) => {
-    if (e.button !== 0) return;
-    e.stopPropagation();
-    (e.currentTarget.ownerSVGElement ?? e.currentTarget).setPointerCapture?.(e.pointerId);
-    let ids = sel;
-    if (e.shiftKey) ids = sel.includes(it.id) ? sel.filter((x) => x !== it.id) : [...sel, it.id];
-    else if (!sel.includes(it.id)) ids = [it.id];
-    setSel(ids);
-    const orig = new Map(layout.items.filter((i) => ids.includes(i.id)).map((i) => [i.id, { x: i.x, y: i.y }]));
-    setDrag({ kind: "move", start: pz.toRoom(e.clientX, e.clientY), orig, moved: false });
-    latestBefore.current = layout;
+  // live changes while dragging or resizing, kept out of the undo history until the gesture ends
+  const onEdit = (items: LayoutItem[], phase: "live" | "end") => {
+    if (phase === "live") {
+      before.current ??= latest.current;
+      setLayout({ ...latest.current, items });
+      return;
+    }
+    const prev = before.current ?? latest.current;
+    before.current = null;
+    commit({ ...latest.current, items }, prev);
   };
-  const latestBefore = useRef(layout);
-  const onHandleDown = (e: RPointerEvent<SVGElement>, kind: "rotate" | "resize", id: string) => {
-    e.stopPropagation();
-    (e.currentTarget.ownerSVGElement ?? e.currentTarget).setPointerCapture?.(e.pointerId);
-    latestBefore.current = layout;
-    setDrag({ kind, id });
-  };
-  const onFloorDown = (e: RPointerEvent<SVGSVGElement>) => {
+
+  // palette: click adds in the middle of the view; drag drops it where you let go
+  const paletteDown = (e: RPointerEvent<HTMLButtonElement>, kind: LayoutKind) => {
     if (e.button !== 0 && e.pointerType === "mouse") return;
-    if (e.shiftKey) {
-      const at = pz.toRoom(e.clientX, e.clientY);
-      try {
-        e.currentTarget.setPointerCapture(e.pointerId);
-      } catch {
-        /* the pointer already ended */
-      }
-      setDrag({ kind: "marquee", start: at, now: at });
+    const start = { x: e.clientX, y: e.clientY };
+    let dragging = false;
+    const move = (ev: PointerEvent) => {
+      if (!dragging && Math.hypot(ev.clientX - start.x, ev.clientY - start.y) > 6) dragging = true;
+      if (dragging) setGhost({ kind, x: ev.clientX, y: ev.clientY });
+    };
+    const up = (ev: PointerEvent) => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+      setGhost(null);
+      if (!dragging) return addAt(kind);
+      const at = canvas.current?.toRoom(ev.clientX, ev.clientY);
+      if (at) addAt(kind, { x: snap(at.x), y: snap(at.y) });
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+  };
+
+  const openMenu = (m: MenuRequest) => {
+    const r = wrap.current?.getBoundingClientRect();
+    if (!r) return;
+    if (m.itemId && !sel.includes(m.itemId)) setSel([m.itemId]);
+    setMenu({ ...m, left: Math.min(m.clientX - r.left, r.width - 220), top: m.clientY - r.top });
+  };
+  useEffect(() => {
+    if (!menu) {
       return;
     }
-    setSel([]);
-    pz.startPan(e);
-  };
-  const onMove = (e: RPointerEvent<SVGSVGElement>) => {
-    if (!drag) {
-      pz.movePan(e);
-      return;
-    }
-    const at = pz.toRoom(e.clientX, e.clientY);
-    if (drag.kind === "move") {
-      const dx = at.x - drag.start.x;
-      const dy = at.y - drag.start.y;
-      if (!drag.moved && Math.hypot(dx, dy) < 0.05) return;
-      if (!drag.moved) setDrag({ ...drag, moved: true });
-      setLayout((l) => ({
-        ...l,
-        items: l.items.map((it) => {
-          const o = drag.orig.get(it.id);
-          if (!o) return it;
-          const nx = e.altKey ? o.x + dx : snap(o.x + dx);
-          const ny = e.altKey ? o.y + dy : snap(o.y + dy);
-          return clampToRoom({ ...it, x: r2(nx), y: r2(ny) }, l);
-        }),
-      }));
-    } else if (drag.kind === "rotate") {
-      setLayout((l) => ({
-        ...l,
-        items: l.items.map((it) => {
-          if (it.id !== drag.id) return it;
-          let a = (Math.atan2(at.y - it.y, at.x - it.x) * 180) / Math.PI + 90;
-          a = e.shiftKey ? Math.round(a) : Math.round(a / 15) * 15;
-          return clampToRoom({ ...it, rot: ((a % 360) + 360) % 360 }, l);
-        }),
-      }));
-    } else if (drag.kind === "resize") {
-      setLayout((l) => ({
-        ...l,
-        items: l.items.map((it) => {
-          if (it.id !== drag.id) return it;
-          const a = (-it.rot * Math.PI) / 180;
-          const lx = (at.x - it.x) * Math.cos(a) - (at.y - it.y) * Math.sin(a);
-          const ly = (at.x - it.x) * Math.sin(a) + (at.y - it.y) * Math.cos(a);
-          let w = Math.max(0.4, snap(Math.abs(lx) * 2));
-          let h = Math.max(it.kind === "wall" ? 0.1 : 0.4, snap(Math.abs(ly) * 2));
-          if (KINDS[it.kind].round) w = h = Math.max(w, h);
-          return clampToRoom({ ...it, w: Math.min(w, l.w), h: Math.min(h, l.h) }, l);
-        }),
-      }));
-    } else if (drag.kind === "marquee") setDrag({ ...drag, now: at });
-  };
-  const onUp = (e: RPointerEvent<SVGSVGElement>) => {
-    pz.endPan(e);
-    if (!drag) return;
-    if (drag.kind === "marquee") {
-      const x0 = Math.min(drag.start.x, drag.now.x);
-      const x1 = Math.max(drag.start.x, drag.now.x);
-      const y0 = Math.min(drag.start.y, drag.now.y);
-      const y1 = Math.max(drag.start.y, drag.now.y);
-      setSel(layout.items.filter((it) => {
-        const b = bounds(it);
-        return b.x0 >= x0 && b.x1 <= x1 && b.y0 >= y0 && b.y1 <= y1;
-      }).map((i) => i.id));
-    } else if (drag.kind !== "move" || drag.moved) commit(latest.current, latestBefore.current);
-    setDrag(null);
-  };
+    const close = (e: Event) => {
+      if (!(e.target as HTMLElement).closest?.("[data-plan-menu]")) setMenu(null);
+    };
+    window.addEventListener("pointerdown", close);
+    return () => window.removeEventListener("pointerdown", close);
+  }, [menu]);
 
   const setRoom = (w: number, h: number) => {
     const next = { ...layout, w: Math.max(ROOM_MIN, Math.min(ROOM_MAX, snap(w, 0.5))), h: Math.max(ROOM_MIN, Math.min(ROOM_MAX, snap(h, 0.5))) };
     commit({ ...next, items: next.items.map((i) => clampToRoom(i, next)) });
   };
-  const align = (how: "left" | "centre" | "top" | "middle") =>
-    patchItems(sel, (it) => {
-      const bs = selected.map(bounds);
-      if (how === "left") return { ...it, x: r2(it.x - bounds(it).x0 + Math.min(...bs.map((b) => b.x0))) };
-      if (how === "top") return { ...it, y: r2(it.y - bounds(it).y0 + Math.min(...bs.map((b) => b.y0))) };
-      if (how === "centre") return { ...it, x: r2(selected.reduce((t, s) => t + s.x, 0) / selected.length) };
-      return { ...it, y: r2(selected.reduce((t, s) => t + s.y, 0) / selected.length) };
-    });
-  const distribute = () => {
-    if (selected.length < 3) return;
-    const sorted = [...selected].sort((a, b) => a.x - b.x);
-    const x0 = sorted[0].x;
-    const step = (sorted[sorted.length - 1].x - x0) / (sorted.length - 1);
-    const pos = new Map(sorted.map((s, i) => [s.id, r2(x0 + step * i)]));
-    patchItems(sel, (it) => ({ ...it, x: pos.get(it.id) ?? it.x }));
-  };
-
-  const marquee = drag?.kind === "marquee" ? drag : null;
 
   return (
-    <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_280px]" onKeyDown={onKey}>
+    <div ref={wrap} className="relative grid gap-4 lg:grid-cols-[minmax(0,1fr)_280px]" onKeyDown={onKey}>
       <div className="min-w-0">
         <div className="mb-2 flex flex-wrap items-center gap-1.5" role="toolbar" aria-label="Floor plan tools">
           <ToolBtn label="Undo (Ctrl+Z)" disabled={!past.length} onClick={undo}>↶</ToolBtn>
           <ToolBtn label="Redo (Ctrl+Y)" disabled={!future.length} onClick={redo}>↷</ToolBtn>
           <span className="mx-1 h-6 w-px bg-line" aria-hidden="true" />
-          <ToolBtn label="Zoom out" onClick={() => pz.zoomAt(1.25)}>−</ToolBtn>
-          <ToolBtn label="Zoom in" onClick={() => pz.zoomAt(0.8)}>+</ToolBtn>
-          <ToolBtn label="Fit the room" onClick={pz.fit}>Fit</ToolBtn>
+          <ToolBtn label="Zoom out" onClick={() => canvas.current?.zoomBy(0.8)}>−</ToolBtn>
+          <ToolBtn label="Zoom in" onClick={() => canvas.current?.zoomBy(1.25)}>+</ToolBtn>
+          <ToolBtn label="Fit the room" onClick={() => canvas.current?.fit()}>Fit</ToolBtn>
           <ToolBtn label={grid ? "Hide the grid" : "Show the grid"} pressed={grid} onClick={() => setGrid(!grid)}>Grid</ToolBtn>
-          <span className="ml-auto text-xs text-stone">{layout.items.length} items · {capacity} seats{clash.size ? ` · ${clash.size} overlapping` : ""}</span>
+          <span className="ml-auto text-xs text-stone" aria-live="polite">{layout.items.length} items · {capacity} seats{clash.size ? ` · ${clash.size} overlapping` : ""}</span>
         </div>
-        <div className="overflow-hidden rounded-lg border border-line bg-paper-2" style={{ touchAction: "none" }}>
-          <svg
-            ref={pz.svg}
-            viewBox={pz.viewBox}
-            className="block aspect-[16/10] w-full select-none"
-            role="application"
-            aria-label={`Floor plan, ${layout.w} by ${layout.h} metres. Select an item, then use the arrow keys to move it, R to rotate, Delete to remove.`}
-            tabIndex={0}
-            onPointerDown={onFloorDown}
-            onPointerMove={onMove}
-            onPointerUp={onUp}
-            onPointerCancel={onUp}
-            style={{ cursor: drag?.kind === "move" ? "grabbing" : "grab" }}
-          >
-            <Room layout={layout} grid={grid} />
-            {layout.items.map((it) => (
-              <ItemShape key={it.id} it={it} selected={sel.includes(it.id)} clash={clash.has(it.id)} handlers={{
-                onPointerDown: onItemDown,
-                onKeyDown: (e, item) => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    e.preventDefault();
-                    setSel(e.shiftKey ? [...new Set([...sel, item.id])] : [item.id]);
-                  }
-                },
-              }} />
-            ))}
-            {one && <Handles it={one} onDown={onHandleDown} />}
-            {marquee && (
-              <rect x={Math.min(marquee.start.x, marquee.now.x)} y={Math.min(marquee.start.y, marquee.now.y)} width={Math.abs(marquee.now.x - marquee.start.x)} height={Math.abs(marquee.now.y - marquee.start.y)}
-                fill="color-mix(in srgb, var(--gold) 12%, transparent)" stroke="var(--gold)" strokeWidth={0.05} strokeDasharray="0.2 0.1" pointerEvents="none" />
-            )}
-          </svg>
+        <div tabIndex={0} className="rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-gold">
+          <Suspense fallback={<div className="grid h-80 place-items-center rounded-lg border border-line bg-paper-2 text-sm text-stone">Opening the floor plan…</div>}>
+            <PlanCanvas
+              ref={canvas}
+              layout={layout}
+              mode="edit"
+              selected={sel}
+              clash={clash}
+              grid={grid}
+              ariaLabel={`Floor plan, ${layout.w} by ${layout.h} metres. Select an item, then use the arrow keys to move it, R to rotate, plus and minus for seats, Delete to remove.`}
+              onSelect={(ids) => { setSel(ids); setMenu(null); }}
+              onEdit={onEdit}
+              onMenu={openMenu}
+              overlay={(b) => (
+                <SelectionBar box={b} items={selected} onSeats={(n) => one && setSeats(one, n)} onRotate={() => rotateBy(90)} onDuplicate={() => duplicate()} onLock={() => toggleLock()} onDelete={() => remove()} />
+              )}
+            />
+          </Suspense>
         </div>
         <p className="m-0 mt-2 text-xs text-stone">
-          Drag to move (Alt for no snapping) · drag the round handle to rotate, the square one to resize · Shift-click or Shift-drag the floor to select several · drag the floor or pinch to pan and zoom.
+          Drag tables to move them (they snap and line up with their neighbours; hold Alt to place freely) · pull a handle to resize, the top knob to rotate · right-click for more · drag the floor to pan, scroll or pinch to zoom · Shift-drag to select several.
         </p>
+        {/* the same items as a list, for keyboards and screen readers */}
+        <ul className="sr-only">
+          {layout.items.map((it) => (
+            <li key={it.id}>
+              <button type="button" aria-pressed={sel.includes(it.id)} onClick={() => setSel([it.id])}>
+                {`${it.label || KINDS[it.kind].label}${it.seats ? `, ${it.seats} seats` : ""}, at ${it.x} by ${it.y} metres${it.locked ? ", locked" : ""}`}
+              </button>
+            </li>
+          ))}
+        </ul>
       </div>
 
       <aside className="grid content-start gap-4">
         <section className="rounded-lg border border-line bg-card p-4">
-          <h3 className="m-0 mb-3 text-sm font-medium text-ink-2">Add</h3>
+          <h3 className="m-0 mb-1 text-sm font-medium text-ink-2">Add</h3>
+          <p className="m-0 mb-3 text-xs text-stone">Click, or drag onto the plan.</p>
           <div className="grid grid-cols-2 gap-1.5">
             {PALETTE.map((k) => (
-              <button key={k} type="button" className="rounded-sm border border-solid border-line bg-paper px-2 py-2 text-left text-xs text-ink hover:border-gold" onClick={() => add(k)}>
+              <button key={k} type="button" className="flex touch-none items-center gap-2 rounded-sm border border-solid border-line bg-paper px-2 py-2 text-left text-xs text-ink hover:border-gold"
+                onPointerDown={(e) => paletteDown(e, k)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); addAt(k); } }}>
+                <KindIcon kind={k} />
                 {KINDS[k].label}
               </button>
             ))}
@@ -337,7 +294,8 @@ function Editor({ initial, p, onSave }: { initial: VenueLayout; p: Proposal; onS
         </section>
 
         {one ? (
-          <Inspector it={one} onChange={(patch) => patchItems([one.id], (it) => ({ ...it, ...patch }))} onDuplicate={duplicate} onDelete={remove} />
+          <Inspector it={one} onChange={(patch) => patchItems([one.id], (it) => (patch.w !== undefined || patch.h !== undefined ? { ...resizeItem({ ...it, ...patch }, patch.w ?? it.w, patch.h ?? it.h, false), ...("seats" in patch ? { seats: patch.seats } : {}) } : { ...it, ...patch }))}
+            onDuplicate={() => duplicate()} onDelete={() => remove()} onLock={() => toggleLock()} />
         ) : selected.length > 1 ? (
           <section className="rounded-lg border border-line bg-card p-4">
             <h3 className="m-0 mb-3 text-sm font-medium text-ink-2">{selected.length} selected</h3>
@@ -347,9 +305,9 @@ function Editor({ initial, p, onSave }: { initial: VenueLayout; p: Proposal; onS
               <button type="button" className="btn-ghost btn-sm" onClick={() => align("centre")}>Centre in a column</button>
               <button type="button" className="btn-ghost btn-sm" onClick={() => align("middle")}>Line up in a row</button>
               <button type="button" className="btn-ghost btn-sm" disabled={selected.length < 3} onClick={distribute}>Space evenly</button>
-              <button type="button" className="btn-ghost btn-sm" onClick={duplicate}>Duplicate</button>
+              <button type="button" className="btn-ghost btn-sm" onClick={() => duplicate()}>Duplicate</button>
             </div>
-            <button type="button" className="link-btn link-danger mt-3" onClick={remove}>Remove {selected.length} items</button>
+            <button type="button" className="link-btn link-danger mt-3" onClick={() => remove()}>Remove {selected.length} items</button>
           </section>
         ) : (
           <section className="rounded-lg border border-line bg-card p-4">
@@ -382,7 +340,126 @@ function Editor({ initial, p, onSave }: { initial: VenueLayout; p: Proposal; onS
           {note && <p className="m-0 mt-2 text-xs text-gold-text" role="status">{note}</p>}
         </section>
       </aside>
+
+      {menu && (
+        <div data-plan-menu role="menu" className="absolute z-30 grid w-52 gap-0.5 rounded-md border border-solid border-line bg-card p-1 text-sm" style={{ left: menu.left, top: menu.top }}>
+          {menu.itemId ? (
+            <>
+              <MenuItem onClick={() => { duplicate(); setMenu(null); }} hint="Ctrl+D">Duplicate</MenuItem>
+              <MenuItem onClick={() => { clipboard.current = selected.map((i) => ({ ...i })); setMenu(null); }} hint="Ctrl+C">Copy</MenuItem>
+              <MenuItem onClick={() => { rotateBy(90, sel); setMenu(null); }} hint="R">Rotate 90°</MenuItem>
+              <MenuItem onClick={() => { reorder(sel, true); setMenu(null); }}>Bring to front</MenuItem>
+              <MenuItem onClick={() => { reorder(sel, false); setMenu(null); }}>Send to back</MenuItem>
+              <MenuItem onClick={() => { toggleLock(); setMenu(null); }}>{selected.every((i) => i.locked) ? "Unlock" : "Lock in place"}</MenuItem>
+              <MenuItem danger onClick={() => { remove(); setMenu(null); }} hint="Del">Delete</MenuItem>
+            </>
+          ) : (
+            <>
+              <MenuItem disabled={!clipboard.current.length} onClick={() => { paste(clipboard.current, menu.room); setMenu(null); }} hint="Ctrl+V">Paste here</MenuItem>
+              <MenuItem onClick={() => { addAt("round", menu.room); setMenu(null); }}>Add a round table here</MenuItem>
+              <MenuItem onClick={() => { addAt("rect", menu.room); setMenu(null); }}>Add a long table here</MenuItem>
+              <MenuItem onClick={() => { setSel(layout.items.map((i) => i.id)); setMenu(null); }} hint="Ctrl+A">Select all</MenuItem>
+              <MenuItem onClick={() => { canvas.current?.fit(); setMenu(null); }}>Fit the room</MenuItem>
+            </>
+          )}
+        </div>
+      )}
+      {ghost && (
+        <div className="pointer-events-none fixed z-50 flex items-center gap-2 rounded-md border border-solid border-gold bg-card px-3 py-1.5 text-sm text-ink" style={{ left: ghost.x + 12, top: ghost.y + 12 }}>
+          <KindIcon kind={ghost.kind} /> {KINDS[ghost.kind].label}
+        </div>
+      )}
     </div>
+  );
+
+  function align(how: "left" | "centre" | "top" | "middle") {
+    const xs = selected.map((s) => s.x - s.w / 2);
+    const ys = selected.map((s) => s.y - s.h / 2);
+    patchItems(movable, (it) => {
+      if (how === "left") return { ...it, x: r2(Math.min(...xs) + it.w / 2) };
+      if (how === "top") return { ...it, y: r2(Math.min(...ys) + it.h / 2) };
+      if (how === "centre") return { ...it, x: r2(selected.reduce((t, s) => t + s.x, 0) / selected.length) };
+      return { ...it, y: r2(selected.reduce((t, s) => t + s.y, 0) / selected.length) };
+    });
+  }
+  function distribute() {
+    if (selected.length < 3) return;
+    const sorted = [...selected].sort((a, b) => a.x - b.x);
+    const x0 = sorted[0].x;
+    const step = (sorted[sorted.length - 1].x - x0) / (sorted.length - 1);
+    const pos = new Map(sorted.map((s, i) => [s.id, r2(x0 + step * i)]));
+    patchItems(movable, (it) => ({ ...it, x: pos.get(it.id) ?? it.x }));
+  }
+}
+
+/** the toolbar floating above the selection: seats −/+, rotate, duplicate, lock, delete */
+function SelectionBar({ box, items, onSeats, onRotate, onDuplicate, onLock, onDelete }: {
+  box: { left: number; top: number; right: number; bottom: number };
+  items: LayoutItem[];
+  onSeats: (n: number) => void;
+  onRotate: () => void;
+  onDuplicate: () => void;
+  onLock: () => void;
+  onDelete: () => void;
+}) {
+  const one = items.length === 1 ? items[0] : null;
+  const locked = items.every((i) => i.locked);
+  const top = box.top - 52 < 4 ? box.bottom + 10 : box.top - 52;
+  const btn = "grid h-8 min-w-8 place-items-center rounded-sm border-0 bg-transparent px-2 text-sm text-ink hover:bg-gold-soft disabled:opacity-40";
+  return (
+    <div className="absolute z-20 flex -translate-x-1/2 items-center gap-0.5 rounded-md border border-solid border-line bg-card p-1" style={{ left: Math.max(120, (box.left + box.right) / 2), top }}
+      onPointerDown={(e) => e.stopPropagation()} role="toolbar" aria-label="Selected item">
+      {one && isTable(one) && (
+        <>
+          <button type="button" className={btn} aria-label="One seat fewer" disabled={(one.seats ?? 0) <= 1 || one.locked} onClick={() => onSeats((one.seats ?? 0) - 1)}>−</button>
+          <span className="min-w-[4.5rem] text-center text-xs tabular-nums text-ink-2">{one.seats} seats</span>
+          <button type="button" className={btn} aria-label="One seat more" disabled={(one.seats ?? 0) >= (SEATS_MAX[one.kind] ?? 24) || one.locked} onClick={() => onSeats((one.seats ?? 0) + 1)}>+</button>
+          <span className="mx-0.5 h-5 w-px bg-line" aria-hidden="true" />
+        </>
+      )}
+      {!one && <span className="px-2 text-xs text-ink-2">{items.length} selected</span>}
+      <button type="button" className={btn} title="Rotate 90°" aria-label="Rotate 90 degrees" disabled={locked} onClick={onRotate}>⟳</button>
+      <button type="button" className={btn} title="Duplicate (Ctrl+D)" aria-label="Duplicate" onClick={onDuplicate}>⧉</button>
+      <button type="button" className={btn} title={locked ? "Unlock" : "Lock in place"} aria-label={locked ? "Unlock" : "Lock in place"} onClick={onLock}>{locked ? "🔓" : "🔒"}</button>
+      <button type="button" className={`${btn} text-danger-ink`} title="Delete" aria-label="Delete" onClick={onDelete}>🗑</button>
+    </div>
+  );
+}
+
+function MenuItem({ children, onClick, hint, danger, disabled }: { children: React.ReactNode; onClick: () => void; hint?: string; danger?: boolean; disabled?: boolean }) {
+  return (
+    <button type="button" role="menuitem" disabled={disabled} onClick={onClick}
+      className={`flex w-full items-center justify-between gap-3 rounded-sm border-0 bg-transparent px-3 py-1.5 text-left hover:bg-gold-soft disabled:opacity-40 ${danger ? "text-danger-ink" : "text-ink"}`}>
+      <span>{children}</span>
+      {hint && <span className="text-xs text-stone">{hint}</span>}
+    </button>
+  );
+}
+
+/** a tiny drawing of each palette item */
+function KindIcon({ kind }: { kind: LayoutKind }) {
+  const k = KINDS[kind];
+  return (
+    <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true" className="shrink-0">
+      {kind === "round" ? (
+        <>
+          {Array.from({ length: 8 }, (_, i) => <circle key={i} cx={9 + Math.cos((i / 8) * Math.PI * 2) * 7.2} cy={9 + Math.sin((i / 8) * Math.PI * 2) * 7.2} r={1.3} fill="var(--taupe)" />)}
+          <circle cx={9} cy={9} r={4.6} fill="var(--card)" stroke="var(--gold)" strokeWidth={1.2} />
+        </>
+      ) : kind === "rect" ? (
+        <>
+          {[4, 9, 14].flatMap((x) => [<circle key={`a${x}`} cx={x} cy={3.5} r={1.3} fill="var(--taupe)" />, <circle key={`b${x}`} cx={x} cy={14.5} r={1.3} fill="var(--taupe)" />])}
+          <rect x={1.5} y={6} width={15} height={6} rx={1} fill="var(--card)" stroke="var(--gold)" strokeWidth={1.2} />
+        </>
+      ) : kind === "row" ? (
+        [2.5, 6.8, 11.2, 15.5].map((x) => <circle key={x} cx={x} cy={9} r={1.8} fill="var(--taupe)" />)
+      ) : kind === "label" ? (
+        <text x={9} y={13} textAnchor="middle" fontSize={12} fill="var(--ink)" fontFamily="serif">T</text>
+      ) : (
+        <rect x={k.w >= k.h * 2 ? 1 : 3} y={k.w >= k.h * 2 ? 6 : 3} width={k.w >= k.h * 2 ? 16 : 12} height={k.w >= k.h * 2 ? 6 : 12} rx={1.5}
+          fill="var(--gold-soft)" stroke="var(--taupe)" strokeWidth={1.2} strokeDasharray={kind === "entrance" ? "2 1.5" : undefined} />
+      )}
+    </svg>
   );
 }
 
@@ -395,39 +472,24 @@ function ToolBtn({ label, children, onClick, disabled, pressed }: { label: strin
   );
 }
 
-/** rotate (round) and resize (square) handles drawn in the item's frame */
-function Handles({ it, onDown }: { it: LayoutItem; onDown: (e: RPointerEvent<SVGElement>, kind: "rotate" | "resize", id: string) => void }) {
-  const r = 0.28;
-  return (
-    <g transform={`translate(${it.x} ${it.y}) rotate(${it.rot})`}>
-      <line x1={0} y1={-it.h / 2} x2={0} y2={-it.h / 2 - 0.8} stroke="var(--gold)" strokeWidth={0.04} pointerEvents="none" />
-      <circle cx={0} cy={-it.h / 2 - 0.8} r={r} fill="var(--card)" stroke="var(--gold)" strokeWidth={0.06} style={{ cursor: "grab" }} onPointerDown={(e) => onDown(e, "rotate", it.id)}>
-        <title>Drag to rotate</title>
-      </circle>
-      <rect x={it.w / 2 - r} y={it.h / 2 - r} width={r * 2} height={r * 2} fill="var(--card)" stroke="var(--gold)" strokeWidth={0.06} style={{ cursor: "nwse-resize" }} onPointerDown={(e) => onDown(e, "resize", it.id)}>
-        <title>Drag to resize</title>
-      </rect>
-    </g>
-  );
-}
-
-function Inspector({ it, onChange, onDuplicate, onDelete }: { it: LayoutItem; onChange: (p: Partial<LayoutItem>) => void; onDuplicate: () => void; onDelete: () => void }) {
+function Inspector({ it, onChange, onDuplicate, onDelete, onLock }: { it: LayoutItem; onChange: (p: Partial<LayoutItem>) => void; onDuplicate: () => void; onDelete: () => void; onLock: () => void }) {
   const k = KINDS[it.kind];
   return (
     <section className="rounded-lg border border-line bg-card p-4">
-      <h3 className="m-0 mb-3 text-sm font-medium text-ink-2">{k.label}</h3>
+      <h3 className="m-0 mb-3 text-sm font-medium text-ink-2">{k.label}{it.locked ? " · locked" : ""}</h3>
       <div className="grid grid-cols-2 gap-2">
         <label className="field col-span-2">
           <span>Label</span>
           <input key={it.id} defaultValue={it.label ?? ""} maxLength={40} onBlur={(e) => e.target.value !== (it.label ?? "") && onChange({ label: e.target.value })} onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()} />
         </label>
-        {isTable(it) && <NumField label="Seats" value={it.seats ?? 0} min={1} max={it.kind === "row" ? 40 : 24} step={1} onCommit={(n) => onChange({ seats: Math.round(n) })} />}
+        {isTable(it) && <NumField label="Seats" value={it.seats ?? 0} min={1} max={SEATS_MAX[it.kind] ?? 24} step={1} onCommit={(n) => onChange({ seats: Math.round(n) })} />}
         <NumField label="Rotation (°)" value={it.rot} min={0} max={359} step={15} onCommit={(n) => onChange({ rot: ((Math.round(n) % 360) + 360) % 360 })} />
-        <NumField label={k.round ? "Diameter (m)" : "Width (m)"} value={it.w} min={0.2} max={60} step={GRID} onCommit={(n) => onChange(k.round ? { w: n, h: n } : { w: n })} />
+        <NumField label={k.round ? "Diameter (m)" : "Width (m)"} value={it.w} min={0.4} max={60} step={GRID} onCommit={(n) => onChange(k.round ? { w: n, h: n } : { w: n })} />
         {!k.round && <NumField label="Depth (m)" value={it.h} min={0.1} max={60} step={GRID} onCommit={(n) => onChange({ h: n })} />}
       </div>
-      <div className="mt-3 flex flex-wrap gap-2">
+      <div className="mt-3 flex flex-wrap items-center gap-2">
         <button type="button" className="btn-ghost btn-sm" onClick={onDuplicate}>Duplicate</button>
+        <button type="button" className="btn-ghost btn-sm" onClick={onLock}>{it.locked ? "Unlock" : "Lock"}</button>
         <button type="button" className="link-btn link-danger" onClick={onDelete}>Remove</button>
       </div>
     </section>
@@ -436,7 +498,9 @@ function Inspector({ it, onChange, onDuplicate, onDelete }: { it: LayoutItem; on
 
 function NumField({ label, value, min, max, step = 0.5, onCommit }: { label: string; value: number; min: number; max: number; step?: number; onCommit: (n: number) => void }) {
   const [text, setText] = useState(String(value));
-  useEffect(() => setText(String(value)), [value]);
+  useEffect(() => {
+    setText(String(value));
+  }, [value]);
   const done = () => {
     const n = Number(text);
     if (Number.isFinite(n) && n !== value) onCommit(Math.max(min, Math.min(max, n)));

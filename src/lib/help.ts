@@ -205,13 +205,16 @@ export const HELP: HelpTopic[] = [
     steps: [
       "Open a wedding from Events, then the Layout tab, and pick the function.",
       "Start from Reception rounds, Banquet long tables or Mandap with chair rows (sized for your guests), a plan saved for this venue, or an empty room.",
-      "Add tables, chair rows, stage, mandap, dance floor, buffet and more from Add. Drag to move, use the round handle to rotate and the square one to resize. Shift-click to select several, then align or space them evenly.",
-      "With an item selected: arrow keys move it, R rotates, Delete removes, Ctrl+D duplicates. Ctrl+Z and Ctrl+Y undo and redo.",
+      "Add tables, chair rows, stage, mandap, dance floor, buffet and more: click an item under Add, or drag it straight onto the plan where you want it.",
+      "Drag a table to move it: it snaps to the grid and lines up with its neighbours (gold guide lines); hold Alt to place it freely. Pull any of the eight handles to resize it and the top knob to rotate it; the size, angle and seats show as you drag, and the chairs follow the table's size.",
+      "The small toolbar above a selected table changes its seats (− and +), rotates it 90°, duplicates, locks it in place or deletes it. Right-click (or press and hold on a phone) for more: copy, paste here, bring to front, send to back.",
+      "Keys: arrows move (Shift for 1 m), R rotates, + and − change seats, Delete removes, Ctrl+C / Ctrl+V copy and paste, Ctrl+D duplicates, Ctrl+Z / Ctrl+Y undo and redo. Shift-drag the floor to select several, then align or space them evenly.",
       "Open the Seating tab. Drag a household from the list onto a table or a seat, or tap them and then tap a table. Auto-seat fills the rest, keeping households and groups together.",
       "Download seating PDF prints the floor plan, each table's guests and an A–Z list for the welcome desk.",
     ],
     tips: [
       "Overlapping items are outlined in red. The Room panel compares seats with the guests coming and the venue's capacity.",
+      "Lock the stage, mandap and walls once they're placed, so they don't move while you arrange tables round them.",
       "Save as a venue plan to reuse the room for the next wedding there.",
       "Seating flags anyone seated who has since said no, households split over tables, and people who lost a seat when a table changed.",
     ],

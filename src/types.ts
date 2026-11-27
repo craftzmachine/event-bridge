@@ -425,6 +425,8 @@ export interface LayoutItem {
   /** seats at a table or chair row */
   seats?: number;
   label?: string;
+  /** can't be moved, resized or rotated until unlocked */
+  locked?: boolean;
 }
 
 export interface VenueLayout {
