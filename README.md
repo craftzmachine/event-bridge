@@ -16,6 +16,8 @@
 | **Venue Directory** | 29 halls, hotels and resorts in and around Thiruvananthapuram |
 | **Visualize Proposal** | share a PDF or Excel proposal as a private, password-protected, view-only page |
 
+**Docs:** the full [user guide](docs/user-guide/README.md) (every app, admin setup, FAQ, glossary) and the [product plan](docs/PRODUCT_PLAN.md) (pricing tiers and the roadmap for selling Event Bridge to other planning companies).
+
 New to it? Sign in and open **Help** in the top bar for a step-by-step guide to every app, or follow **Wedding Quest** (the gold button, bottom right): a two-minute spotlight tour and a list of missions that tick themselves off as you go.
 
 Proposals and their exports are branded **Parinay Weddings**, because that's what clients receive. Event Bridge is the name of the app the team uses.
