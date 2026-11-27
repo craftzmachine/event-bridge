@@ -2,7 +2,7 @@
 
 Keep each wedding's guest list, invite households to the right functions, and let guests answer from their phone.
 
-Open a wedding from **Events**, then the **Guests** tab.
+Open **Guests & Seating** from the Dashboard. Every wedding is listed (drafts too) with its guests, how many are confirmed and its seating; press **Guests** on a wedding. The same tab is in each wedding's workspace under **Events**.
 
 [Screenshot: Guests tab with reply cards]
 
