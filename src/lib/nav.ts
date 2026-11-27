@@ -1,9 +1,9 @@
 // The signed-in apps. There's no menu: the Dashboard shows them as tiles, and every other page links back to it.
-export type NavId = "dashboard" | "events" | "studio" | "crm" | "tasks" | "vendors" | "questionnaires" | "portal" | "expenses" | "venues" | "visualize";
-export type IconName = "home" | "calendar" | "file" | "wallet" | "pin" | "eye" | "users" | "check" | "book" | "list" | "heart";
+export type NavId = "dashboard" | "events" | "studio" | "crm" | "tasks" | "vendors" | "questionnaires" | "portal" | "expenses" | "venues" | "visualize" | "help" | "settings";
+export type IconName = "home" | "calendar" | "file" | "wallet" | "pin" | "eye" | "users" | "check" | "book" | "list" | "heart" | "help" | "settings";
 
 export interface AppItem {
-  id: Exclude<NavId, "dashboard">;
+  id: Exclude<NavId, "dashboard" | "help" | "settings">;
   label: string;
   /** one line on the Dashboard tile */
   description: string;
@@ -27,6 +27,6 @@ export const APPS: AppItem[] = [
 /** "#/expenses/company" → "expenses"; a hash outside the app (landing, login, a client's link) → null. */
 export function navCurrent(hash: string): NavId | null {
   const head = hash.replace(/^#\/?/, "").split("/")[0].toLowerCase();
-  if (head === "dashboard") return "dashboard";
+  if (head === "dashboard" || head === "help") return head;
   return APPS.find((x) => x.id === head)?.id ?? null;
 }

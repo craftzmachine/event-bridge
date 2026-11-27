@@ -1,0 +1,46 @@
+/*
+ * Tailwind v4, alongside app.css. No preflight (app.css owns the base styles), and utilities sit in a cascade layer,
+ * so the hand-written rules in app.css win wherever both style the same element: use utilities for new markup.
+ * Colours and fonts map to the theme tokens in tokens.css, and Tailwind's own palette is removed, so every utility
+ * follows the six themes and nothing can hard-code a colour: `bg-card`, `text-ink-2`, `border-line`, `text-gold-text`.
+ */
+@layer theme, utilities;
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities);
+
+@theme inline {
+  --color-*: initial;
+  --color-transparent: transparent;
+  --color-current: currentColor;
+  --color-paper: var(--paper);
+  --color-paper-2: var(--paper-2);
+  --color-card: var(--card);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-stone: var(--stone);
+  --color-taupe: var(--taupe);
+  --color-line: var(--line);
+  --color-gold: var(--gold);
+  --color-gold-text: var(--gold-text);
+  --color-gold-light: var(--gold-light);
+  --color-gold-soft: var(--gold-soft);
+  --color-gold-wash: var(--gold-wash);
+  --color-espresso: var(--espresso);
+  --color-on-espresso: var(--on-espresso);
+  --color-on-accent: var(--on-accent);
+  --color-primary: var(--primary);
+  --color-on-primary: var(--on-primary);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-danger-line: var(--danger-line);
+  --color-danger-ink: var(--danger-ink);
+
+  --font-serif: var(--serif);
+  --font-caps: var(--caps);
+  --font-script: var(--script);
+  --font-sans: var(--sans);
+
+  --radius-sm: var(--r-sm);
+  --radius-md: var(--r);
+  --radius-lg: var(--r-lg);
+}

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
+import { assetUrl } from "../lib/asset";
 import { useConfig } from "../config/context";
 import { checkCredentials, SERVER_SIGNIN } from "../auth/auth";
 import { decideLogin } from "../auth/loginRules";
@@ -77,7 +78,7 @@ export default function Login({ onSignedIn }: { onSignedIn: (email: string) => v
     }
   }
 
-  const logo = `${import.meta.env.BASE_URL}${brand.logo}`;
+  const logo = assetUrl(brand.logo);
   return (
     <div className="login">
       <aside className="login-art">

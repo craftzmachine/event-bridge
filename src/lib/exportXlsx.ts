@@ -1,4 +1,5 @@
 import ExcelJS from "exceljs";
+import { assetUrl } from "./asset";
 import type { Brand, Catalog, Line, Proposal } from "../types";
 import { computeTotals, functionTotals } from "./totals";
 import { byFunction, functionHeading } from "./functions";
@@ -350,7 +351,7 @@ function styleItemRow(row: ExcelJS.Row, thin: Partial<ExcelJS.Border>, c: Brand[
 }
 
 export async function downloadXlsx(p: Proposal, catalog: Catalog, brand: Brand) {
-  const logo = await logoToPng(`${import.meta.env.BASE_URL}${brand.logo}`);
+  const logo = await logoToPng(assetUrl(brand.logo));
   const wb = buildWorkbook(p, catalog, brand, logo);
   const buf = await wb.xlsx.writeBuffer();
   saveBlob(new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }), exportFileName(p, catalog));

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import EmptyState from "../components/EmptyState";
 import { createPortal } from "react-dom";
 import { uid } from "../state/proposals";
 import { useVendors, VENDORS_FORMAT } from "../state/vendors";
@@ -72,10 +73,13 @@ export default function Vendors() {
         </div>
 
         {shown.length === 0 ? (
-          <div className="empty-state">
-            <p>{store.all.length ? "No vendors match." : "No vendors yet. Add the florists, caterers and artists you work with, once, and find them again for every wedding."}</p>
-            {!store.all.length && <button type="button" className="btn-primary" onClick={() => setEditing(blank())}>Add the first vendor</button>}
-          </div>
+          store.all.length ? (
+            <div className="empty-state"><p>No vendors match.</p></div>
+          ) : (
+            <EmptyState icon="book" title="No vendors yet" actions={<button type="button" className="btn-primary" onClick={() => setEditing(blank())}>Add the first vendor</button>}>
+              Add the florists, caterers and artists you work with, once, and find them again for every wedding.
+            </EmptyState>
+          )
         ) : (
           <ul className="vn-grid">
             {shown.map((v) => {

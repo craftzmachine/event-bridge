@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import EmptyState from "../components/EmptyState";
 import { createPortal } from "react-dom";
 import { useConfig } from "../config/context";
 import { uid, type useProposals } from "../state/proposals";
@@ -129,10 +130,9 @@ export default function Crm({ store, account, onOpen }: { store: Store; account:
         {view === "clients" ? (
           <Clients store={store} onOpen={onOpen} />
         ) : leads.list.length === 0 ? (
-          <div className="empty-state">
-            <p>No enquiries yet. Add each new enquiry from Instagram, WhatsApp or a referral, then move it along as you talk.</p>
-            <button type="button" className="btn-primary" onClick={() => setEditing(blank(account))}>Add the first enquiry</button>
-          </div>
+          <EmptyState icon="users" title="No enquiries yet" actions={<button type="button" className="btn-primary" onClick={() => setEditing(blank(account))}>Add the first enquiry</button>}>
+            Add each new enquiry from Instagram, WhatsApp or a referral, then move it along as you talk.
+          </EmptyState>
         ) : view === "board" ? (
           <div className="crm-board">
             {STAGES.map((s) => {

@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from "react";
+import EmptyState from "../components/EmptyState";
+import { assetUrl } from "../lib/asset";
 import type { Proposal, ProposalPackage, ProposalStatus } from "../types";
 import { usePackages } from "../state/packages";
 import PackagePicker from "../components/PackagePicker";
@@ -115,7 +117,7 @@ export default function Home({
       <header className="home-hero" data-tour="studio">
         <Img src={heroPhoto} alt="" className="home-hero-img" />
         <div className="home-hero-text">
-          <img className="brand-logo" src={`${import.meta.env.BASE_URL}${brand.logo}`} alt={`${brand.company} — ${brand.tagline}`} />
+          <img className="brand-logo" src={assetUrl(brand.logo)} alt={`${brand.company} — ${brand.tagline}`} />
           <h1>Craft a proposal worth saying <em>yes</em> to.</h1>
           <Ornament />
           <p className="lede">Choose the occasion, curate the elements and hand the client a polished estimate in minutes.</p>
@@ -224,9 +226,9 @@ export default function Home({
           </>
         )}
         {sorted.length === 0 ? (
-          <div className="empty-state">
-            <p>No proposals yet. Start one above — drafts are saved on this device as you work.</p>
-          </div>
+          <EmptyState icon="file" title="No proposals yet">
+            Start one above, from a package, or from an Excel estimate. Drafts are saved on this device as you work.
+          </EmptyState>
         ) : shown.length === 0 ? (
           <div className="empty-state">
             <p>No {filter === "all" ? "" : `${statusLabel(filter).toLowerCase()} `}proposals{query.trim() ? ` match “${query.trim()}”` : " yet"}.</p>
@@ -276,7 +278,7 @@ export default function Home({
         )}
       </main>
       <footer className="home-foot">
-        <img src={`${import.meta.env.BASE_URL}${brand.logo}`} alt={brand.company} />
+        <img src={assetUrl(brand.logo)} alt={brand.company} />
         <span className="home-foot-line">
           <span>{SITE.name}, {brand.legalName}</span>
           <a href={`tel:${brand.phone.replace(/[^+0-9]/g, "")}`}>{brand.phone}</a>

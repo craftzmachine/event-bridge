@@ -16,13 +16,17 @@
 | **Venue Directory** | 29 halls, hotels and resorts in and around Thiruvananthapuram |
 | **Visualize Proposal** | share a PDF or Excel proposal as a private, password-protected, view-only page |
 
-New to it? Sign in and follow **Wedding Quest** (the gold button, bottom right): a two-minute spotlight tour and a list of missions that tick themselves off as you go.
+**Docs:** the full [user guide](docs/user-guide/README.md) (every app, admin setup, FAQ, glossary) and the [product plan](docs/PRODUCT_PLAN.md) (pricing tiers and the roadmap for selling Event Bridge to other planning companies).
+
+New to it? Sign in and open **Help** in the top bar for a step-by-step guide to every app, or follow **Wedding Quest** (the gold button, bottom right): a two-minute spotlight tour and a list of missions that tick themselves off as you go.
 
 Proposals and their exports are branded **Parinay Weddings**, because that's what clients receive. Event Bridge is the name of the app the team uses.
 
 ## Navigation
 
-**There are no menus. The Dashboard is the way into everything.** After sign-in you land on it, and its **apps bar** opens each of the ten apps in the table above. Every other page has **← Dashboard** at the start of its breadcrumb. A slim top bar carries the crest (back to the Dashboard), the theme and font buttons, your email and **Sign out**. Opening a proposal still fills the screen with the Builder.
+**There are no menus. The Dashboard is the way into everything.** After sign-in you land on it, and its **apps bar** opens each of the ten apps in the table above. Every other page has **← Dashboard** at the start of its breadcrumb. A slim top bar carries the crest (back to the Dashboard), the theme and font buttons, **Help**, your email and **Sign out**.
+
+**Help** (`#/help`, also **Help & how-to** on the Dashboard): a searchable guide with numbered steps, tips and common questions for every app, plus getting started, Wedding Quest and data and privacy questions. `#/help/<topic>` (for example `#/help/expenses`) opens at one topic. Opening a proposal still fills the screen with the Builder.
 
 The public landing page has only the brand and **Team sign in** (or **Dashboard** when signed in). It introduces Event Bridge with the team's photos, every app, and the starting packages.
 
@@ -44,6 +48,7 @@ The public landing page has only the brand and **Team sign in** (or **Dashboard*
 | `/#/studio` | Proposal Studio (needs sign-in) |
 | `/#/venues` | Venue Directory (needs sign-in) |
 | `/#/visualize` | Visualize Proposal: upload and share (needs sign-in) |
+| `/#/help` | Help: how to use each app; `/#/help/<topic>` opens at one (needs sign-in) |
 | `/#/view/<code>` | a client's private proposal link (password-protected; `/#/view` lets them paste a link) |
 
 Opening an app while signed out goes to sign-in first, then straight back to that app; signing in from the landing page lands on the Dashboard.
@@ -90,7 +95,7 @@ Duplicating a proposal starts the copy as a draft, with the payment plan but no 
 **Sending the link**: after a private link is created, **Link on WhatsApp** and **Password on WhatsApp** open WhatsApp with each message ready, as two separate messages, addressed to the client's number when it looks like a mobile number. **Email the link** opens your email. Nothing is sent until you press Send.
 
 **Dashboard** (`#/dashboard`, where sign-in lands): the team's home, and the only way into the apps.
-- **Header:** a greeting with today's date, and **New proposal** and **Record expense**.
+- **Header:** a greeting with today's date, and **New proposal** and **Record expense**. **Record expense** opens the add-expense form right there: choose what it's **For** (Company or an event; it starts on the one you used last, or the next event), attach the proof and save.
 - **Apps bar:** all ten apps, one click each.
 - **Four figures:** upcoming events (and functions in the next 7 days), awaiting decision (the value of proposals sent, and the win rate), received this month (and what's still to come, plus the margin when costs exist), and needs attention (red when something is overdue).
 - **Upcoming events:** the next functions with date, client, function, venue, guests and status, or **Calendar**: a month grid with each day's functions. Pick a day to list it. Each opens the event's workspace.
@@ -168,7 +173,8 @@ Duplicating a proposal starts the copy as a draft, with the payment plan but no 
 - **The ledger:** spending so far (against the quote, for reference), what needs attention, totals by category and by who paid, and filters (category, payer, proof missing, possible duplicates, queried, removed) with search.
   - **History:** every edit is recorded with who and when, under **History** in the expense.
   - **Removing:** needs a reason, and the expense can be restored.
-- **Company expenses** (the **Events | Company** switch at the top of the Expenses page, or `#/expenses/company`): the company's own running costs, not tied to any proposal, such as rent, fuel, ads, wages and equipment.
+- **The Expenses home** (`#/expenses`): **Add expense** (the same quick form as the Dashboard's), **Receive a handover**, this month's spending, what's missing proof and what's with staff, the most recent expenses across every ledger, and a searchable list of ledgers with **Company** first.
+- **Company expenses** (**Company** at the top of the ledgers on the Expenses home, or `#/expenses/company`): the company's own running costs, not tied to any proposal, such as rent, fuel, ads, wages and equipment.
   - **The same ledger as an event:** proof, safeguards, history, staff advances and handovers all work the same way, but there's no event date check and no quote.
   - **By month:** it opens on this month; the month picker (or **All months**) filters the list and the figures, and the first figure also shows last month and the year so far.
   - **Categories:** Office & rent, Utilities & internet, Fuel & travel, Marketing & ads, Salaries & wages, Equipment, Professional fees, Bank charges and Other. Team-wide extras go in `brand.json` as `companyExpenseCategories`.

@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { defineConfig, loadEnv, type Plugin, type ViteDevServer } from "vite";
 import react from "@vitejs/plugin-react";
+import tailwindcss from "@tailwindcss/vite";
 
 // the same security headers Vercel sends, so `vite preview` behaves like production
 const vercel = JSON.parse(readFileSync("vercel.json", "utf8")) as { headers: { headers: { key: string; value: string }[] }[] };
@@ -50,7 +51,7 @@ function devApi(): Plugin {
 }
 
 export default defineConfig({
-  plugins: [react(), devApi()],
+  plugins: [react(), tailwindcss(), devApi()],
   base: "./",
   server: { port: 5173 },
   preview: { headers: siteHeaders },

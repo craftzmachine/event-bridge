@@ -1,4 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
+import EmptyState from "../components/EmptyState";
+import SetupGuide from "../components/SetupGuide";
 import type { Proposal } from "../types";
 import { useConfig } from "../config/context";
 import { api } from "../lib/api";
@@ -17,7 +19,10 @@ import PageHeader from "../components/PageHeader";
 import Icon from "../components/icons";
 import { APPS } from "../lib/nav";
 import { readLeads } from "../state/crm";
-import { followUpsDue, isOpen } from "../lib/crm";
+import { followUpsDue } from "../lib/crm";
+
+// the quick-add dialog lives in the (lazy) expenses page
+const QuickExpense = lazy(() => import("./Expenses").then((m) => ({ default: m.QuickExpense })));
 import { readTeamTasks } from "../state/tasks";
 import { allTasks, overdueRows } from "../lib/tasks";
 import { awaitingAnswers } from "../lib/questionnaires";
@@ -64,6 +69,8 @@ export default function Dashboard({ list, account, onOpen, onNew }: { list: Prop
   const today = todayISO(now);
   const [calMonth, setCalMonth] = useState(monthOf(today));
   const [day, setDay] = useState<string | null>(null);
+  const [adding, setAdding] = useState(false);
+  const [saved, setSaved] = useState<{ id: string; title: string } | null>(null);
 
   useEffect(() => {
     api<{ shares: Share[] }>("shares")
@@ -134,13 +141,19 @@ export default function Dashboard({ list, account, onOpen, onNew }: { list: Prop
         subtitle={`${now.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" })} · ${list.length} proposal${list.length === 1 ? "" : "s"} on this device`}
         actions={
           <>
-            <a className="btn-ghost" href="#/expenses">Record expense</a>
+            <a className="btn-ghost" href="#/help">Help &amp; how-to</a>
+            <button type="button" className="btn-ghost" onClick={() => setAdding(true)}>Record expense</button>
             <button type="button" className="btn-primary" onClick={onNew}>New proposal</button>
           </>
         }
       />
 
       <main className="dash-main">
+        {saved && (
+          <p className="toast" role="status">
+            Expense saved to {saved.title}. <a href={`#/expenses/${saved.id}`}>View ledger</a>
+          </p>
+        )}
         <nav className="dash-launch" aria-label="Apps" data-tour="apps">
           {APPS.map((a) => (
             <a key={a.id} href={a.href} title={a.description}>
@@ -150,6 +163,7 @@ export default function Dashboard({ list, account, onOpen, onNew }: { list: Prop
           ))}
         </nav>
 
+        <SetupGuide list={list} onNew={onNew} />
         <section className="dash-stats" data-tour="stats" aria-label={`${month(now)} at a glance`}>
           <div className="dash-stat">
             <span>Upcoming events</span>
@@ -174,10 +188,9 @@ export default function Dashboard({ list, account, onOpen, onNew }: { list: Prop
         </section>
 
         {list.length === 0 ? (
-          <div className="empty-state">
-            <p>No proposals on this device yet. Start one, or add an enquiry in the CRM, and it shows up here.</p>
-            <button type="button" className="btn-primary" onClick={onNew}>Start a proposal</button>
-          </div>
+          <EmptyState icon="file" title="Your weddings will show up here" actions={<><button type="button" className="btn-primary" onClick={onNew}>Start a proposal</button><a className="btn-ghost" href="#/crm">Add an enquiry</a></>}>
+            Start a proposal, or add an enquiry in the CRM. Upcoming events, payments and everything that needs you will gather on this page.
+          </EmptyState>
         ) : (
           <>
             <div className="dash-cols">
@@ -333,6 +346,7 @@ export default function Dashboard({ list, account, onOpen, onNew }: { list: Prop
               <section className="dash-panel" aria-labelledby="dash-exp-title">
                 <header className="dash-panel-head">
                   <h2 id="dash-exp-title">Spending in {month(now)}</h2>
+                  <button type="button" className="link-btn" onClick={() => setAdding(true)}>Add expense</button>
                 </header>
                 <ul className="dash-rows">
                   <li>
@@ -346,14 +360,24 @@ export default function Dashboard({ list, account, onOpen, onNew }: { list: Prop
                     <strong>{formatINRShort(company.total)}</strong>
                   </li>
                 </ul>
-                <p className="dash-note">
-                  Open CRM enquiries: {leads.filter(isOpen).length}
-                </p>
               </section>
             </div>
           </>
         )}
       </main>
+      {adding && (
+        <Suspense fallback={null}>
+          <QuickExpense
+            proposals={list}
+            account={account}
+            onClose={() => setAdding(false)}
+            onSaved={(b) => {
+              setSaved({ id: b.id, title: b.kind === "company" ? "Company expenses" : b.title });
+              listExpenses().then(setExpenses).catch(() => {});
+            }}
+          />
+        </Suspense>
+      )}
     </div>
   );
 }

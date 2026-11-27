@@ -1,4 +1,5 @@
 import { useConfig } from "../config/context";
+import { assetUrl } from "../lib/asset";
 import { SITE } from "../site";
 import AppearanceControls from "./AppearanceControls";
 
@@ -11,7 +12,7 @@ export default function SiteNav({ account, onSignOut }: { account?: string; onSi
   return (
     <header className="site-nav lp-nav">
       <a className="site-brand" href="#/" aria-label={`${SITE.name} home`}>
-        <img src={`${import.meta.env.BASE_URL}${brand.logo}`} alt="" />
+        <img src={assetUrl(brand.logo)} alt="" />
         <span className="site-brand-text">
           <strong>{SITE.name}</strong>
           <small>by {brand.company}</small>
