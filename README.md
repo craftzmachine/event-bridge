@@ -16,13 +16,15 @@
 | **Venue Directory** | 29 halls, hotels and resorts in and around Thiruvananthapuram |
 | **Visualize Proposal** | share a PDF or Excel proposal as a private, password-protected, view-only page |
 
-New to it? Sign in and follow **Wedding Quest** (the gold button, bottom right): a two-minute spotlight tour and a list of missions that tick themselves off as you go.
+New to it? Sign in and open **Help** in the top bar for a step-by-step guide to every app, or follow **Wedding Quest** (the gold button, bottom right): a two-minute spotlight tour and a list of missions that tick themselves off as you go.
 
 Proposals and their exports are branded **Parinay Weddings**, because that's what clients receive. Event Bridge is the name of the app the team uses.
 
 ## Navigation
 
-**There are no menus. The Dashboard is the way into everything.** After sign-in you land on it, and its **apps bar** opens each of the ten apps in the table above. Every other page has **← Dashboard** at the start of its breadcrumb. A slim top bar carries the crest (back to the Dashboard), the theme and font buttons, your email and **Sign out**. Opening a proposal still fills the screen with the Builder.
+**There are no menus. The Dashboard is the way into everything.** After sign-in you land on it, and its **apps bar** opens each of the ten apps in the table above. Every other page has **← Dashboard** at the start of its breadcrumb. A slim top bar carries the crest (back to the Dashboard), the theme and font buttons, **Help**, your email and **Sign out**.
+
+**Help** (`#/help`, also **Help & how-to** on the Dashboard): a searchable guide with numbered steps, tips and common questions for every app, plus getting started, Wedding Quest and data and privacy questions. `#/help/<topic>` (for example `#/help/expenses`) opens at one topic. Opening a proposal still fills the screen with the Builder.
 
 The public landing page has only the brand and **Team sign in** (or **Dashboard** when signed in). It introduces Event Bridge with the team's photos, every app, and the starting packages.
 
@@ -44,6 +46,7 @@ The public landing page has only the brand and **Team sign in** (or **Dashboard*
 | `/#/studio` | Proposal Studio (needs sign-in) |
 | `/#/venues` | Venue Directory (needs sign-in) |
 | `/#/visualize` | Visualize Proposal: upload and share (needs sign-in) |
+| `/#/help` | Help: how to use each app; `/#/help/<topic>` opens at one (needs sign-in) |
 | `/#/view/<code>` | a client's private proposal link (password-protected; `/#/view` lets them paste a link) |
 
 Opening an app while signed out goes to sign-in first, then straight back to that app; signing in from the landing page lands on the Dashboard.

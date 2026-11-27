@@ -134,6 +134,7 @@ export default function Dashboard({ list, account, onOpen, onNew }: { list: Prop
         subtitle={`${now.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" })} · ${list.length} proposal${list.length === 1 ? "" : "s"} on this device`}
         actions={
           <>
+            <a className="btn-ghost" href="#/help">Help &amp; how-to</a>
             <a className="btn-ghost" href="#/expenses">Record expense</a>
             <button type="button" className="btn-primary" onClick={onNew}>New proposal</button>
           </>
