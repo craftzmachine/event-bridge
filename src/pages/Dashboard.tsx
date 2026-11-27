@@ -1,4 +1,6 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from "react";
+import EmptyState from "../components/EmptyState";
+import SetupGuide from "../components/SetupGuide";
 import type { Proposal } from "../types";
 import { useConfig } from "../config/context";
 import { api } from "../lib/api";
@@ -161,6 +163,7 @@ export default function Dashboard({ list, account, onOpen, onNew }: { list: Prop
           ))}
         </nav>
 
+        <SetupGuide list={list} onNew={onNew} />
         <section className="dash-stats" data-tour="stats" aria-label={`${month(now)} at a glance`}>
           <div className="dash-stat">
             <span>Upcoming events</span>
@@ -185,10 +188,9 @@ export default function Dashboard({ list, account, onOpen, onNew }: { list: Prop
         </section>
 
         {list.length === 0 ? (
-          <div className="empty-state">
-            <p>No proposals on this device yet. Start one, or add an enquiry in the CRM, and it shows up here.</p>
-            <button type="button" className="btn-primary" onClick={onNew}>Start a proposal</button>
-          </div>
+          <EmptyState icon="file" title="Your weddings will show up here" actions={<><button type="button" className="btn-primary" onClick={onNew}>Start a proposal</button><a className="btn-ghost" href="#/crm">Add an enquiry</a></>}>
+            Start a proposal, or add an enquiry in the CRM. Upcoming events, payments and everything that needs you will gather on this page.
+          </EmptyState>
         ) : (
           <>
             <div className="dash-cols">

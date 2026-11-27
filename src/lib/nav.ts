@@ -1,9 +1,9 @@
 // The signed-in apps. There's no menu: the Dashboard shows them as tiles, and every other page links back to it.
-export type NavId = "dashboard" | "events" | "studio" | "crm" | "tasks" | "vendors" | "questionnaires" | "portal" | "expenses" | "venues" | "visualize" | "help";
-export type IconName = "home" | "calendar" | "file" | "wallet" | "pin" | "eye" | "users" | "check" | "book" | "list" | "heart" | "help";
+export type NavId = "dashboard" | "events" | "studio" | "crm" | "tasks" | "vendors" | "questionnaires" | "portal" | "expenses" | "venues" | "visualize" | "help" | "settings";
+export type IconName = "home" | "calendar" | "file" | "wallet" | "pin" | "eye" | "users" | "check" | "book" | "list" | "heart" | "help" | "settings";
 
 export interface AppItem {
-  id: Exclude<NavId, "dashboard" | "help">;
+  id: Exclude<NavId, "dashboard" | "help" | "settings">;
   label: string;
   /** one line on the Dashboard tile */
   description: string;

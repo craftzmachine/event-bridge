@@ -1,4 +1,5 @@
 import { Fragment } from "react";
+import { assetUrl } from "../lib/asset";
 import type { Line, Proposal } from "../types";
 import { useConfig } from "../config/context";
 import { computeTotals, functionTotals, lineAmount } from "../lib/totals";
@@ -51,7 +52,7 @@ export default function ProposalPreview({ p, dated }: { p: Proposal; dated?: str
       <header className="pv-cover">
         <Img src={style?.image ?? type?.image} alt="" className="pv-hero" />
         <div className="pv-cover-text">
-          <img className="pv-logo" src={`${import.meta.env.BASE_URL}${brand.logo}`} alt={brand.company} />
+          <img className="pv-logo" src={assetUrl(brand.logo)} alt={brand.company} />
           <p className="eyebrow">A proposal for</p>
           <h2>{proposalTitle(p, catalog)}</h2>
           <Ornament />
@@ -118,7 +119,7 @@ export default function ProposalPreview({ p, dated }: { p: Proposal; dated?: str
       <p className="eyebrow">Terms &amp; conditions</p>
       <ul className="pv-terms">{p.terms.filter((x) => x.trim()).map((x, i) => <li key={i}>{x}</li>)}</ul>
       <footer className="pv-contact">
-        <img className="pv-contact-logo" src={`${import.meta.env.BASE_URL}${brand.logo}`} alt={brand.company} />
+        <img className="pv-contact-logo" src={assetUrl(brand.logo)} alt={brand.company} />
         <div>
           <p className="eyebrow">Your point of contact</p>
           <strong>{brand.contact.name}</strong>

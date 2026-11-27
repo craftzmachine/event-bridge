@@ -2,8 +2,11 @@ import type { Brand, Catalog, ChecklistTemplate, ProposalPackage, QuestionnaireT
 import { validateQuestionnaires } from "../lib/questionnaires";
 import { validateBrand, validateCatalog, validateChecklists, validatePackages, validateVenues } from "./validate";
 import { validateVendors, type Vendor } from "../lib/vendors";
+import { applySettings } from "../lib/settings";
+import { readSettings } from "../state/settings";
 
-export type Loaded = { catalog: Catalog; brand: Brand; venues: VenueDirectory; packages: ProposalPackage[]; checklists?: ChecklistTemplate[]; teamVendors?: Vendor[]; teamQuestionnaires?: QuestionnaireTemplate[] } | { errors: string[] };
+/** `base`: brand.json and catalog.json as shipped, before this device's Settings; `settingsIgnored`: saved parts set aside */
+export type Loaded = { catalog: Catalog; brand: Brand; venues: VenueDirectory; packages: ProposalPackage[]; base: { brand: Brand; catalog: Catalog }; settingsIgnored?: string[]; checklists?: ChecklistTemplate[]; teamVendors?: Vendor[]; teamQuestionnaires?: QuestionnaireTemplate[] } | { errors: string[] };
 
 async function getJson(path: string): Promise<unknown> {
   // no-store so an edited config shows up on the next reload, no rebuild needed
@@ -50,11 +53,16 @@ export async function loadConfig(): Promise<Loaded> {
     if (vendors !== null) errors.push(...validateVendors(vendors));
     if (questionnaires !== null) errors.push(...validateQuestionnaires(questionnaires));
     if (errors.length) return { errors };
+    const pkgs = (packages as { packages: ProposalPackage[] }).packages;
+    // this device's Settings page, laid over the files; a saved part that no longer fits is set aside, not fatal
+    const own = applySettings(brand as Brand, catalog as Catalog, pkgs, readSettings());
     return {
-      catalog: catalog as Catalog,
-      brand: brand as Brand,
+      catalog: own.catalog,
+      brand: own.brand,
+      base: { brand: brand as Brand, catalog: catalog as Catalog },
+      ...(own.ignored.length ? { settingsIgnored: own.ignored } : {}),
       venues: venues as VenueDirectory,
-      packages: (packages as { packages: ProposalPackage[] }).packages,
+      packages: pkgs,
       ...(checklists !== null ? { checklists: (checklists as { items: ChecklistTemplate[] }).items } : {}),
       ...(questionnaires !== null ? { teamQuestionnaires: (questionnaires as { questionnaires: QuestionnaireTemplate[] }).questionnaires } : {}),
       ...(vendors !== null ? { teamVendors: (vendors as { vendors: Vendor[] }).vendors.map((v) => ({ ...v, tags: v.tags ?? [], createdAt: "", updatedAt: "" })) } : {}),

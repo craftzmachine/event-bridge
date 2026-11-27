@@ -2,9 +2,30 @@
 
 For the person who sets Event Bridge up for a company: company details, catalogue, team accounts and sharing.
 
-> **Today** these settings are files edited by whoever hosts the site (described below and in detail in the project [README](../../README.md)). **In-app settings screens and self-serve sign-up are on the roadmap** ([product plan](../PRODUCT_PLAN.md#phase-0--sellable-must-ship-before-the-first-paid-customer--34-months)). When they ship, this page becomes a click-through guide.
+## Start with the Settings page
+Open **Settings** (the gear in the top bar). Everything a planner needs to make Event Bridge their own is there:
 
-## 1. Company details and branding
+| Tab | What you set |
+|---|---|
+| **Company** | Company name, tagline, legal name, GSTIN, phone, email, address, and the point of contact printed on proposals |
+| **Logo & money** | Your logo (PNG, JPG, WebP or SVG under 400 KB), co-ordination % and label, GST %, how many days before the first event the balance falls due |
+| **Terms** | The standard terms on every proposal, one per line, in order |
+| **Catalogue** | Categories (rename, reorder, add) and elements: name, category, unit, default quantity, rate or *as per actuals*, per-guest quantity, description, and which event types and ceremony styles they suit |
+| **Backup** | Export the settings to a file, import them on another device, or reset to the original |
+
+Press **Save changes**. New proposals, PDFs and Excel files use them straight away. Proposals already made keep their own copy of each element.
+
+[Screenshot: Settings → Catalogue]
+
+**Good to know**
+- Settings are saved **on this device**. Set up one device, then **Export settings** and **Import settings** on each colleague's device. (Cloud sync is on the [roadmap](../PRODUCT_PLAN.md#4-roadmap).)
+- A proposal shared as a **web page** shows the logo published with the site, not one uploaded in Settings. PDFs and Excel files use your uploaded logo.
+- The **Set up Event Bridge** card on the Dashboard ticks off company details, catalogue, first enquiry, first proposal and first share as you go.
+
+## For the person who hosts the site
+The settings above are laid over files in `public/config/`, which set the defaults for every device. Everything not on the Settings page (Excel colours, payment plan, expense categories, advance managers, packages, checklists, questionnaires, vendors, venues) is still set there. More detail is in the project [README](../../README.md).
+
+## 1. Company defaults
 Set in `public/config/brand.json`:
 - Company name, tagline and legal name
 - **Logo** — a transparent PNG; used in the app, PDFs and Excel files

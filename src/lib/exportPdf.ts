@@ -1,4 +1,5 @@
 import type { Content, TableCell, TDocumentDefinitions } from "pdfmake/interfaces";
+import { assetUrl } from "./asset";
 import type { Brand, Catalog, Line, Proposal } from "../types";
 import { computeTotals, functionTotals, lineAmount } from "./totals";
 import { byFunction, functionHeading } from "./functions";
@@ -248,7 +249,7 @@ export async function renderPdf(brand: Brand, build: (logoPng?: string) => TDocu
   const [{ default: pdfMake }, fonts, logo] = await Promise.all([
     import("pdfmake/build/pdfmake"),
     import("pdfmake/build/vfs_fonts"),
-    logoToPng(`${import.meta.env.BASE_URL}${brand.logo}`),
+    logoToPng(assetUrl(brand.logo)),
   ]);
   // vfs_fonts exports the font map itself (0.2.x); older builds nested it under pdfMake.vfs
   type Vfs = Record<string, string>;

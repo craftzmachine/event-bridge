@@ -53,6 +53,7 @@ Prices are **indicative**, per company, in INR, excluding GST. Validate them wit
 |---|:-:|:-:|:-:|
 | **Dashboard** (upcoming events, money, needs attention, calendar) | ✓ | ✓ | ✓ |
 | **Proposal Studio**: catalogue, qty/rate, upgrades, additional options, notes | ✓ | ✓ | ✓ |
+| **Settings**: company details, logo, money defaults, terms, catalogue editor | ✓ | ✓ | ✓ |
 | PDF and Excel export with your logo and terms | ✓ | ✓ | ✓ |
 | Excel → proposal import | ✓ | ✓ | ✓ |
 | Multiple event dates and functions | ✓ | ✓ | ✓ |
@@ -120,7 +121,7 @@ The app was built for one company. These are the gaps between today and a produc
 2. **Real accounts.** Server sign-in for everyone (the existing `/api/staff/*` path and the `SERVER_SIGNIN` switch are the starting point), email invites, password reset, optional Google sign-in, and sessions checked on the server.
 3. **Roles.** Owner, manager, planner, accounts. Costs and margin visible to owner/manager only; advances managed by accounts (today's `advanceManagers` rule, generalised).
 4. **Cloud database and sync.** Move proposals, leads, tasks, vendors, questionnaires and expenses to a hosted database (for example Postgres via Supabase or Neon) with file storage for proofs. One-time **import of existing JSON backups** so Parinay and early users keep their history.
-5. **Settings screens.** Edit company details, logo, GST %, co-ordination %, terms, catalogue, categories, packages and checklists in the app, with the same human-readable error list the JSON loader shows today.
+5. **Settings screens.** *Started 27 November 2026:* the Settings page (`#/settings`) edits company details, logo, GST %, co-ordination %, terms, categories and elements, saved on the device with export/import, plus a "Set up Event Bridge" checklist on the Dashboard. Still to do: packages and checklists in the app, and storing settings per workspace on the server.
 6. **Sign-up and billing.** Self-serve sign-up, 14-day trial, Razorpay subscriptions (UPI autopay, cards), GST invoices for the subscription, plan limits enforced on the server.
 7. **Trust basics.** Terms of service, privacy policy, DPDP Act consent and data-export / delete-my-workspace, daily backups, uptime monitoring, a status page.
 8. **Hosting.** Move to a commercial plan (Vercel Pro or equivalent) with the database in an Indian region.

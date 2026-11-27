@@ -19,6 +19,7 @@ There are no menus. The **Dashboard is the hub**:
   - the **crest** — back to the Dashboard
   - the **theme** button — Dark, Parinay, Solarized Light, Solarized Dark, Nord, White
   - **Aa** — cycles the font (Classic, Sans, Mono)
+  - **Settings** (the gear) — company details, logo, terms and catalogue; see [Admin setup](admin-setup.md)
   - **Help** — the in-app guide, searchable
   - your email and **Sign out**
 

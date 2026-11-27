@@ -22,6 +22,8 @@ const Questionnaires = lazy(() => import("./pages/Questionnaires"));
 const Portal = lazy(() => import("./pages/Portal"));
 // how to use each app
 const Help = lazy(() => import("./pages/Help"));
+// the company details and catalogue, edited in the app and saved on this device
+const Settings = lazy(() => import("./pages/Settings"));
 import ClientView from "./pages/ClientView";
 import AppShell from "./components/AppShell";
 import { endSession, readSession, SERVER_SIGNIN, startSession, type Session } from "./auth/auth";
@@ -32,9 +34,9 @@ import { ApiError, api } from "./lib/api";
  * #/ (landing), #/login, the signed-in #/dashboard (team overview) and feature apps #/studio (Proposal Studio), #/venues (Venue Directory) and
  * #/visualize (Visualize Proposal), and the public #/view/<token> where a client opens a shared proposal.
  */
-type Route = "landing" | "login" | "dashboard" | "events" | "crm" | "tasks" | "vendors" | "questionnaires" | "portal" | "expenses" | "studio" | "venues" | "visualize" | "help" | "view";
+type Route = "landing" | "login" | "dashboard" | "events" | "crm" | "tasks" | "vendors" | "questionnaires" | "portal" | "expenses" | "studio" | "venues" | "visualize" | "help" | "settings" | "view";
 type AppRoute = Exclude<Route, "landing" | "login" | "view">;
-const APP_ROUTES: Route[] = ["dashboard", "events", "crm", "tasks", "vendors", "questionnaires", "portal", "expenses", "studio", "venues", "visualize", "help"];
+const APP_ROUTES: Route[] = ["dashboard", "events", "crm", "tasks", "vendors", "questionnaires", "portal", "expenses", "studio", "venues", "visualize", "help", "settings"];
 const readRoute = (hash: string): Route => {
   const h = hash.replace(/^#\/?/, "").split("/")[0].toLowerCase();
   return h === "login" || h === "view" || APP_ROUTES.includes(h as Route) ? (h as Route) : "landing";
@@ -201,6 +203,10 @@ export default function App() {
             ) : route === "help" ? (
               <Suspense fallback={<p className="hint" role="status" style={{ padding: 24 }}>Opening help…</p>}>
                 <Help path={hash.replace(/^#\/?/, "").split("/").slice(1)} />
+              </Suspense>
+            ) : route === "settings" ? (
+              <Suspense fallback={<p className="hint" role="status" style={{ padding: 24 }}>Opening settings…</p>}>
+                <Settings onSaved={() => loadConfig().then(setConfig)} />
               </Suspense>
             ) : route === "dashboard" ? (
               <Dashboard list={store.list} account={session.email} onOpen={setOpenId} onNew={() => startProposal()} />

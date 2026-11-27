@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { assetUrl } from "../lib/asset";
 import { useConfig } from "../config/context";
 import { SITE } from "../site";
 import AppearanceControls from "./AppearanceControls";
@@ -17,7 +18,7 @@ export default function AppShell({ account, onSignOut, proposals, hash, children
     <div className="shell">
       <header className="shell-bar">
         <a className="shell-brand" href="#/dashboard" title={`${SITE.name}: Dashboard`}>
-          <img src={`${import.meta.env.BASE_URL}${brand.logo}`} alt="" />
+          <img src={assetUrl(brand.logo)} alt="" />
           <span className="shell-label">
             <strong>{SITE.name}</strong>
             <small>{brand.company}</small>
@@ -25,6 +26,10 @@ export default function AppShell({ account, onSignOut, proposals, hash, children
         </a>
         <div className="shell-bar-tools">
           <AppearanceControls />
+          <a className="shell-link" href="#/settings" aria-label="Settings" title="Company settings">
+            <Icon name="settings" />
+            <span className="shell-label">Settings</span>
+          </a>
           <a className="shell-link" href="#/help" aria-label="Help">
             <Icon name="help" />
             <span className="shell-label">Help</span>

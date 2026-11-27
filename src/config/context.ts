@@ -3,7 +3,7 @@ import type { Brand, Catalog, CatalogElement, ChecklistTemplate, ProposalPackage
 import type { Vendor } from "../lib/vendors";
 
 /** `checklists`: the team's from checklists.json; missing means the built-in list (DEFAULT_CHECKLIST) */
-export const ConfigContext = createContext<{ catalog: Catalog; brand: Brand; venues: VenueDirectory; packages: ProposalPackage[]; checklists?: ChecklistTemplate[]; teamVendors?: Vendor[]; teamQuestionnaires?: QuestionnaireTemplate[] } | null>(null);
+export const ConfigContext = createContext<{ catalog: Catalog; brand: Brand; venues: VenueDirectory; packages: ProposalPackage[]; base?: { brand: Brand; catalog: Catalog }; settingsIgnored?: string[]; checklists?: ChecklistTemplate[]; teamVendors?: Vendor[]; teamQuestionnaires?: QuestionnaireTemplate[] } | null>(null);
 
 export function useConfig() {
   const c = useContext(ConfigContext);

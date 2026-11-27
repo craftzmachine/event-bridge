@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { assetUrl } from "../lib/asset";
 import { useConfig } from "../config/context";
 import { SITE } from "../site";
 import Ornament from "../components/Ornament";
@@ -7,6 +8,7 @@ import Icon from "../components/icons";
 import { APPS } from "../lib/nav";
 import { computeTotals } from "../lib/totals";
 import { formatINRShort } from "../lib/format";
+import { PLANS } from "../lib/plans";
 import bridePhoto from "../assets/JK_05098.webp";
 import canopyPhoto from "../assets/AMU02965.webp";
 import mandapPhoto from "../assets/AMU02986.webp";
@@ -95,7 +97,7 @@ export default function Landing({ account, onSignOut }: { account?: string; onSi
   const { catalog, brand, venues, packages } = useConfig();
   const occasion = (eventType: string | null, style: string | null) =>
     [catalog.ceremonyStyles.find((x) => x.id === style)?.label, catalog.eventTypes.find((x) => x.id === eventType)?.label].filter(Boolean).join(" ");
-  const logo = `${import.meta.env.BASE_URL}${brand.logo}`;
+  const logo = assetUrl(brand.logo);
   const way = account ? "#/dashboard" : "#/login";
   const toApps = () => document.getElementById("lp-apps")?.scrollIntoView({ behavior: "smooth" });
 
@@ -190,6 +192,48 @@ export default function Landing({ account, onSignOut }: { account?: string; onSi
             </ul>
           </section>
         )}
+
+        <section id="lp-pricing" className="lp-pricing mx-auto mt-24 w-full max-w-6xl" aria-labelledby="lp-pricing-title">
+          <header className="lp-head">
+            <h2 id="lp-pricing-title">Plans and pricing</h2>
+            <p className="lede">Your brand, your catalogue, your team. Every plan includes the Dashboard, Wedding Quest onboarding and free updates.</p>
+          </header>
+          <ul className="m-0 grid list-none gap-5 p-0 md:grid-cols-3">
+            {PLANS.map((pl) => (
+              <li key={pl.id} className={`flex flex-col rounded-lg border bg-card p-6 ${pl.highlight ? "border-gold" : "border-line"}`}>
+                <h3 className="m-0 font-serif text-[28px] leading-tight text-ink">{pl.name}</h3>
+                <p className="m-0 mt-1 text-sm text-ink-2">{pl.forWho}</p>
+                <p className="m-0 mt-5 text-ink">
+                  {pl.price === null ? (
+                    <span className="font-serif text-3xl">Let's talk</span>
+                  ) : (
+                    <>
+                      <span className="font-serif text-4xl">{formatINRShort(pl.price)}</span>
+                      <span className="text-sm text-ink-2"> / month</span>
+                    </>
+                  )}
+                </p>
+                <p className="m-0 mt-1 text-xs text-stone">{pl.users} · {pl.price === null ? "quoted for your team" : "plus GST, 2 months free yearly"}</p>
+                <ul className="m-0 mt-5 grid flex-1 list-none gap-2.5 p-0 text-sm text-ink-2">
+                  {pl.features.map((f) => (
+                    <li key={f} className="flex gap-2.5">
+                      <span aria-hidden="true" className="text-gold-text">✓</span>
+                      <span>{f}</span>
+                    </li>
+                  ))}
+                </ul>
+                {pl.highlight && <p className="m-0 mt-5 text-xs text-gold-text">Most teams start here</p>}
+                <a
+                  className={`${pl.highlight ? "btn-primary" : "btn-ghost"} mt-3 justify-center`}
+                  href={`mailto:${brand.email}?subject=${encodeURIComponent(`${SITE.name} ${pl.name} plan`)}`}
+                >
+                  {pl.price === null ? "Contact us" : "Book a demo"}
+                </a>
+              </li>
+            ))}
+          </ul>
+          <p className="mx-auto mt-6 max-w-2xl text-center text-sm text-stone">14-day free trial of Professional, no card needed. Prices are indicative and exclude GST.</p>
+        </section>
       </main>
 
       <section className="lp-cta">

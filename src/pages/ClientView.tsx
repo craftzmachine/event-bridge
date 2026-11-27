@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { assetUrl } from "../lib/asset";
 import { useConfig } from "../config/context";
 import { SITE } from "../site";
 import { ApiError, api, formatRetry, pageBitmap } from "../lib/api";
@@ -114,7 +115,7 @@ export default function ClientView({ token }: { token?: string }) {
     ended("You've signed out. Enter the password to open the proposal again.");
   }
 
-  const logo = `${import.meta.env.BASE_URL}${brand.logo}`;
+  const logo = assetUrl(brand.logo);
   if (phase === "view" && doc && id) return <Viewer doc={doc} id={id} logo={logo} company={brand.company} onSignOut={signOut} onFail={fail} />;
 
   return (

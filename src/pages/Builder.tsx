@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { assetUrl } from "../lib/asset";
 import type { Line, Proposal } from "../types";
 import { elementFits, useConfig } from "../config/context";
 import { customLine, lineFromElement } from "../state/proposals";
@@ -75,7 +76,7 @@ export default function Builder({
         <button className="btn-ghost btn-sm" onClick={onClose} aria-label="All proposals">
           ←<span className="hide-phone"> All proposals</span>
         </button>
-        <img className="topbar-logo" src={`${import.meta.env.BASE_URL}${brand.logo}`} alt={brand.company} />
+        <img className="topbar-logo" src={assetUrl(brand.logo)} alt={brand.company} />
         <div className="topbar-title">
           <span className="eyebrow">{occasionChosen ? proposalTitle(p, catalog) : "New proposal"}</span>
           <strong>{p.client.name || "Untitled client"}</strong>

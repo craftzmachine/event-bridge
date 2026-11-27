@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import EmptyState from "../components/EmptyState";
 import { createPortal } from "react-dom";
 import type { Proposal } from "../types";
 import { uid, type useProposals } from "../state/proposals";
@@ -127,9 +128,9 @@ export default function Tasks({ store, account }: { store: Store; account: strin
         </div>
 
         {rows.length === 0 ? (
-          <div className="empty-state">
-            <p>{who === "family" ? "No family tasks. They come from each wedding's checklist." : "Nothing here. Add a task, or start a wedding's checklist from its event page."}</p>
-          </div>
+          <EmptyState icon="check" title={who === "family" ? "No family tasks" : "Nothing to do here"}>
+            {who === "family" ? "They come from each wedding's checklist." : "Add a task, or start a wedding's checklist from its event page."}
+          </EmptyState>
         ) : view === "list" ? (
           GROUPS.map((g) => {
             const group = rows.filter((r) => bucketOfRow(r, today) === g.id);

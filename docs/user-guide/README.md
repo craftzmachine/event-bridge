@@ -22,7 +22,7 @@ Event Bridge is a workspace for wedding planners: build and send proposals, run 
 | [Wedding Quest](13-wedding-quest.md) | The guided tour and missions |
 
 ## For the person who sets it up
-- [Admin setup](admin-setup.md) — company details, logo, catalogue, terms, team accounts, sharing
+- [Admin setup](admin-setup.md) — the Settings page (company details, logo, terms, catalogue), team accounts, sharing
 - [Frequently asked questions](faq.md)
 - [Glossary](glossary.md) — Sub Total, co-ordination, additional options and the other terms you'll see
 

@@ -180,6 +180,26 @@ export const HELP: HelpTopic[] = [
     tips: ["From Proposal Studio, the Review step's Send it to the client does all of this in one go."],
   }),
   {
+    id: "settings",
+    title: "Company settings",
+    icon: "settings",
+    href: "#/settings",
+    summary: "Your company details, logo, money defaults, terms and catalogue, edited in the app.",
+    steps: [
+      "Open Settings from the top bar (the gear).",
+      "Company: name, tagline, legal name, GSTIN, phone, email, address and the point of contact printed on proposals.",
+      "Logo & money: upload your logo (PNG, JPG, WebP or SVG under 400 KB), and set the co-ordination %, GST % and when the balance falls due.",
+      "Terms: the standard terms printed on every proposal, one per line. Reorder them with the arrows.",
+      "Catalogue: rename and reorder categories, and add, edit or remove elements with their unit, rate (or as per actuals), per-guest quantity, description and which occasions they suit.",
+      "Press Save changes. New proposals and exports use them straight away.",
+    ],
+    tips: [
+      "Settings are saved on this device. Use Backup → Export settings, then Import settings on a colleague's device.",
+      "Reset to original goes back to the details and catalogue the site was published with.",
+      "Proposals already made keep their own copy of each element, so editing the catalogue doesn't change them.",
+    ],
+  },
+  {
     id: "quest",
     title: "Wedding Quest",
     icon: "help",
