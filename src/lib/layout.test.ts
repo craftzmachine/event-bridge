@@ -36,3 +36,30 @@ describe("venue layout", () => {
     }
   });
 });
+
+describe("canvas editing helpers", () => {
+  it("lines a moving table up with a neighbour's edge or centre, within the tolerance", async () => {
+    const { snapGuides } = await import("./layout");
+    const other = { x0: 5, y0: 5, x1: 7, y1: 7 };
+    const r = snapGuides({ x0: 5.1, y0: 9, x1: 7.1, y1: 11 }, [other]);
+    expect(r.dx).toBeCloseTo(-0.1);
+    expect(r.dy).toBe(0);
+    expect(r.guides).toEqual([expect.objectContaining({ dir: "v", at: 5 })]);
+    expect(snapGuides({ x0: 5.5, y0: 9, x1: 7.5, y1: 11 }, [other]).guides).toEqual([]);
+    // the room's centre line counts too
+    expect(snapGuides({ x0: 14, y0: 0, x1: 15.95, y1: 1 }, [], 0.15, { w: 32, h: 20 }).dx).toBeCloseTo(0.05);
+  });
+
+  it("keeps round tables round and fits the seats to a resized table", async () => {
+    const { resizeItem, seatsFor } = await import("./layout");
+    const round = newItem("round", { x: 5, y: 5 });
+    const small = resizeItem(round, 1.2, 1.5);
+    expect(small.w).toBe(small.h);
+    expect(small.seats).toBe(seatsFor("round", 1.5, 1.5));
+    expect(seatsFor("round", 1.8, 1.8)).toBe(10);
+    expect(seatsFor("rect", 2.4, 0.9)).toBe(8);
+    expect(seatsFor("row", 5, 0.6)).toBe(10);
+    expect(resizeItem(newItem("stage", { x: 5, y: 5 }), 0.1, 0.1)).toMatchObject({ w: 0.4, h: 0.4 });
+    expect(seatsFor("rect", 20, 1)).toBe(24);
+  });
+});

@@ -220,3 +220,73 @@ export function starterLayout(kind: Starter, guests: number): VenueLayout {
   add("entrance", w / 2, h - 0.25);
   return { w: snap(w), h: snap(h), items };
 }
+
+// ---- editing helpers for the canvas editor ----------------------------------------------------
+
+export interface Box {
+  x0: number;
+  y0: number;
+  x1: number;
+  y1: number;
+}
+
+export interface Guide {
+  /** "v": a vertical line at x = at; "h": a horizontal line at y = at; from/to along the other axis */
+  dir: "v" | "h";
+  at: number;
+  from: number;
+  to: number;
+}
+
+/**
+ * Smart guides: when an edge or centre of the moving box comes within `tol` metres of another box's edge or
+ * centre (or the room's centre lines), how far to nudge it to line up, and the lines to draw.
+ */
+export function snapGuides(moving: Box, others: Box[], tol = 0.15, room?: { w: number; h: number }): { dx: number; dy: number; guides: Guide[] } {
+  const xs = (b: Box) => [b.x0, (b.x0 + b.x1) / 2, b.x1];
+  const ys = (b: Box) => [b.y0, (b.y0 + b.y1) / 2, b.y1];
+  const targets = room ? [...others, { x0: room.w / 2, x1: room.w / 2, y0: room.h / 2, y1: room.h / 2 }] : others;
+  let bestX: { d: number; at: number; box: Box } | null = null;
+  let bestY: { d: number; at: number; box: Box } | null = null;
+  for (const o of targets) {
+    for (const m of xs(moving))
+      for (const t of xs(o)) {
+        const d = t - m;
+        if (Math.abs(d) <= tol && (!bestX || Math.abs(d) < Math.abs(bestX.d))) bestX = { d, at: t, box: o };
+      }
+    for (const m of ys(moving))
+      for (const t of ys(o)) {
+        const d = t - m;
+        if (Math.abs(d) <= tol && (!bestY || Math.abs(d) < Math.abs(bestY.d))) bestY = { d, at: t, box: o };
+      }
+  }
+  const guides: Guide[] = [];
+  const dx = bestX?.d ?? 0;
+  const dy = bestY?.d ?? 0;
+  if (bestX) guides.push({ dir: "v", at: bestX.at, from: Math.min(moving.y0 + dy, bestX.box.y0), to: Math.max(moving.y1 + dy, bestX.box.y1) });
+  if (bestY) guides.push({ dir: "h", at: bestY.at, from: Math.min(moving.x0 + dx, bestY.box.x0), to: Math.max(moving.x1 + dx, bestY.box.x1) });
+  return { dx, dy, guides };
+}
+
+export const SEATS_MAX: Partial<Record<LayoutKind, number>> = { round: 24, rect: 24, row: 40 };
+
+/** chairs that fit a table of this size: about 0.55 m of edge per chair round a table, 0.5 m per chair in a row */
+export function seatsFor(kind: LayoutKind, w: number, h: number): number {
+  const max = SEATS_MAX[kind] ?? 0;
+  if (!max) return 0;
+  const n = kind === "round" ? (Math.PI * Math.min(w, h)) / 0.55 : kind === "rect" ? (2 * Math.max(w, h)) / 0.55 : Math.max(w, h) / 0.5;
+  return Math.max(1, Math.min(max, Math.floor(n + 1e-6)));
+}
+
+/**
+ * A resized item: round tables stay round, nothing smaller than 0.4 m (walls 0.1 m deep), and a table's seats
+ * follow its new size when `fitSeats` is set (the canvas does this on resize, so a smaller table loses chairs).
+ */
+export function resizeItem(it: LayoutItem, w: number, h: number, fitSeats = true): LayoutItem {
+  const minH = it.kind === "wall" ? 0.1 : 0.4;
+  let nw = Math.max(0.4, snap(w, 0.05));
+  let nh = Math.max(minH, snap(h, 0.05));
+  if (KINDS[it.kind].round) nw = nh = Math.max(nw, nh);
+  const next = { ...it, w: r2(nw), h: r2(nh) };
+  return fitSeats && isTable(it) ? { ...next, seats: seatsFor(it.kind, nw, nh) } : next;
+}

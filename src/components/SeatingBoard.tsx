@@ -1,17 +1,18 @@
 // Seat the guests on the floor plan: drag a household (or tap it, then tap a table) onto a table or a seat;
-// auto-seat fills the rest keeping households and groups together. Uses the same SVG drawing as the layout editor.
-import { useMemo, useState, type PointerEvent as RPointerEvent } from "react";
+// auto-seat fills the rest keeping households and groups together. Drawn on the same Konva canvas as the layout editor.
+import { lazy, Suspense, useMemo, useRef, useState, type PointerEvent as RPointerEvent } from "react";
 import type { LayoutItem, Proposal } from "../types";
 import { useConfig } from "../config/context";
 import { KINDS } from "../lib/layout";
 import { SIDES } from "../lib/guestList";
 import { autoSeat, freeSeats, guestOf, householdsFor, issues, normalise, seatAt, seatedKeys, tablesOf, tidy, unseat, type Plan } from "../lib/seating";
-import { ItemShape, Room } from "./layout/FloorPlan";
-import { usePanZoom } from "./layout/usePanZoom";
+import type { CanvasHandle, Tone } from "./layout/PlanCanvas";
 import EmptyState from "./EmptyState";
 
+const PlanCanvas = lazy(() => import("./layout/PlanCanvas"));
+
 type Update = (fn: (cur: Proposal) => Proposal) => void;
-const SIDE_FILL: Record<string, string> = { bride: "var(--gold)", groom: "var(--ink-2)", both: "var(--taupe)", "": "var(--stone)" };
+const SIDE_TONE: Record<string, Tone> = { bride: "gold", groom: "ink2", both: "taupe", "": "stone" };
 
 export default function SeatingBoard({ p, fnId, onUpdate }: { p: Proposal; fnId: string; onUpdate: Update }) {
   const { brand } = useConfig();
@@ -26,7 +27,8 @@ export default function SeatingBoard({ p, fnId, onUpdate }: { p: Proposal; fnId:
   const [dragging, setDragging] = useState<{ guestId: string; x: number; y: number } | null>(null);
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
-  const pz = usePanZoom(layout ?? { w: 30, h: 20 });
+  const [over, setOver] = useState<string | null>(null);
+  const canvas = useRef<CanvasHandle>(null);
 
   const seated = seatedKeys(plan);
   const byId = new Map(households.map((h) => [h.guest.id, h]));
@@ -66,15 +68,22 @@ export default function SeatingBoard({ p, fnId, onUpdate }: { p: Proposal; fnId:
     }
     setDragging({ guestId, x: e.clientX, y: e.clientY });
   };
-  const moveDrag = (e: RPointerEvent<HTMLElement>) => dragging && setDragging({ ...dragging, x: e.clientX, y: e.clientY });
+  const tableAt = (x: number, y: number) => {
+    const hit = canvas.current?.hitAt(x, y);
+    return hit && tables.some((t) => t.id === hit.itemId) ? hit : null;
+  };
+  const moveDrag = (e: RPointerEvent<HTMLElement>) => {
+    if (!dragging) return;
+    setDragging({ ...dragging, x: e.clientX, y: e.clientY });
+    setOver(tableAt(e.clientX, e.clientY)?.itemId ?? null);
+  };
   const endDrag = (e: RPointerEvent<HTMLElement>) => {
     if (!dragging) return;
-    const el = document.elementFromPoint(e.clientX, e.clientY);
-    const g = el?.closest("[data-table]") as SVGGElement | null;
-    const seat = el?.getAttribute("data-seat");
-    if (g) place(dragging.guestId, g.dataset.table!, seat != null ? Number(seat) : undefined);
-    else if (!g) setPicked((cur) => (cur === dragging.guestId ? null : dragging.guestId));
+    const hit = tableAt(e.clientX, e.clientY);
+    if (hit) place(dragging.guestId, hit.itemId, hit.seat);
+    else setPicked((cur) => (cur === dragging.guestId ? null : dragging.guestId));
     setDragging(null);
+    setOver(null);
   };
 
   if (!layout || !tables.length)
@@ -85,11 +94,15 @@ export default function SeatingBoard({ p, fnId, onUpdate }: { p: Proposal; fnId:
     );
 
   const table = openTable ? tables.find((t) => t.id === openTable) : null;
-  const fillFor = (t: LayoutItem) => (i: number) => {
+  const toneFor = (t: LayoutItem, i: number): Tone | undefined => {
     const k = plan[t.id]?.[i];
-    if (!k) return undefined;
-    return SIDE_FILL[allGuests.get(guestOf(k))?.side ?? ""];
+    return k ? SIDE_TONE[allGuests.get(guestOf(k))?.side ?? ""] : undefined;
   };
+  const seatName = (t: LayoutItem, i: number) => {
+    const k = plan[t.id]?.[i];
+    return k ? allGuests.get(guestOf(k))?.name ?? "Guest" : `${t.label || KINDS[t.kind].label}: empty seat`;
+  };
+  const dropping = dragging && over ? tables.find((t) => t.id === over) : null;
 
   return (
     <div className="grid gap-4 lg:grid-cols-[280px_minmax(0,1fr)]">
@@ -110,7 +123,7 @@ export default function SeatingBoard({ p, fnId, onUpdate }: { p: Proposal; fnId:
                 onPointerDown={(e) => startDrag(e, h.guest.id)} onPointerMove={moveDrag} onPointerUp={endDrag}
                 onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setPicked(picked === h.guest.id ? null : h.guest.id); } }}
                 className={`flex w-full cursor-grab touch-none items-center gap-2 rounded-md border border-solid px-3 py-2 text-left text-sm ${picked === h.guest.id ? "border-gold bg-gold-soft" : "border-line bg-paper"}`}>
-                <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: SIDE_FILL[h.guest.side] }} aria-hidden="true" />
+                <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: `var(--${SIDE_TONE[h.guest.side] === "ink2" ? "ink-2" : SIDE_TONE[h.guest.side]})` }} aria-hidden="true" />
                 <span className="min-w-0 flex-1 truncate text-ink">{h.guest.name}</span>
                 {!h.confirmed && <span className="text-xs text-stone">?</span>}
                 <span className="tabular-nums text-xs text-ink-2">{left.length}</span>
@@ -120,7 +133,7 @@ export default function SeatingBoard({ p, fnId, onUpdate }: { p: Proposal; fnId:
           {!shown.length && <li className="py-4 text-center text-xs text-stone">{toSeat.length ? "No one matches." : totalPeople ? "Everyone has a seat." : "No confirmed guests yet. Tick the box above to seat people ahead of their reply."}</li>}
         </ul>
         <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-stone" aria-label="Key">
-          {SIDES.filter((s) => s.id).map((s) => <span key={s.id} className="flex items-center gap-1"><span className="h-2 w-2 rounded-full" style={{ background: SIDE_FILL[s.id] }} />{s.label}</span>)}
+          {SIDES.filter((s) => s.id).map((s) => <span key={s.id} className="flex items-center gap-1"><span className="h-2 w-2 rounded-full" style={{ background: `var(--${SIDE_TONE[s.id] === "ink2" ? "ink-2" : SIDE_TONE[s.id]})` }} />{s.label}</span>)}
         </div>
       </aside>
 
@@ -148,26 +161,21 @@ export default function SeatingBoard({ p, fnId, onUpdate }: { p: Proposal; fnId:
             {picked ? `Now tap a table for ${byId.get(picked)?.guest.name}.` : note}
           </p>
         )}
-        <div className="overflow-hidden rounded-lg border border-line bg-paper-2" style={{ touchAction: "none" }}>
-          <svg ref={pz.svg} viewBox={pz.viewBox} className="block aspect-[16/10] w-full select-none" role="application" aria-label="Seating plan. Choose a guest, then a table." tabIndex={0}
-            onPointerDown={(e) => { setOpenTable(null); pz.startPan(e); }} onPointerMove={(e) => { pz.movePan(e); }} onPointerUp={pz.endPan} onPointerCancel={pz.endPan}>
-            <Room layout={layout} grid={false} />
-            {layout.items.map((it) => {
-              const isT = tables.some((t) => t.id === it.id);
-              const taken = isT ? (plan[it.id] ?? []).filter(Boolean).length : 0;
-              return (
-                <g key={it.id} data-table={isT ? it.id : undefined} onPointerDown={isT ? (e) => e.stopPropagation() : undefined}>
-                  <ItemShape it={it} focusable={isT} selected={openTable === it.id} seatFill={isT ? fillFor(it) : undefined}
-                    title={isT ? `${it.label || KINDS[it.kind].label}, ${taken} of ${it.seats} seated` : undefined}
-                    handlers={isT ? {
-                      onClick: () => (picked ? place(picked, it.id) : setOpenTable(it.id)),
-                      onKeyDown: (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); picked ? place(picked, it.id) : setOpenTable(it.id); } },
-                    } : undefined} />
-                </g>
-              );
-            })}
-          </svg>
-        </div>
+        <Suspense fallback={<div className="grid h-80 place-items-center rounded-lg border border-line bg-paper-2 text-sm text-stone">Opening the seating plan…</div>}>
+          <PlanCanvas ref={canvas} layout={layout} mode="seat" grid={false} selected={openTable ? [openTable] : []} highlight={over}
+            seatTone={toneFor} seatTitle={seatName}
+            tableTitle={(t) => `${t.label || KINDS[t.kind].label} · ${(plan[t.id] ?? []).filter(Boolean).length}/${t.seats}`}
+            onSelect={() => setOpenTable(null)}
+            onTableClick={(id, seat) => (picked ? place(picked, id, seat) : setOpenTable(id))}
+            ariaLabel="Seating plan. Choose a guest from the list, then a table." />
+        </Suspense>
+        {dropping && <p className="m-0 mt-1 text-xs text-gold-text" role="status">{dropping.label || "Table"}: {freeSeats(plan, dropping.id)} free</p>}
+        {/* tables as buttons, for keyboards and screen readers */}
+        <ul className="sr-only">
+          {tables.map((t) => (
+            <li key={t.id}><button type="button" onClick={() => (picked ? place(picked, t.id) : setOpenTable(t.id))}>{`${t.label || "Table"}, ${(plan[t.id] ?? []).filter(Boolean).length} of ${t.seats} seated`}</button></li>
+          ))}
+        </ul>
 
         {table && (
           <section className="mt-3 rounded-lg border border-line bg-card p-4" aria-labelledby="table-title">
