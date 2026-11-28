@@ -16,6 +16,8 @@ import { fitSeats, setSeatsFor } from "../lib/inventory";
 import CountsPanel from "./layout/CountsPanel";
 import KindIcon from "./layout/KindIcon";
 import LayersPanel from "./layout/LayersPanel";
+import ChecksPanel from "./layout/ChecksPanel";
+import { checkPlan } from "../lib/safety";
 import { loadBackdrop, saveBackdrop, useBackdropUrl } from "../state/backdrops";
 import { SCALES, fits, orientationFor, pickScale, type Orientation, type Paper } from "../lib/scalePlan";
 import { calibrate, placeBackdrop, roomForBackdrop } from "../lib/backdrop";
@@ -73,6 +75,7 @@ function Editor({ initial, p, onSave, onEvent, full }: { initial: VenueLayout; p
   // fullscreen on a phone: the side panels fold away behind a button
   const [panels, setPanels] = useState(false);
   const [layers, setLayers] = useState(false);
+  const [checks, setChecks] = useState(false);
   const { venues, brand } = useConfig();
   const emit = (e: TutorialEvent) => onEvent?.(e);
   const [pop, setPop] = useState<"tables" | "inventory" | "background" | "print" | null>(null);
@@ -178,7 +181,11 @@ function Editor({ initial, p, onSave, onEvent, full }: { initial: VenueLayout; p
   }, [many]);
   const one = selected.length === 1 ? selected[0] : null;
   const movable = sel.filter((id) => !layout.items.find((i) => i.id === id)?.locked);
-  const clash = useMemo(() => clashes(layout.items.filter((i) => !i.hidden)), [layout.items]);
+  const overlapping = useMemo(() => clashes(layout.items.filter((i) => !i.hidden)), [layout.items]);
+  const issues = useMemo(() => checkPlan(layout, p.client.guests), [layout, p.client.guests]);
+  const warnings = issues.filter((i) => i.level === "warn");
+  // with the Checks panel open, items with a warning are outlined like overlaps
+  const clash = useMemo(() => (checks ? new Set([...overlapping, ...warnings.flatMap((i) => i.itemIds)]) : overlapping), [checks, overlapping, warnings]);
   const capacity = layoutCapacity(layout);
   const coming = confirmedHeadcount(p);
   const venueMax = (p.client.venue ? venueCapacity(venues.venues, p.client.venue) : null)?.capacity ?? null;
@@ -378,8 +385,11 @@ function Editor({ initial, p, onSave, onEvent, full }: { initial: VenueLayout; p
             }
           }}>{saving ? "Saving…" : "⤓ Image"}</ToolBtn>
           {full && <span className="lg:hidden"><ToolBtn label={panels ? "Hide the side panels" : "Show the side panels"} pressed={panels} onClick={() => setPanels(!panels)}>☰ Panels</ToolBtn></span>}
+          <ToolBtn label={`Safety and clearance checks${warnings.length ? `: ${warnings.length} to look at` : ", all clear"}`} pressed={checks} onClick={() => { setChecks(!checks); if (!checks) setPanels(true); }}>
+            {warnings.length ? <span className="text-danger-ink">⚠ Checks {warnings.length}</span> : "✓ Checks"}
+          </ToolBtn>
           <ToolBtn label="Layers: every item, show, hide, lock and order (L)" pressed={layers} onClick={() => { setLayers(!layers); if (!layers) setPanels(true); }}>☰ Layers</ToolBtn>
-          <span className="ml-auto text-xs text-stone" aria-live="polite">{layout.items.length} items · {capacity} seats{clash.size ? ` · ${clash.size} overlapping` : ""}</span>
+          <span className="ml-auto text-xs text-stone" aria-live="polite">{layout.items.length} items · {capacity} seats{overlapping.size ? ` · ${overlapping.size} overlapping` : ""}</span>
         </div>
         {pop === "tables" && (
           <div data-plan-menu className="mb-2 grid gap-3 rounded-md border border-solid border-line bg-card p-3 text-sm sm:grid-cols-2">
@@ -624,6 +634,15 @@ function Editor({ initial, p, onSave, onEvent, full }: { initial: VenueLayout; p
           </section>
         )}
 
+        {checks && (
+          <ChecksPanel issues={issues} onClose={() => setChecks(false)}
+            onShow={(i) => {
+              const shown = layout.items.filter((x) => i.itemIds.includes(x.id) && !x.hidden);
+              setSel(shown.map((x) => x.id));
+              if (shown.length) canvas.current?.centreOn(shown.reduce((t, x) => t + x.x, 0) / shown.length, shown.reduce((t, x) => t + x.y, 0) / shown.length);
+            }}
+            onFix={(i) => { if (i.fix) { setItems(i.fix.apply(layout.items)); setNote(`Done: ${i.fix.label.toLowerCase()}.`); } }} />
+        )}
         {layers && (
           <LayersPanel items={layout.items} sel={sel} onSelect={setSel} onClose={() => setLayers(false)} onOrder={(how) => reorder(sel, how)}
             onPatch={(id, patch) => setItems(layout.items.map((i) => (i.id === id ? { ...i, ...patch } : i)))} />
