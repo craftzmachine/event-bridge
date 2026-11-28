@@ -14,6 +14,14 @@ Open **Floor Plans** from the Dashboard.
 
 **Plan details** (at the top of a plan) holds the name, venue, guests expected and notes.
 
+## Professional tools
+Everything in the [Layout editor](15-layout-seating.md) works here too, including:
+- **⛶ Fullscreen** (or F) for the whole screen,
+- **🗺 Background** to trace the venue's own drawing at the right scale,
+- **☰ Layers** to find, hide, lock and reorder items,
+- **✓ Checks** for aisles, gaps between tables, the stage and entrances,
+- **🖨 Print** to scale (1:50 to 1:500 on A4 or A3) with a legend.
+
 ## Counting and ordering
 - The **Counts** panel totals tables (by size and seats), chairs, chair rows and the mandap, stage, aisle and other items, as you work.
 - **Inventory ▾** downloads the list for the rental vendor as **PDF** or **Excel**: chairs, tables by size, tablecloths to the floor, runners, centrepieces and décor with their sizes.
