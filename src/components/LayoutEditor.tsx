@@ -20,9 +20,9 @@ const PlanCanvas = lazy(() => import("./layout/PlanCanvas"));
 const r2 = (n: number) => Math.round(n * 100) / 100;
 const HISTORY = 80;
 
-export default function LayoutEditor({ p, fnId, onSave, onEvent }: { p: Proposal; fnId: string; onSave: (l: VenueLayout | undefined) => void; onEvent?: (e: TutorialEvent) => void }) {
+export default function LayoutEditor({ p, fnId, onSave, onEvent, full = false }: { p: Proposal; fnId: string; onSave: (l: VenueLayout | undefined) => void; onEvent?: (e: TutorialEvent) => void; full?: boolean }) {
   const saved = p.layouts?.[fnId];
-  return saved ? <Editor key={fnId} initial={saved} p={p} onSave={onSave} onEvent={onEvent} /> : <Start p={p} onPick={onSave} />;
+  return saved ? <Editor key={fnId} initial={saved} p={p} onSave={onSave} onEvent={onEvent} full={full} /> : <div className={full ? "min-h-0 flex-1 overflow-auto" : undefined}><Start p={p} onPick={onSave} /></div>;
 }
 
 /** No plan yet: pick a starter sized for the guests, a saved venue plan, or an empty room. */
@@ -64,7 +64,9 @@ function Start({ p, onPick }: { p: Proposal; onPick: (l: VenueLayout) => void })
 
 type Menu = MenuRequest & { left: number; top: number };
 
-function Editor({ initial, p, onSave, onEvent }: { initial: VenueLayout; p: Proposal; onSave: (l: VenueLayout | undefined) => void; onEvent?: (e: TutorialEvent) => void }) {
+function Editor({ initial, p, onSave, onEvent, full }: { initial: VenueLayout; p: Proposal; onSave: (l: VenueLayout | undefined) => void; onEvent?: (e: TutorialEvent) => void; full: boolean }) {
+  // fullscreen on a phone: the side panels fold away behind a button
+  const [panels, setPanels] = useState(false);
   const { venues, brand } = useConfig();
   const emit = (e: TutorialEvent) => onEvent?.(e);
   const [pop, setPop] = useState<"tables" | "inventory" | null>(null);
@@ -283,8 +285,8 @@ function Editor({ initial, p, onSave, onEvent }: { initial: VenueLayout; p: Prop
   };
 
   return (
-    <div ref={wrap} className="relative grid gap-4 lg:grid-cols-[minmax(0,1fr)_280px]" onKeyDown={onKey}>
-      <div className="min-w-0">
+    <div ref={wrap} className={full ? "relative grid min-h-0 flex-1 grid-rows-[minmax(0,1fr)_auto] gap-3 lg:grid-cols-[minmax(0,1fr)_280px] lg:grid-rows-[minmax(0,1fr)]" : "relative grid gap-4 lg:grid-cols-[minmax(0,1fr)_280px]"} onKeyDown={onKey}>
+      <div className={full ? "flex min-h-0 min-w-0 flex-col" : "min-w-0"}>
         <div className="mb-2 flex flex-wrap items-center gap-1.5" role="toolbar" aria-label="Floor plan tools">
           <span data-tutorial="undo"><ToolBtn label="Undo (Ctrl+Z)" disabled={!past.length} onClick={undo}>↶</ToolBtn></span>
           <ToolBtn label="Redo (Ctrl+Y)" disabled={!future.length} onClick={redo}>↷</ToolBtn>
@@ -319,6 +321,7 @@ function Editor({ initial, p, onSave, onEvent }: { initial: VenueLayout; p: Prop
               setSaving(false);
             }
           }}>{saving ? "Saving…" : "⤓ Image"}</ToolBtn>
+          {full && <span className="lg:hidden"><ToolBtn label={panels ? "Hide the side panels" : "Show the side panels"} pressed={panels} onClick={() => setPanels(!panels)}>☰ Panels</ToolBtn></span>}
           <span className="ml-auto text-xs text-stone" aria-live="polite">{layout.items.length} items · {capacity} seats{clash.size ? ` · ${clash.size} overlapping` : ""}</span>
         </div>
         {pop === "tables" && (
@@ -366,10 +369,11 @@ function Editor({ initial, p, onSave, onEvent }: { initial: VenueLayout; p: Prop
             ))}
           </div>
         )}
-        <div tabIndex={0} data-tutorial="canvas" className="rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-gold">
+        <div tabIndex={0} data-tutorial="canvas" className={`rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-gold${full ? " min-h-0 flex-1" : ""}`}>
           <Suspense fallback={<div className="grid h-80 place-items-center rounded-lg border border-line bg-paper-2 text-sm text-stone">Opening the floor plan…</div>}>
             <PlanCanvas
               ref={canvas}
+              fill={full}
               layout={layout}
               mode="edit"
               selected={sel}
@@ -389,7 +393,7 @@ function Editor({ initial, p, onSave, onEvent }: { initial: VenueLayout; p: Prop
             />
           </Suspense>
         </div>
-        <p className="m-0 mt-2 text-xs text-stone">
+        <p className={full ? "sr-only" : "m-0 mt-2 text-xs text-stone"}>
           Click a table or any of its chairs to select it · drag across empty floor to select several (left to right: wholly inside; right to left: anything touched; Shift adds) · Alt-click picks the item underneath · drag to move (hold Alt to place freely) · handles resize, the top knob rotates · Space-drag, the middle button, the Hand tool or two fingers pan · scroll or pinch to zoom · right-click for more.
         </p>
         {/* the same items as a list, for keyboards and screen readers */}
@@ -404,7 +408,7 @@ function Editor({ initial, p, onSave, onEvent }: { initial: VenueLayout; p: Prop
         </ul>
       </div>
 
-      <aside className="grid content-start gap-4">
+      <aside className={full ? `grid content-start gap-4 overflow-y-auto lg:min-h-0 ${panels ? "max-lg:max-h-[42dvh]" : "max-lg:hidden"}` : "grid content-start gap-4"}>
         <section className="rounded-lg border border-line bg-card p-4">
           <h3 className="m-0 mb-1 text-sm font-medium text-ink-2">Add</h3>
           <p className="m-0 mb-2 text-xs text-stone">Click, or drag onto the plan.</p>

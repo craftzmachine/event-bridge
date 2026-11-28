@@ -35,8 +35,10 @@ export function hasWebGL(): boolean {
   }
 }
 
-export default function Plan3D({ layout, title, seatTone, seatName }: {
+export default function Plan3D({ layout, title, seatTone, seatName, full = false }: {
   layout: VenueLayout;
+  /** fullscreen: fill the space below the toolbar */
+  full?: boolean;
   title: string;
   seatTone?: (it: LayoutItem, seat: number) => Tone | undefined;
   seatName?: (it: LayoutItem, seat: number) => string | undefined;
@@ -65,7 +67,7 @@ export default function Plan3D({ layout, title, seatTone, seatName }: {
   };
 
   return (
-    <div className="relative">
+    <div className={full ? "relative flex h-full min-h-0 flex-col" : "relative"}>
       <div className="mb-2 flex flex-wrap items-center gap-1.5" role="toolbar" aria-label="3D views">
         {(["overview", "top", "entrance", "stage", "walk"] as Preset[]).map((p) => (
           <button key={p} type="button" aria-pressed={preset === p} onClick={() => setPreset(p)}
@@ -75,7 +77,7 @@ export default function Plan3D({ layout, title, seatTone, seatName }: {
         ))}
         <button type="button" className="btn-ghost btn-sm ml-auto" onClick={save}>⤓ Save image</button>
       </div>
-      <div className="relative h-[min(72vh,640px)] min-h-[320px] overflow-hidden rounded-lg border border-line" style={{ background: "#1d1915", touchAction: "none" }}
+      <div className={`relative ${full ? "min-h-[320px] flex-1" : "h-[min(72vh,640px)] min-h-[320px]"} overflow-hidden rounded-lg border border-line`} style={{ background: "#1d1915", touchAction: "none" }}
         onPointerLeave={() => setTip(null)}>
         <Canvas shadows dpr={[1, 2]} gl={{ preserveDrawingBuffer: true, antialias: true }} camera={{ fov: 50, near: 0.1, far: 1000 }}
           onCreated={({ gl: r }) => {
