@@ -14,6 +14,8 @@ import type { CanvasHandle, MenuRequest } from "./layout/PlanCanvas";
 import type { TutorialEvent } from "../lib/planTutorial";
 import { fitSeats, setSeatsFor } from "../lib/inventory";
 import CountsPanel from "./layout/CountsPanel";
+import KindIcon from "./layout/KindIcon";
+import LayersPanel from "./layout/LayersPanel";
 
 const PlanCanvas = lazy(() => import("./layout/PlanCanvas"));
 
@@ -67,6 +69,7 @@ type Menu = MenuRequest & { left: number; top: number };
 function Editor({ initial, p, onSave, onEvent, full }: { initial: VenueLayout; p: Proposal; onSave: (l: VenueLayout | undefined) => void; onEvent?: (e: TutorialEvent) => void; full: boolean }) {
   // fullscreen on a phone: the side panels fold away behind a button
   const [panels, setPanels] = useState(false);
+  const [layers, setLayers] = useState(false);
   const { venues, brand } = useConfig();
   const emit = (e: TutorialEvent) => onEvent?.(e);
   const [pop, setPop] = useState<"tables" | "inventory" | null>(null);
@@ -127,7 +130,7 @@ function Editor({ initial, p, onSave, onEvent, full }: { initial: VenueLayout; p
   }, [many]);
   const one = selected.length === 1 ? selected[0] : null;
   const movable = sel.filter((id) => !layout.items.find((i) => i.id === id)?.locked);
-  const clash = useMemo(() => clashes(layout.items), [layout.items]);
+  const clash = useMemo(() => clashes(layout.items.filter((i) => !i.hidden)), [layout.items]);
   const capacity = layoutCapacity(layout);
   const coming = confirmedHeadcount(p);
   const venueMax = (p.client.venue ? venueCapacity(venues.venues, p.client.venue) : null)?.capacity ?? null;
@@ -199,7 +202,7 @@ function Editor({ initial, p, onSave, onEvent, full }: { initial: VenueLayout; p
     else if (mod && key === "d") duplicate();
     else if (mod && key === "c") clipboard.current = selected.map((i) => ({ ...i }));
     else if (mod && key === "v") paste(clipboard.current);
-    else if (mod && key === "a") setSel(layout.items.map((i) => i.id));
+    else if (mod && key === "a") setSel(layout.items.filter((i) => !i.hidden).map((i) => i.id));
     else if (mod && e.key === "]") reorder(sel, e.shiftKey ? "front" : "forward");
     else if (mod && e.key === "[") reorder(sel, e.shiftKey ? "back" : "backward");
     else if (mod && (e.code === "BracketRight" || e.code === "BracketLeft")) reorder(sel, e.code === "BracketRight" ? (e.shiftKey ? "front" : "forward") : e.shiftKey ? "back" : "backward");
@@ -210,6 +213,7 @@ function Editor({ initial, p, onSave, onEvent, full }: { initial: VenueLayout; p
     } else if (!mod && key === "m") setTool((t) => (t === "measure" ? "select" : "measure"));
     else if (!mod && key === "v") setTool("select");
     else if (!mod && key === "h") setTool("hand");
+    else if (!mod && key === "l") setLayers((x) => !x);
     else if (!sel.length) return;
     else if (e.key === "ArrowLeft") nudge(-step, 0);
     else if (e.key === "ArrowRight") nudge(step, 0);
@@ -322,6 +326,7 @@ function Editor({ initial, p, onSave, onEvent, full }: { initial: VenueLayout; p
             }
           }}>{saving ? "Saving…" : "⤓ Image"}</ToolBtn>
           {full && <span className="lg:hidden"><ToolBtn label={panels ? "Hide the side panels" : "Show the side panels"} pressed={panels} onClick={() => setPanels(!panels)}>☰ Panels</ToolBtn></span>}
+          <ToolBtn label="Layers: every item, show, hide, lock and order (L)" pressed={layers} onClick={() => { setLayers(!layers); if (!layers) setPanels(true); }}>☰ Layers</ToolBtn>
           <span className="ml-auto text-xs text-stone" aria-live="polite">{layout.items.length} items · {capacity} seats{clash.size ? ` · ${clash.size} overlapping` : ""}</span>
         </div>
         {pop === "tables" && (
@@ -475,6 +480,11 @@ function Editor({ initial, p, onSave, onEvent, full }: { initial: VenueLayout; p
           </section>
         )}
 
+        {layers && (
+          <LayersPanel items={layout.items} sel={sel} onSelect={setSel} onClose={() => setLayers(false)} onOrder={(how) => reorder(sel, how)}
+            onPatch={(id, patch) => setItems(layout.items.map((i) => (i.id === id ? { ...i, ...patch } : i)))} />
+        )}
+
         <CountsPanel layout={layout} onOpen={() => emit("inventory")} />
 
         <section className="rounded-lg border border-line bg-card p-4">
@@ -511,7 +521,7 @@ function Editor({ initial, p, onSave, onEvent, full }: { initial: VenueLayout; p
               <MenuItem disabled={!clipboard.current.length} onClick={() => { paste(clipboard.current, menu.room); setMenu(null); }} hint="Ctrl+V">Paste here</MenuItem>
               <MenuItem onClick={() => { addAt("round", menu.room); setMenu(null); }}>Add a round table here</MenuItem>
               <MenuItem onClick={() => { addAt("rect", menu.room); setMenu(null); }}>Add a long table here</MenuItem>
-              <MenuItem onClick={() => { setSel(layout.items.map((i) => i.id)); setMenu(null); }} hint="Ctrl+A">Select all</MenuItem>
+              <MenuItem onClick={() => { setSel(layout.items.filter((i) => !i.hidden).map((i) => i.id)); setMenu(null); }} hint="Ctrl+A">Select all</MenuItem>
               <MenuItem onClick={() => { setItems(renumberTables(layout.items)); setMenu(null); }}>Renumber tables</MenuItem>
               <MenuItem onClick={() => { canvas.current?.fit(); setMenu(null); }}>Fit the room</MenuItem>
             </>
@@ -597,37 +607,6 @@ function MenuItem({ children, onClick, hint, danger, disabled }: { children: Rea
       <span>{children}</span>
       {hint && <span className="text-xs text-stone">{hint}</span>}
     </button>
-  );
-}
-
-/** a tiny drawing of each palette item */
-function KindIcon({ kind }: { kind: LayoutKind }) {
-  const k = KINDS[kind];
-  return (
-    <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true" className="shrink-0">
-      {kind === "round" ? (
-        <>
-          {Array.from({ length: 8 }, (_, i) => <circle key={i} cx={9 + Math.cos((i / 8) * Math.PI * 2) * 7.2} cy={9 + Math.sin((i / 8) * Math.PI * 2) * 7.2} r={1.3} fill="var(--taupe)" />)}
-          <circle cx={9} cy={9} r={4.6} fill="var(--card)" stroke="var(--gold)" strokeWidth={1.2} />
-        </>
-      ) : kind === "rect" ? (
-        <>
-          {[4, 9, 14].flatMap((x) => [<circle key={`a${x}`} cx={x} cy={3.5} r={1.3} fill="var(--taupe)" />, <circle key={`b${x}`} cx={x} cy={14.5} r={1.3} fill="var(--taupe)" />])}
-          <rect x={1.5} y={6} width={15} height={6} rx={1} fill="var(--card)" stroke="var(--gold)" strokeWidth={1.2} />
-        </>
-      ) : kind === "row" ? (
-        [2.5, 6.8, 11.2, 15.5].map((x) => <circle key={x} cx={x} cy={9} r={1.8} fill="var(--taupe)" />)
-      ) : kind === "label" ? (
-        <text x={9} y={13} textAnchor="middle" fontSize={12} fill="var(--ink)" fontFamily="serif">T</text>
-      ) : k.round ? (
-        <circle cx={9} cy={9} r={6} fill="var(--gold-soft)" stroke="var(--taupe)" strokeWidth={1.2} />
-      ) : kind === "aisle" ? (
-        <rect x={6} y={1} width={6} height={16} rx={1} fill="var(--gold-soft)" stroke="var(--gold)" strokeWidth={1.2} />
-      ) : (
-        <rect x={k.w >= k.h * 2 ? 1 : 3} y={k.w >= k.h * 2 ? 6 : 3} width={k.w >= k.h * 2 ? 16 : 12} height={k.w >= k.h * 2 ? 6 : 12} rx={1.5}
-          fill="var(--gold-soft)" stroke="var(--taupe)" strokeWidth={1.2} strokeDasharray={kind === "entrance" ? "2 1.5" : undefined} />
-      )}
-    </svg>
   );
 }
 
