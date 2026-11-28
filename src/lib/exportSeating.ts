@@ -18,10 +18,10 @@ const SOFT = "#f4eee3";
 const LINE = "#d8cfbf";
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
 
-/** the floor plan as a standalone SVG string, seats filled where someone sits */
-export function layoutSvg(l: VenueLayout, plan: Plan = {}): string {
+/** the floor plan as a standalone SVG string, seats filled where someone sits (and numbered, for a printed plan) */
+export function layoutSvg(l: VenueLayout, plan: Plan = {}, opts: { seatNumbers?: boolean; transparent?: boolean } = {}): string {
   const pad = 1;
-  const parts: string[] = [`<rect x="0" y="0" width="${l.w}" height="${l.h}" fill="#ffffff" stroke="${INK}" stroke-width="0.08"/>`];
+  const parts: string[] = [`<rect x="0" y="0" width="${l.w}" height="${l.h}" fill="${opts.transparent ? "none" : "#ffffff"}" stroke="${INK}" stroke-width="0.08"/>`];
   for (const it of drawOrder(l.items)) {
     const k = KINDS[it.kind];
     const g: string[] = [];
@@ -29,6 +29,7 @@ export function layoutSvg(l: VenueLayout, plan: Plan = {}): string {
       seatPositions(it).forEach((s, i) => {
         const taken = !!plan[it.id]?.[i];
         g.push(`<circle cx="${s.x}" cy="${s.y}" r="0.2" fill="${taken ? GOLD : "#ffffff"}" stroke="${MUTED}" stroke-width="0.03"/>`);
+        if (opts.seatNumbers) g.push(`<text x="${s.x}" y="${s.y + 0.06}" text-anchor="middle" font-size="0.17" fill="${INK}" transform="rotate(${-it.rot} ${s.x} ${s.y})">${i + 1}</text>`);
       });
     if (it.kind !== "row") {
       g.push(k.round

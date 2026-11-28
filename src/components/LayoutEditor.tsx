@@ -16,7 +16,8 @@ import { fitSeats, setSeatsFor } from "../lib/inventory";
 import CountsPanel from "./layout/CountsPanel";
 import KindIcon from "./layout/KindIcon";
 import LayersPanel from "./layout/LayersPanel";
-import { saveBackdrop, useBackdropUrl } from "../state/backdrops";
+import { loadBackdrop, saveBackdrop, useBackdropUrl } from "../state/backdrops";
+import { SCALES, fits, orientationFor, pickScale, type Orientation, type Paper } from "../lib/scalePlan";
 import { calibrate, placeBackdrop, roomForBackdrop } from "../lib/backdrop";
 
 const PlanCanvas = lazy(() => import("./layout/PlanCanvas"));
@@ -74,7 +75,8 @@ function Editor({ initial, p, onSave, onEvent, full }: { initial: VenueLayout; p
   const [layers, setLayers] = useState(false);
   const { venues, brand } = useConfig();
   const emit = (e: TutorialEvent) => onEvent?.(e);
-  const [pop, setPop] = useState<"tables" | "inventory" | "background" | null>(null);
+  const [pop, setPop] = useState<"tables" | "inventory" | "background" | "print" | null>(null);
+  const [print, setPrint] = useState<{ paper: Paper; orientation: Orientation | "auto"; scale: number | "auto"; seatNumbers: boolean; backdrop: boolean }>({ paper: "A3", orientation: "auto", scale: "auto", seatNumbers: false, backdrop: false });
   // the venue drawing: moving it, and setting its scale from a measured wall
   const [moveBackdrop, setMoveBackdrop] = useState(false);
   const [calibrating, setCalibrating] = useState(false);
@@ -361,6 +363,7 @@ function Editor({ initial, p, onSave, onEvent, full }: { initial: VenueLayout; p
           <ToolBtn label="Number the tables left to right, top to bottom" onClick={() => setItems(renumberTables(layout.items))}>1·2·3 Renumber</ToolBtn>
           <span data-tutorial="bulk-seats"><ToolBtn label="Set chairs for many tables" pressed={pop === "tables"} onClick={() => setPop(pop === "tables" ? null : "tables")}>Tables ▾</ToolBtn></span>
           <ToolBtn label="Venue drawing to trace over" pressed={pop === "background" || moveBackdrop || calibrating} onClick={() => setPop(pop === "background" ? null : "background")}>🗺 Background ▾</ToolBtn>
+          <ToolBtn label="Print the plan to scale" pressed={pop === "print"} onClick={() => setPop(pop === "print" ? null : "print")}>🖨 Print ▾</ToolBtn>
           <span data-tutorial="inventory"><ToolBtn label="Inventory for the vendor" pressed={pop === "inventory"} onClick={() => setPop(pop === "inventory" ? null : "inventory")}>Inventory ▾</ToolBtn></span>
           <ToolBtn label="Download the plan as an image" disabled={saving} onClick={async () => {
             setSaving(true);
@@ -447,6 +450,51 @@ function Editor({ initial, p, onSave, onEvent, full }: { initial: VenueLayout; p
             )}
           </div>
         )}
+        {pop === "print" && (() => {
+          const orient = print.orientation === "auto" ? orientationFor(layout) : print.orientation;
+          const auto = pickScale(layout, print.paper, orient);
+          const chosen = print.scale !== "auto" && fits(layout, print.paper, orient, print.scale) ? print.scale : auto;
+          const sel = "rounded-sm border border-line bg-card px-2 py-1.5";
+          return (
+            <div data-plan-menu className="mb-2 grid gap-2 rounded-md border border-solid border-line bg-card p-3 text-sm">
+              <div className="flex flex-wrap items-center gap-2">
+                <select className={sel} aria-label="Paper" value={print.paper} onChange={(e) => setPrint({ ...print, paper: e.target.value as Paper })}>
+                  <option value="A3">A3</option>
+                  <option value="A4">A4</option>
+                </select>
+                <select className={sel} aria-label="Orientation" value={print.orientation} onChange={(e) => setPrint({ ...print, orientation: e.target.value as Orientation | "auto" })}>
+                  <option value="auto">Best way round</option>
+                  <option value="landscape">Landscape</option>
+                  <option value="portrait">Portrait</option>
+                </select>
+                <select className={sel} aria-label="Scale" value={String(print.scale)} onChange={(e) => setPrint({ ...print, scale: e.target.value === "auto" ? "auto" : Number(e.target.value) })}>
+                  <option value="auto">Largest that fits</option>
+                  {SCALES.map((sc) => <option key={sc} value={sc} disabled={!fits(layout, print.paper, orient, sc)}>1:{sc}{fits(layout, print.paper, orient, sc) ? "" : " (too big)"}</option>)}
+                </select>
+                <label className="check min-h-0 text-xs"><input type="checkbox" checked={print.seatNumbers} onChange={(e) => setPrint({ ...print, seatNumbers: e.target.checked })} /> Seat numbers</label>
+                {layout.backdrop && backdropUrl && backdropUrl !== "missing" && (
+                  <label className="check min-h-0 text-xs"><input type="checkbox" checked={print.backdrop} onChange={(e) => setPrint({ ...print, backdrop: e.target.checked })} /> Venue drawing underneath</label>
+                )}
+                <button type="button" className="btn-primary btn-sm ml-auto" disabled={saving} onClick={async () => {
+                  setSaving(true);
+                  try {
+                    const { downloadScalePlan } = await import("../lib/exportScalePlan");
+                    const backdropBlob = print.backdrop && layout.backdrop && !layout.backdrop.hidden ? await loadBackdrop(layout.backdrop.imageId) : undefined;
+                    const sc = await downloadScalePlan({ title: p.client.name || "Floor plan", venue: p.client.venue, layout, paper: print.paper, orientation: print.orientation, scale: print.scale, seatNumbers: print.seatNumbers, backdropBlob }, brand);
+                    setNote(sc ? `Saved at 1:${sc}. Print at 100% (actual size) to keep the scale.` : "Saved, fitted to the page (the room is too big to print to scale on this paper).");
+                  } catch (e) {
+                    setNote((e as Error).message);
+                  } finally {
+                    setSaving(false);
+                  }
+                }}>{saving ? "Saving…" : "⤓ PDF"}</button>
+              </div>
+              <p className="m-0 text-xs text-stone">
+                {chosen ? `1:${chosen} on ${print.paper} ${orient}: 1 m on the floor is ${1000 / chosen} mm on paper.` : `The room is too big for ${print.paper} at 1:500; it will be fitted to the page and marked not to scale.`} With a legend, a scale bar, the main sizes and the counts.
+              </p>
+            </div>
+          );
+        })()}
         {pop === "inventory" && (
           <div data-plan-menu className="mb-2 flex flex-wrap items-center gap-2 rounded-md border border-solid border-line bg-card p-3 text-sm">
             <span className="mr-auto text-ink-2">Chairs, tables, linens, centrepieces and décor with sizes, for the rental vendor.</span>
