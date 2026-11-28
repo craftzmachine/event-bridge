@@ -7,6 +7,7 @@ import { KINDS } from "../lib/layout";
 import { SIDES } from "../lib/guestList";
 import { autoSeat, freeSeats, guestOf, householdsFor, issues, normalise, seatAt, seatedKeys, tablesOf, tidy, unseat, type Plan } from "../lib/seating";
 import type { CanvasHandle, Tone } from "./layout/PlanCanvas";
+import { usePlanView } from "./layout/planView";
 import EmptyState from "./EmptyState";
 
 const PlanCanvas = lazy(() => import("./layout/PlanCanvas"));
@@ -29,6 +30,7 @@ export default function SeatingBoard({ p, fnId, onUpdate }: { p: Proposal; fnId:
   const [busy, setBusy] = useState(false);
   const [over, setOver] = useState<string | null>(null);
   const canvas = useRef<CanvasHandle>(null);
+  const [view] = usePlanView();
 
   const seated = seatedKeys(plan);
   const byId = new Map(households.map((h) => [h.guest.id, h]));
@@ -163,7 +165,8 @@ export default function SeatingBoard({ p, fnId, onUpdate }: { p: Proposal; fnId:
         )}
         <Suspense fallback={<div className="grid h-80 place-items-center rounded-lg border border-line bg-paper-2 text-sm text-stone">Opening the seating plan…</div>}>
           <PlanCanvas ref={canvas} layout={layout} mode="seat" grid={false} selected={openTable ? [openTable] : []} highlight={over}
-            seatTone={toneFor} seatTitle={seatName}
+            seatTone={toneFor} seatTitle={seatName} seatName={(t, i) => { const k = plan[t.id]?.[i]; return k ? allGuests.get(guestOf(k))?.name : undefined; }}
+            look={view.look} minimap rulers={view.rulers}
             tableTitle={(t) => `${t.label || KINDS[t.kind].label} · ${(plan[t.id] ?? []).filter(Boolean).length}/${t.seats}`}
             onSelect={() => setOpenTable(null)}
             onTableClick={(id, seat) => (picked ? place(picked, id, seat) : setOpenTable(id))}

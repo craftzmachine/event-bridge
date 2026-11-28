@@ -111,8 +111,10 @@ export function clashes(items: LayoutItem[]): Set<string> {
 }
 
 /**
- * Where each seat of a table sits, in the item's own frame (centre 0,0, before rotation), with the chair's facing
- * angle. Round: evenly round the edge. Long table: along both long sides. Chair row: in a line.
+ * Where each seat of a table sits, in the item's own frame (centre 0,0, before rotation). `a` is where the chair's
+ * back points, in degrees clockwise from up (−y), so a chair drawn with its back at local −y and rotated by `a` faces
+ * the table. Round: evenly round the edge. Long table: along both long sides. Chair row: in a line, facing up (the
+ * stage or mandap is at the top of a starter plan).
  */
 export function seatPositions(it: Pick<LayoutItem, "kind" | "w" | "h" | "seats">): { x: number; y: number; a: number }[] {
   const n = Math.max(0, Math.floor(it.seats ?? 0));
@@ -124,12 +126,12 @@ export function seatPositions(it: Pick<LayoutItem, "kind" | "w" | "h" | "seats">
       return { x: r2(Math.cos(a) * rr), y: r2(Math.sin(a) * rr), a: (a * 180) / Math.PI + 90 };
     });
   }
-  if (it.kind === "row") return Array.from({ length: n }, (_, i) => ({ x: r2(-it.w / 2 + (it.w / n) * (i + 0.5)), y: 0, a: 0 }));
+  if (it.kind === "row") return Array.from({ length: n }, (_, i) => ({ x: r2(-it.w / 2 + (it.w / n) * (i + 0.5)), y: 0, a: 180 }));
   // long table: half on each long side (the extra one on the top side)
   const top = Math.ceil(n / 2);
   const bottom = n - top;
   const side = (count: number, y: number, a: number) => Array.from({ length: count }, (_, i) => ({ x: r2(-it.w / 2 + (it.w / count) * (i + 0.5)), y, a }));
-  return [...side(top, -it.h / 2 - 0.3, 180), ...side(bottom, it.h / 2 + 0.3, 0)];
+  return [...side(top, -it.h / 2 - 0.3, 0), ...side(bottom, it.h / 2 + 0.3, 180)];
 }
 
 /** seats in a seat position, turned to the room's frame */
@@ -290,3 +292,40 @@ export function resizeItem(it: LayoutItem, w: number, h: number, fitSeats = true
   const next = { ...it, w: r2(nw), h: r2(nh) };
   return fitSeats && isTable(it) ? { ...next, seats: seatsFor(it.kind, nw, nh) } : next;
 }
+
+// ---- tools: numbering, grids of tables, measuring ---------------------------------------------
+
+/** "Table 7" → 7; a label without a trailing number → null */
+export function tableNumber(label: string | undefined): number | null {
+  const m = /(\d+)\s*$/.exec(label ?? "");
+  return m ? Number(m[1]) : null;
+}
+
+/** Numbers round and long tables "Table 1…n" left to right, then top to bottom (rows within half a metre count as one). */
+export function renumberTables(items: LayoutItem[]): LayoutItem[] {
+  const tables = items.filter((i) => i.kind === "round" || i.kind === "rect").sort((a, b) => (Math.abs(a.y - b.y) < 0.5 ? a.x - b.x : a.y - b.y));
+  const n = new Map(tables.map((t, i) => [t.id, `Table ${i + 1}`]));
+  return items.map((i) => (n.has(i.id) ? { ...i, label: n.get(i.id) } : i));
+}
+
+/**
+ * A grid of `rows × cols` items centred on `origin`, `gapX`/`gapY` metres apart edge to edge, numbered on from the
+ * tables already in the plan.
+ */
+export function arrayItems(kind: LayoutKind, rows: number, cols: number, gapX: number, gapY: number, origin: { x: number; y: number }, existing: LayoutItem[], seats?: number): LayoutItem[] {
+  const k = KINDS[kind];
+  const stepX = k.w + Math.max(0, gapX) + (isTable({ kind }) ? 0.6 : 0);
+  const stepY = k.h + Math.max(0, gapY) + (isTable({ kind }) ? 0.6 : 0);
+  const out: LayoutItem[] = [];
+  const all = [...existing];
+  for (let r = 0; r < Math.max(1, rows); r++)
+    for (let c = 0; c < Math.max(1, cols); c++) {
+      const it = newItem(kind, { x: origin.x + (c - (cols - 1) / 2) * stepX, y: origin.y + (r - (rows - 1) / 2) * stepY }, all);
+      const next = seats && isTable(it) ? { ...it, seats: Math.min(SEATS_MAX[kind] ?? seats, seats) } : it;
+      out.push(next);
+      all.push(next);
+    }
+  return out;
+}
+
+export const distance = (a: { x: number; y: number }, b: { x: number; y: number }) => Math.hypot(b.x - a.x, b.y - a.y);

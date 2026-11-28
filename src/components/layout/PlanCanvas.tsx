@@ -3,10 +3,12 @@
 // Colours come from the theme's CSS tokens and are re-read when the theme changes. Loaded lazily with Konva.
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState, type ReactNode } from "react";
 import Konva from "konva";
-import { Circle, Ellipse, Group, Layer, Line, Rect, Stage, Text, Transformer } from "react-konva";
+import { Group, Layer, Line, Rect, Stage, Text, Transformer } from "react-konva";
 import type { KonvaEventObject } from "konva/lib/Node";
 import type { LayoutItem, VenueLayout } from "../../types";
-import { KINDS, bounds, clampToRoom, isTable, resizeItem, seatPositions, snap, snapGuides, type Guide } from "../../lib/layout";
+import { KINDS, bounds, clampToRoom, distance, isTable, resizeItem, snap, snapGuides, type Guide } from "../../lib/layout";
+import ItemNode, { type Look } from "./ItemNode";
+import { Minimap, Rulers } from "./Overlays";
 
 Konva.hitOnDragEnabled = true;
 
@@ -61,6 +63,8 @@ export interface CanvasHandle {
   zoomBy: (factor: number) => void;
   /** the centre of what's on screen, in room metres */
   viewCentre: () => { x: number; y: number };
+  /** pan so this room point is in the middle */
+  centreOn: (x: number, y: number) => void;
 }
 
 export interface MenuRequest {
@@ -90,13 +94,25 @@ interface Props {
   /** drawn over the canvas above the selection (the floating toolbar); box in px relative to the canvas */
   overlay?: (box: { left: number; top: number; right: number; bottom: number }) => ReactNode;
   ariaLabel: string;
+  /** furniture drawn top-down ("realistic", the default) or as plain shapes */
+  look?: Look;
+  /** seat mode: the guest's name on a seat, shown when zoomed in */
+  seatName?: (it: LayoutItem, seat: number) => string | undefined;
+  /** "measure": dragging draws a dimension line instead of panning */
+  tool?: "select" | "measure";
+  rulers?: boolean;
+  minimap?: boolean;
 }
 
 const coarse = () => typeof window !== "undefined" && window.matchMedia?.("(pointer: coarse)").matches;
 const r2 = (n: number) => Math.round(n * 100) / 100;
 
 const PlanCanvas = forwardRef<CanvasHandle, Props>(function PlanCanvas(props, ref) {
-  const { layout, mode, selected = [], clash, grid = true, seatTone, seatTitle, highlight, tableTitle, onSelect, onEdit, onTableClick, onMenu, overlay, ariaLabel } = props;
+  const { layout, mode, selected = [], clash, grid = true, seatTone, seatTitle, highlight, tableTitle, onSelect, onEdit, onTableClick, onMenu, overlay, ariaLabel, look = "realistic", seatName, tool = "select", rulers = false, minimap = false } = props;
+  const [measure, setMeasure] = useState<{ a: { x: number; y: number }; b: { x: number; y: number }; live: boolean } | null>(null);
+  useEffect(() => {
+    if (tool !== "measure") setMeasure(null);
+  }, [tool]);
   const c = useThemeColors();
   const box = useRef<HTMLDivElement>(null);
   const stage = useRef<Konva.Stage>(null);
@@ -168,6 +184,7 @@ const PlanCanvas = forwardRef<CanvasHandle, Props>(function PlanCanvas(props, re
     fit,
     zoomBy: (f) => zoomAt(f),
     viewCentre: () => toRoomPx({ x: size.w / 2, y: size.h / 2 }),
+    centreOn: (x, y) => setView((v) => ({ ...v, x: size.w / 2 - x * v.scale, y: size.h / 2 - y * v.scale })),
   }));
 
   // the transformer wraps the selected, unlocked items (edit mode)
@@ -278,6 +295,12 @@ const PlanCanvas = forwardRef<CanvasHandle, Props>(function PlanCanvas(props, re
     const st = stage.current;
     if (!st) return;
     const pos = st.getPointerPosition();
+    if (tool === "measure" && pos && !("touches" in e.evt && e.evt.touches.length > 1)) {
+      st.draggable(false);
+      const p = toRoomPx(pos);
+      setMeasure({ a: p, b: p, live: true });
+      return;
+    }
     if (mode === "edit" && isFloor(e) && (e.evt as MouseEvent).shiftKey && pos) {
       st.draggable(false);
       const p = toRoomPx(pos);
@@ -317,6 +340,16 @@ const PlanCanvas = forwardRef<CanvasHandle, Props>(function PlanCanvas(props, re
       setView({ scale, x: mid.x - pinch.current.mid.x * scale, y: mid.y - pinch.current.mid.y * scale });
       return;
     }
+    if (measure?.live) {
+      const pos = st.getPointerPosition();
+      if (pos) {
+        const p = toRoomPx(pos);
+        // Shift keeps the line straight across or down
+        const straight = (e.evt as MouseEvent).shiftKey ? (Math.abs(p.x - measure.a.x) > Math.abs(p.y - measure.a.y) ? { x: p.x, y: measure.a.y } : { x: measure.a.x, y: p.y }) : p;
+        setMeasure({ ...measure, b: straight });
+      }
+      return;
+    }
     if (marquee) {
       const pos = st.getPointerPosition();
       if (pos) {
@@ -328,7 +361,8 @@ const PlanCanvas = forwardRef<CanvasHandle, Props>(function PlanCanvas(props, re
   const onUp = () => {
     cancelPress();
     pinch.current = null;
-    stage.current?.draggable(true);
+    stage.current?.draggable(tool !== "measure");
+    if (measure?.live) setMeasure({ ...measure, live: false });
     if (!marquee) return;
     const x0 = Math.min(marquee.x0, marquee.x1);
     const x1 = Math.max(marquee.x0, marquee.x1);
@@ -376,7 +410,7 @@ const PlanCanvas = forwardRef<CanvasHandle, Props>(function PlanCanvas(props, re
         draggable onDragEnd={(e) => { if (e.target === stage.current) setView((v) => ({ ...v, x: e.target.x(), y: e.target.y() })); }}
         onWheel={onWheel} onMouseDown={onDown} onTouchStart={onDown} onMouseMove={onMove} onTouchMove={onMove} onMouseUp={onUp} onTouchEnd={onUp}
         onClick={onClickStage} onTap={onClickStage} onContextMenu={onContext}
-        style={{ cursor: marquee ? "crosshair" : "grab" }}>
+        style={{ cursor: marquee || tool === "measure" ? "crosshair" : "grab" }}>
         <Layer listening={false}>
           <Rect x={0} y={0} width={layout.w} height={layout.h} fill={c.paper} stroke={c.ink2} strokeWidth={2} strokeScaleEnabled={false} />
           {gridLines.map((l, i) => <Line key={i} points={l.pts} stroke={c.line} strokeWidth={l.strong ? 1.2 : 0.6} strokeScaleEnabled={false} perfectDrawEnabled={false} />)}
@@ -391,8 +425,8 @@ const PlanCanvas = forwardRef<CanvasHandle, Props>(function PlanCanvas(props, re
           {/* an invisible floor so clicks on the room count as "the floor" */}
           <Rect name="floor" x={0} y={0} width={layout.w} height={layout.h} fill="transparent" />
           {layout.items.map((it) => (
-            <ItemNode key={it.id} it={it} c={c} mode={mode} selected={selected.includes(it.id)} clash={!!clash?.has(it.id)} highlight={highlight === it.id}
-              seatTone={seatTone} title={tableTitle}
+            <ItemNode key={it.id} it={it} c={c} mode={mode} look={look} zoom={view.scale} selected={selected.includes(it.id)} clash={!!clash?.has(it.id)} highlight={highlight === it.id}
+              seatTone={seatTone} seatName={seatName} title={tableTitle}
               register={(n) => { if (n) nodes.current.set(it.id, n); else nodes.current.delete(it.id); }}
               onSelect={(additive) => onSelect?.(additive ? (selected.includes(it.id) ? selected.filter((x) => x !== it.id) : [...selected, it.id]) : [it.id])}
               onDragStart={onDragStart} onDragMove={onDragMove} onDragEnd={onDragEnd}
@@ -406,6 +440,17 @@ const PlanCanvas = forwardRef<CanvasHandle, Props>(function PlanCanvas(props, re
           {guides.map((g, i) => (
             <Line key={i} points={g.dir === "v" ? [g.at, g.from - 0.5, g.at, g.to + 0.5] : [g.from - 0.5, g.at, g.to + 0.5, g.at]} stroke={c.accent} strokeWidth={1.5} dash={[6, 4]} strokeScaleEnabled={false} listening={false} />
           ))}
+          {measure && distance(measure.a, measure.b) > 0.05 && (
+            <Group listening={false}>
+              <Line points={[measure.a.x, measure.a.y, measure.b.x, measure.b.y]} stroke={c.danger} strokeWidth={2} strokeScaleEnabled={false} />
+              {[measure.a, measure.b].map((p, i) => <Rect key={i} x={p.x - 4 / view.scale} y={p.y - 4 / view.scale} width={8 / view.scale} height={8 / view.scale} fill={c.danger} />)}
+              <Group x={(measure.a.x + measure.b.x) / 2} y={(measure.a.y + measure.b.y) / 2}>
+                <Rect x={-0.9 * (22 / view.scale) * 2} y={-14 / view.scale} width={1.8 * (22 / view.scale) * 2} height={28 / view.scale} cornerRadius={4 / view.scale} fill={c.ink} opacity={0.85} />
+                <Text x={-0.9 * (22 / view.scale) * 2} y={-14 / view.scale} width={1.8 * (22 / view.scale) * 2} height={28 / view.scale} align="center" verticalAlign="middle"
+                  text={`${distance(measure.a, measure.b).toFixed(2)} m`} fontSize={14 / view.scale} fill={c.card} fontFamily="Inter, system-ui, sans-serif" />
+              </Group>
+            </Group>
+          )}
           {marquee && (
             <Rect x={Math.min(marquee.x0, marquee.x1)} y={Math.min(marquee.y0, marquee.y1)} width={Math.abs(marquee.x1 - marquee.x0)} height={Math.abs(marquee.y1 - marquee.y0)}
               fill={c.goldSoft} opacity={0.35} stroke={c.gold} strokeWidth={1} dash={[6, 4]} strokeScaleEnabled={false} listening={false} />
@@ -427,96 +472,10 @@ const PlanCanvas = forwardRef<CanvasHandle, Props>(function PlanCanvas(props, re
       {badge && <div className="pointer-events-none absolute z-10 whitespace-nowrap rounded-sm bg-espresso px-2 py-1 text-xs tabular-nums text-on-espresso" style={{ left: badge.x + 14, top: badge.y + 14 }}>{badge.text}</div>}
       {tip && <div className="pointer-events-none absolute z-10 whitespace-nowrap rounded-sm bg-espresso px-2 py-1 text-xs text-on-espresso" style={{ left: tip.x + 12, top: tip.y - 30 }}>{tip.text}</div>}
       {overlayBox && overlay?.(overlayBox)}
+      {rulers && <Rulers view={view} size={size} c={c} />}
+      {minimap && size.w >= 560 && <Minimap layout={layout} view={view} size={size} c={c} onJump={(x, y) => setView((v) => ({ ...v, x: size.w / 2 - x * v.scale, y: size.h / 2 - y * v.scale }))} />}
     </div>
   );
 });
 
 export default PlanCanvas;
-
-const TONE: Record<Tone, keyof Colors> = { gold: "gold", ink2: "ink2", taupe: "taupe", stone: "stone" };
-const FONT = "Inter, system-ui, sans-serif";
-
-function ItemNode({ it, c, mode, selected, clash, highlight, seatTone, title, register, onSelect, onDragStart, onDragMove, onDragEnd, onTable, onSeatHover }: {
-  it: LayoutItem;
-  c: Colors;
-  mode: "edit" | "seat";
-  selected: boolean;
-  clash: boolean;
-  highlight: boolean;
-  seatTone?: (it: LayoutItem, seat: number) => Tone | undefined;
-  title?: (it: LayoutItem) => string;
-  register: (n: Konva.Group | null) => void;
-  onSelect: (additive: boolean) => void;
-  onDragStart: (e: KonvaEventObject<DragEvent>, it: LayoutItem) => void;
-  onDragMove: (e: KonvaEventObject<DragEvent>, it: LayoutItem) => void;
-  onDragEnd: () => void;
-  onTable?: (itemId: string, seat?: number) => void;
-  onSeatHover: (seat: number, on: boolean) => void;
-}) {
-  const k = KINDS[it.kind];
-  const table = isTable(it);
-  const seats = table ? seatPositions(it) : [];
-  const stroke = clash ? c.danger : highlight ? c.accent : selected && mode === "seat" ? c.accent : k.zone ? c.taupe : c.gold;
-  const fill = it.kind === "label" ? "transparent" : k.zone ? c.goldSoft : c.card;
-  const font = Math.max(0.22, Math.min(0.5, Math.min(it.w, it.h) * (it.kind === "round" ? 0.22 : 0.35)));
-  const chair = it.kind === "row" ? Math.min(0.22, it.w / Math.max(1, it.seats ?? 1) / 2.4) : 0.22;
-
-  // the Transformer frames the table itself, not its chairs: report the body as the group's own box
-  const setRef = useCallback((n: Konva.Group | null) => {
-    if (n && !n.getAttr("patched")) {
-      const base = Konva.Group.prototype.getClientRect;
-      n.getClientRect = function (cfg?: Parameters<typeof base>[0]) {
-        if (cfg?.skipTransform) {
-          const w = this.getAttr("bodyW") as number;
-          const h = this.getAttr("bodyH") as number;
-          return { x: -w / 2, y: -h / 2, width: w, height: h };
-        }
-        return base.call(this, cfg);
-      };
-      n.setAttr("patched", true);
-    }
-    register(n);
-  }, []);
-
-  const label = it.kind === "wall" ? "" : it.label || k.label;
-  return (
-    <Group ref={setRef} name="item" itemId={it.id} bodyW={it.w} bodyH={it.h} x={it.x} y={it.y} rotation={it.rot}
-      draggable={mode === "edit" && !it.locked}
-      onMouseDown={(e) => { if (mode === "edit" && e.evt.button === 0) { e.cancelBubble = true; if (e.evt.shiftKey || !selected) onSelect(e.evt.shiftKey); } }}
-      onTouchStart={(e) => { if (mode === "edit") { e.cancelBubble = true; if (!selected) onSelect(false); } }}
-      onDragStart={(e) => onDragStart(e, it)} onDragMove={(e) => onDragMove(e, it)} onDragEnd={onDragEnd}
-      onClick={(e) => { if (mode === "seat" && table) { e.cancelBubble = true; onTable?.(it.id, e.target.getAttr("seat")); } }}
-      onTap={(e) => { if (mode === "seat" && table) { e.cancelBubble = true; onTable?.(it.id, e.target.getAttr("seat")); } }}
-      onMouseEnter={(e) => { const s = e.target.getStage(); if (s) s.container().style.cursor = mode === "edit" ? (it.locked ? "not-allowed" : "move") : table ? "pointer" : "grab"; }}
-      onMouseLeave={(e) => { const s = e.target.getStage(); if (s) s.container().style.cursor = "grab"; }}>
-      {seats.map((s, i) => {
-        const tone = seatTone?.(it, i);
-        return (
-          <Circle key={i} seat={i} x={s.x} y={s.y} radius={chair} fill={tone ? c[TONE[tone]] : c.paper2} stroke={c.taupe} strokeWidth={1} strokeScaleEnabled={false}
-            perfectDrawEnabled={false} listening={mode === "seat"}
-            onMouseEnter={() => onSeatHover(i, true)} onMouseLeave={() => onSeatHover(i, false)} />
-        );
-      })}
-      {it.kind === "row" ? (
-        <Rect x={-it.w / 2} y={-it.h / 2} width={it.w} height={it.h} fill="rgba(0,0,0,0.001)" stroke={selected || clash || highlight ? stroke : undefined} strokeWidth={1.5} strokeScaleEnabled={false} />
-      ) : k.round ? (
-        <Ellipse radiusX={it.w / 2} radiusY={it.h / 2} fill={fill} stroke={stroke} strokeWidth={highlight || clash ? 2.5 : 1.5} strokeScaleEnabled={false} />
-      ) : (
-        <Rect x={-it.w / 2} y={-it.h / 2} width={it.w} height={it.h} cornerRadius={k.zone ? 0.12 : 0.06} fill={it.kind === "label" ? "rgba(0,0,0,0.001)" : fill}
-          stroke={it.kind === "label" ? (selected ? c.gold : undefined) : stroke} strokeWidth={highlight || clash ? 2.5 : 1.5} strokeScaleEnabled={false}
-          dash={it.kind === "entrance" ? [8, 5] : undefined} />
-      )}
-      {label && (
-        <Group rotation={-it.rot} listening={false}>
-          {it.kind === "row" ? (
-            <Text x={-it.w / 2} y={-it.h / 2 - 0.4} width={it.w} align="center" text={label} fontSize={0.26} fill={c.stone} fontFamily={FONT} />
-          ) : (
-            <Text x={-Math.max(it.w, it.h) / 2} y={-font} width={Math.max(it.w, it.h)} height={font * 2} align="center" verticalAlign="middle" text={title && table && mode === "seat" ? title(it) : label}
-              fontSize={it.kind === "label" ? Math.min(0.6, it.h * 0.7) : font} fill={it.kind === "label" ? c.ink : c.ink2} fontFamily={FONT} wrap="none" ellipsis />
-          )}
-        </Group>
-      )}
-      {it.locked && mode === "edit" && <Text x={it.w / 2 - 0.35} y={-it.h / 2 - 0.05} text="🔒" fontSize={0.3} listening={false} />}
-    </Group>
-  );
-}

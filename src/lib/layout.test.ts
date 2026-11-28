@@ -63,3 +63,33 @@ describe("canvas editing helpers", () => {
     expect(seatsFor("rect", 20, 1)).toBe(24);
   });
 });
+
+describe("layout tools", () => {
+  it("points every chair's back away from its table", async () => {
+    const { seatPositions } = await import("./layout");
+    const back = (a: number) => ({ x: Math.sin((a * Math.PI) / 180), y: -Math.cos((a * Math.PI) / 180) });
+    for (const it of [newItem("round", { x: 0, y: 0 }), newItem("rect", { x: 0, y: 0 })])
+      for (const s of seatPositions(it)) {
+        const b = back(s.a);
+        // the back points the same way as the chair sits from the centre
+        expect(b.x * s.x + b.y * s.y, it.kind).toBeGreaterThan(0);
+      }
+  });
+
+  it("numbers tables in reading order and lays out a grid", async () => {
+    const { renumberTables, arrayItems, tableNumber, distance } = await import("./layout");
+    const a = { ...newItem("round", { x: 9, y: 3 }), label: "x" };
+    const b = { ...newItem("round", { x: 3, y: 3.2 }), label: "y" };
+    const c = { ...newItem("rect", { x: 3, y: 9 }), label: "z" };
+    expect(renumberTables([a, b, c, newItem("stage", { x: 1, y: 1 })]).map((i) => i.label)).toEqual(["Table 2", "Table 1", "Table 3", "Stage"]);
+    const grid = arrayItems("round", 2, 3, 1, 1, { x: 15, y: 10 }, [b], 8);
+    expect(grid).toHaveLength(6);
+    expect(grid.map((g) => tableNumber(g.label))).toEqual([1, 2, 3, 4, 5, 6]);
+    // numbering carries on after tables already called "Table n"
+    expect(arrayItems("rect", 1, 2, 1, 1, { x: 15, y: 10 }, [{ ...b, label: "Table 1" }]).map((g) => g.label)).toEqual(["Table 2", "Table 3"]);
+    expect(grid.every((g) => g.seats === 8)).toBe(true);
+    expect(clashes(grid).size).toBe(0);
+    expect(distance({ x: 0, y: 0 }, { x: 3, y: 4 })).toBe(5);
+    expect(tableNumber("Head table")).toBeNull();
+  });
+});
