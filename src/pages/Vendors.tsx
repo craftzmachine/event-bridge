@@ -45,7 +45,7 @@ export default function Vendors() {
 
   return (
     <div className="ev-page">
-      <PageHeader
+      <PageHeader help="vendors"
         crumbs={[{ label: "Dashboard", href: "#/dashboard" }, { label: "Vendors" }]}
         title="Vendor rolodex"
         subtitle={`${store.all.length} vendor${store.all.length === 1 ? "" : "s"}: how to reach and pay them, what they charge, and what you've paid them.`}

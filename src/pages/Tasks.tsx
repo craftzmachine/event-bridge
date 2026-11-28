@@ -91,7 +91,7 @@ export default function Tasks({ store, account }: { store: Store; account: strin
 
   return (
     <div className="ev-page">
-      <PageHeader
+      <PageHeader help="tasks"
         crumbs={[{ label: "Dashboard", href: "#/dashboard" }, { label: "Tasks" }]}
         title="Tasks"
         subtitle="The team's own tasks and every wedding's checklist, in one place."

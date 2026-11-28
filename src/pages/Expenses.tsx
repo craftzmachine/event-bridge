@@ -32,6 +32,7 @@ import { matchesSearch, proposalStatus, statusLabel } from "../lib/status";
 import { formatDate, formatINR, formatINRShort, todayISO } from "../lib/format";
 import { saveBlob } from "../lib/files";
 import { Breadcrumbs } from "../components/PageHeader";
+import HelpButton from "../components/help/HelpButton";
 import { vendorNames } from "../state/vendors";
 import ExpenseDialog, { type ExpenseEventInfo } from "../components/ExpenseDialog";
 import AdvanceDialog from "../components/AdvanceDialog";
@@ -247,6 +248,7 @@ function Index({ proposals, account }: { proposals: Proposal[]; account: string 
           <p className="lede">What's spent on each wedding and by the company, with its proof, ready to hand over to a colleague to check.</p>
         </div>
         <div className="exp-head-tools">
+          <HelpButton topic="expenses" />
           <button className="btn-ghost" onClick={() => fileRef.current?.click()}>Receive a handover</button>
           <button className="btn-primary" onClick={() => setAdding(true)}>Add expense</button>
           <input ref={fileRef} type="file" accept=".zip,application/zip" hidden onChange={(e) => receive(e.target.files?.[0])} />

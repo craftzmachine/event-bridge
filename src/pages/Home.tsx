@@ -19,6 +19,7 @@ import ClientAnswer from "../components/ClientAnswer";
 import Img from "../components/Img";
 import Ornament from "../components/Ornament";
 import { Breadcrumbs } from "../components/PageHeader";
+import HelpButton from "../components/help/HelpButton";
 import ExcelImport from "../components/ExcelImport";
 import { SITE } from "../site";
 import heroPhoto from "../assets/AMU02986.webp";
@@ -111,8 +112,9 @@ export default function Home({
 
   return (
     <div className="home">
-      <div className="page-crumbs">
+      <div className="page-crumbs flex items-center justify-between gap-3">
         <Breadcrumbs items={[{ label: "Dashboard", href: "#/dashboard" }, { label: "Proposal Studio" }]} />
+        <HelpButton topic="studio" />
       </div>
       <header className="home-hero" data-tour="studio">
         <Img src={heroPhoto} alt="" className="home-hero-img" />

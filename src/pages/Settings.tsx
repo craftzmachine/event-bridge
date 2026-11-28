@@ -75,7 +75,7 @@ export default function Settings({ onSaved }: { onSaved: () => void }) {
 
   return (
     <div className="ev-page settings-page mx-auto w-full max-w-5xl pb-28">
-      <PageHeader
+      <PageHeader help="settings"
         crumbs={[{ label: "Dashboard", href: "#/dashboard" }, { label: "Settings" }]}
         title="Company settings"
         subtitle="Your company details, logo, money defaults, terms and catalogue. They're used by every new proposal, PDF and Excel file made on this device."

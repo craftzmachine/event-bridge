@@ -66,7 +66,7 @@ function Index({ store }: { store: Store }) {
 
   return (
     <div className="ev-page">
-      <PageHeader
+      <PageHeader help="plans"
         crumbs={[{ label: "Dashboard", href: "#/dashboard" }, { label: "Floor Plans" }]}
         title="Floor Plans"
         subtitle="Venue layouts and seating that aren't tied to a wedding: mock-ups for a pitch, a venue's standard plan, or practice."
@@ -156,7 +156,7 @@ function PlanView({ plan, tab, tutorial, store, proposals, onCopyToWedding }: { 
 
   return (
     <div className="ev-page">
-      <PageHeader
+      <PageHeader help="plans"
         crumbs={[{ label: "Dashboard", href: "#/dashboard" }, { label: "Floor Plans", href: "#/plans" }, { label: plan.name }]}
         title={plan.name}
         subtitle={[plan.venue || "No venue set", `${c.tables} tables · ${c.chairs} chairs`, plan.guests.length ? `${plan.guests.reduce((t, g) => t + g.invited, 0)} guests` : ""].filter(Boolean).join(" · ")}

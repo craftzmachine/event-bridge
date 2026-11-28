@@ -1,5 +1,6 @@
 // The Help page's content: how to use each app, written for planners. Pure data, so the test can check that
-// every app on the Dashboard has a guide. When you add an app to APPS, add its topic here too.
+// every app on the Dashboard has a guide. When you add an app to APPS, add its topic here too (with a figure from
+// src/components/help/figures.tsx when the app has a screen worth drawing, and its keyboard shortcuts).
 import { APPS, type AppItem, type IconName } from "./nav";
 
 export interface HelpFaq {
@@ -7,25 +8,46 @@ export interface HelpFaq {
   a: string;
 }
 
+export interface HelpShortcut {
+  keys: string;
+  does: string;
+}
+
+/** the drawn illustrations (src/components/help/figures.tsx); their numbered callouts match the topic's steps */
+export const FIGURES = ["dashboard", "studio", "share", "events", "guests", "layout", "seating", "expenses", "portal", "crm"] as const;
+export type FigureId = (typeof FIGURES)[number];
+
+export type HelpGroup = "start" | "apps" | "more";
+export const GROUPS: { id: HelpGroup; label: string }[] = [
+  { id: "start", label: "Getting started" },
+  { id: "apps", label: "Apps" },
+  { id: "more", label: "More" },
+];
+
 export interface HelpTopic {
   id: string;
   title: string;
   icon: IconName;
+  group: HelpGroup;
   summary: string;
   steps: string[];
   tips?: string[];
   faqs?: HelpFaq[];
+  shortcuts?: HelpShortcut[];
+  figure?: FigureId;
+  /** other topics worth reading next */
+  related?: string[];
   /** where "Open <title>" goes; none for general topics */
   href?: string;
 }
 
-type AppGuide = Omit<HelpTopic, "id" | "title" | "icon" | "href">;
+type AppGuide = Omit<HelpTopic, "id" | "title" | "icon" | "href" | "group">;
 
 /** An app's topic takes its id, name, icon and address from the Dashboard's own list, so they can't drift. */
 function app(id: AppItem["id"], guide: AppGuide): HelpTopic {
   const a = APPS.find((x) => x.id === id);
   if (!a) throw new Error(`No app "${id}" in APPS`);
-  return { id: a.id, title: a.label, icon: a.icon, href: a.href, ...guide };
+  return { id: a.id, title: a.label, icon: a.icon, href: a.href, group: "apps", ...guide };
 }
 
 export const HELP: HelpTopic[] = [
@@ -33,6 +55,8 @@ export const HELP: HelpTopic[] = [
     id: "start",
     title: "Getting started",
     icon: "home",
+    group: "start",
+    related: ["dashboard", "data", "shortcuts"],
     summary: "Sign in, find your way from the Dashboard, and keep your work safe.",
     steps: [
       "Sign in with your team account. You land on the Dashboard, the starting point for everything.",
@@ -45,6 +69,28 @@ export const HELP: HelpTopic[] = [
       "The theme button switches between Dark, Parinay, Solarized Light, Solarized Dark, Nord and White; Aa cycles the font. Both are remembered on this device.",
       "Clearing the browser's site data deletes this device's work, so back up regularly.",
       "Each office app (CRM, Tasks, Vendors, Questionnaires) has its own Export and Import.",
+      "Every app page has a ? button next to its title: it opens that app's guide beside your work, without leaving the page.",
+    ],
+  },
+  {
+    id: "dashboard",
+    title: "The Dashboard",
+    icon: "home",
+    group: "start",
+    href: "#/dashboard",
+    figure: "dashboard",
+    related: ["events", "expenses", "crm"],
+    summary: "Your starting point: every app, today's figures, what's coming up and what needs you.",
+    steps: [
+      "The apps bar along the top opens each app: Events, Guests & Seating, Floor Plans, Proposal Studio, CRM, Tasks and the rest.",
+      "Four figures sum up the business: upcoming events, proposals awaiting a decision, money received this month and how many things need attention.",
+      "Upcoming events shows the next weddings as a list, or switch to the month calendar and step through the months with the arrows.",
+      "Needs attention gathers overdue payments, overdue tasks, proposals and enquiries to follow up, payments due soon and questionnaires the family hasn't answered. Each line opens the right place.",
+      "Below are the pipeline (draft, sent, accepted and their values), what's selling, and this month's spending, with Record expense for a quick entry.",
+    ],
+    tips: [
+      "The setup checklist at the top helps a new team set up: company settings, the catalogue, a first enquiry, a proposal and a share. Hide it once you're done.",
+      "Client names open the wedding's workspace under Events.",
     ],
   },
   app("events", {
@@ -52,15 +98,23 @@ export const HELP: HelpTopic[] = [
     steps: [
       "Open Events from the Dashboard. Accepted proposals and anything with a date appear here.",
       "Switch between Upcoming, Past and All, or search by client. Each row shows a countdown and checklist progress.",
-      "Open a wedding to reach its workspace, with tabs: Overview, Checklist, Coordination, Payments, Expenses and Proposal.",
+      "Open a wedding to reach its workspace, with tabs: Overview, Guests, Layout, Seating, Checklist, Coordination, Questionnaires, Payments, Expenses and Proposal.",
       "Checklist: Start the checklist fills it from the team's list, each task due a set number of days before the first event date. Tick tasks off, or use the Board to move them between To do, Doing and Done.",
       "Coordination: fill in the On-Site Event Coordination sheet for each function (contacts, team, hostesses, timeline, readiness, issue log) and Export PDF to print it.",
       "Payments: record what the family has paid and download receipts. Expenses: the event's spending ledger.",
+      "Guests, Layout and Seating hold the guest list with RSVP, each function's floor plan and who sits where; Questionnaires holds what you've sent the family and their answers.",
     ],
     tips: [
       "The checklist and the coordination sheet are internal: they never appear on anything the client sees.",
       "Overview has WhatsApp for the client and checks the guest count against the venue's capacity.",
+      "The ? button on a workspace tab opens the guide for that tab: Guests, Layout and Seating open the guest and floor plan guides.",
     ],
+    faqs: [
+      { q: "How do payment milestones work?", a: "Unless you set your own plan, 70% is due on booking and 30% a week before the first event date, as shares of the total including GST. Payments you record are applied to the milestones in order, and each one gets a numbered receipt." },
+      { q: "Can the family see the checklist?", a: "Only the tasks marked for the family, and only through their client portal. The team's tasks, the coordination sheet and the expenses stay internal." },
+    ],
+    figure: "events",
+    related: ["guests", "layout", "expenses", "portal"],
   }),
   app("studio", {
     summary: "Build a tailored proposal, review it as the client will see it, and send it as a web page, PDF or Excel file.",
@@ -82,7 +136,11 @@ export const HELP: HelpTopic[] = [
       { q: "Why isn't an additional option in the Grand Total?", a: "Additional options, upgrades marked Offer and as-per-actuals items are listed separately so the family can choose them. They are never added to the Grand Total." },
       { q: "What does \"as per actuals\" mean?", a: "The item has no fixed rate: it will be charged at what it actually costs. It adds nothing to the Sub Total and is listed under its own heading." },
       { q: "Is GST included in the Grand Total?", a: "No. The Grand Total is before GST. GST and the total including GST are shown as reference figures, and payment milestones are shares of the total including GST." },
+      { q: "From Excel asks me questions. Why?", a: "It never guesses. When a quantity, rate or category in the spreadsheet is missing, unclear or contradicts itself, it asks you; you can also decide later or leave a row out. Every value in the result shows which cell it came from." },
+      { q: "What's a package?", a: "A ready-made proposal for a common booking. Save as a package keeps the current lines (without your costs); Start from a package begins a new proposal from it with a fresh reference." },
     ],
+    figure: "studio",
+    related: ["visualize", "portal", "settings"],
   }),
   app("crm", {
     summary: "Track enquiries from the first message to a booking, and see every client behind your proposals.",
@@ -96,6 +154,8 @@ export const HELP: HelpTopic[] = [
       "Board, List and Clients views: List puts follow-ups first, Clients lists everyone behind your proposals, one per mobile number.",
       "Follow-ups due also show on the Dashboard under Needs attention.",
     ],
+    figure: "crm",
+    related: ["studio", "dashboard"],
   }),
   app("tasks", {
     summary: "The team's own tasks and every wedding's checklist in one place.",
@@ -105,6 +165,8 @@ export const HELP: HelpTopic[] = [
       "Work from the list (Overdue, This week, Later, Done), the board, or the calendar.",
       "Tick a checklist task here and it's ticked in the wedding's workspace too.",
     ],
+    tips: ["Overdue tasks also show on the Dashboard under Needs attention."],
+    related: ["events"],
   }),
   app("vendors", {
     summary: "The rolodex: who to call, what they charge and what you've paid them.",
@@ -115,6 +177,7 @@ export const HELP: HelpTopic[] = [
       "Each card shows what's been paid to that vendor across events, taken from your expenses.",
     ],
     tips: ["When you record an expense, the payee field suggests names from the rolodex."],
+    related: ["expenses"],
   }),
   app("questionnaires", {
     summary: "Build a set of questions once, send it to a wedding, and keep the family's answers.",
@@ -124,6 +187,8 @@ export const HELP: HelpTopic[] = [
       "Under Send to a wedding, pick the event.",
       "The family answers in their client portal, or you can fill answers in from a call in the event's Questionnaires tab.",
     ],
+    tips: ["Questionnaires the family hasn't answered show on the Dashboard under Needs attention."],
+    related: ["portal", "events"],
   }),
   app("portal", {
     summary: "Give each family a private, password-protected page with their proposal, to-dos, payments and questionnaires.",
@@ -137,6 +202,8 @@ export const HELP: HelpTopic[] = [
       "Their answers come back into the wedding when you open the Portal page or the event.",
       "The portal never shows your costs, the family's budget or the team's own tasks.",
     ],
+    figure: "portal",
+    related: ["questionnaires", "events", "visualize"],
   }),
   app("expenses", {
     summary: "Record what's spent on each wedding and by the company, with proof, staff advances and handovers for review.",
@@ -157,7 +224,11 @@ export const HELP: HelpTopic[] = [
     faqs: [
       { q: "Can it read my Google Pay payments automatically?", a: "Not yet. Entry is manual for now; reading the details from screenshots is planned. A website can't read payment notifications." },
       { q: "Why can't I review a handover?", a: "The reviewer must be someone else: anyone who recorded or edited the expenses, or gave, held or moved money on its advances, is refused." },
+      { q: "How is a staff advance settled?", a: "The card shows what's left. To settle, the money given, less the expenses accepted (with proof or a reviewer's check) and anything returned, is what's owed back; a negative figure is owed to the staff member. Queried or unchecked expenses hold the settlement until they're cleared, or it can be written off with a reason." },
+      { q: "What do the warnings on an expense mean?", a: "They're checks, not errors: the same screenshot or the same amount, date and payee recorded before, no proof attached, a large amount, or a date outside the event. Only a UPI transaction ID already used in the event stops the save." },
     ],
+    figure: "expenses",
+    related: ["vendors", "data"],
   }),
   app("venues", {
     summary: "Search halls, hotels and resorts around Thiruvananthapuram, and start a proposal at one.",
@@ -167,6 +238,7 @@ export const HELP: HelpTopic[] = [
       "Start proposal begins a quotation with the venue already filled in.",
     ],
     tips: ["The Venue field in a proposal also suggests directory venues, and warns when the guests are more than its largest space holds."],
+    related: ["studio", "plans"],
   }),
   app("visualize", {
     summary: "Share a PDF or Excel proposal as a private, password-protected, view-only page.",
@@ -178,6 +250,11 @@ export const HELP: HelpTopic[] = [
       "Watch the list for views and the client's answer (approved or changes requested). Revoke ends access immediately.",
     ],
     tips: ["From Proposal Studio, the Review step's Send it to the client does all of this in one go."],
+    faqs: [
+      { q: "Can the client download or screenshot the file?", a: "They never receive the file itself: PDF pages arrive as watermarked images with their name, and Excel as values only. The page also hides itself when they switch away or press a screenshot key, though no website can block every screenshot." },
+    ],
+    figure: "share",
+    related: ["studio", "portal"],
   }),
   app("guests", {
     summary: "Keep each wedding's guest list, let guests answer from their phone, then draw the floor plan and seat them.",
@@ -195,6 +272,12 @@ export const HELP: HelpTopic[] = [
       "Use confirmed headcount sets the proposal's guest count from the replies, so per-guest items follow it.",
       "Guests never appear on the proposal or portal you share with the family.",
     ],
+    faqs: [
+      { q: "What happens after the reply-by date?", a: "The RSVP page stops taking replies at the end of that day (India time) and says so. Change the date and press Update RSVP link to open it again." },
+      { q: "A guest says their link shows nothing.", a: "Links end when you turn RSVP off, and a mistyped link looks the same as a closed one. Send their personal link again from the guest's WhatsApp button." },
+    ],
+    figure: "guests",
+    related: ["layout", "events"],
   }),
   app("plans", {
     summary: "Floor plans and seating that aren't tied to a wedding: a venue's standard layout, a mock-up for a pitch, or practice.",
@@ -214,12 +297,17 @@ export const HELP: HelpTopic[] = [
       "✓ Checks looks for narrow aisles, tables too close together, chairs too near the stage or an entrance, and a crowded room, and fixes what it can in one click.",
       "Plans are saved on this device; Export and Import move them to another.",
     ],
+    figure: "seating",
+    related: ["layout", "shortcuts"],
   }),
   {
     id: "layout",
     title: "Venue layout & seating",
     icon: "pin",
+    group: "apps",
     href: "#/events",
+    figure: "layout",
+    related: ["plans", "guests", "shortcuts"],
     summary: "Draw each function's floor plan, then seat the guests at its tables and print the seating plan.",
     steps: [
       "Open a wedding from Events, then the Layout tab, and pick the function.",
@@ -229,7 +317,7 @@ export const HELP: HelpTopic[] = [
       "The small toolbar above a selected table changes its seats (− and +), rotates it 90°, duplicates, locks it in place or deletes it. Right-click (or press and hold on a phone) for more: copy, paste here, bring to front, send to back.",
       "Click a table or any of its chairs to select it. Drag across empty floor to select several (left to right picks what's wholly inside, right to left anything it touches; Shift adds), then move, align or space them evenly. Alt-click picks the item underneath; ☰ Layers lists everything, to select, hide, lock or reorder.",
       "Pan with the ✋ Hand tool (H), by holding Space, with the middle mouse button or with two fingers; ⬚ Select (V) goes back to box selection. Scroll or pinch to zoom.",
-      "Keys: arrows move (Shift for 1 m), R rotates, + and − change seats, Delete removes, Ctrl+C / Ctrl+V copy and paste, Ctrl+D duplicates, Ctrl+] / Ctrl+[ bring forward and send back, Ctrl+Z / Ctrl+Y undo and redo, F fullscreen, L layers.",
+      "Use the keyboard for speed: the shortcuts are listed below.",
       "Open the Seating tab. Drag a household from the list onto a table or a seat, or tap them and then tap a table. Auto-seat fills the rest, keeping households and groups together.",
       "Download seating PDF prints the floor plan, each table's guests and an A–Z list for the welcome desk.",
     ],
@@ -245,11 +333,32 @@ export const HELP: HelpTopic[] = [
       "Save as a venue plan to reuse the room for the next wedding there.",
       "Seating flags anyone seated who has since said no, households split over tables, and people who lost a seat when a table changed.",
     ],
+    shortcuts: [
+      { keys: "Arrow keys", does: "Move the selection 25 cm (with Shift, 1 m)" },
+      { keys: "R / Shift+R", does: "Rotate 15° clockwise / anticlockwise" },
+      { keys: "+ / −", does: "One seat more / fewer at the selected table" },
+      { keys: "Delete", does: "Remove the selection" },
+      { keys: "Ctrl+C / Ctrl+V / Ctrl+D", does: "Copy, paste, duplicate" },
+      { keys: "Ctrl+A", does: "Select everything" },
+      { keys: "Ctrl+] / Ctrl+[", does: "Bring forward / send backward (with Shift: to front / to back)" },
+      { keys: "Ctrl+Z / Ctrl+Y", does: "Undo / redo" },
+      { keys: "V / H", does: "Select tool (drag a box) / Hand tool (drag to pan)" },
+      { keys: "Space + drag", does: "Pan while held" },
+      { keys: "Alt + click", does: "Pick the item underneath" },
+      { keys: "Alt + drag", does: "Place freely, without snapping" },
+      { keys: "M", does: "Measure a distance (Shift keeps the line straight)" },
+      { keys: "L", does: "Show or hide the Layers panel" },
+      { keys: "F", does: "Fullscreen on and off" },
+      { keys: "Esc", does: "Clear the selection, close a menu, leave fullscreen" },
+      { keys: "W A S D / arrows", does: "Walk, in the 3D view's Walk mode" },
+    ],
   },
   {
     id: "settings",
     title: "Company settings",
     icon: "settings",
+    group: "more",
+    related: ["studio", "data"],
     href: "#/settings",
     summary: "Your company details, logo, money defaults, terms and catalogue, edited in the app.",
     steps: [
@@ -270,6 +379,8 @@ export const HELP: HelpTopic[] = [
     id: "quest",
     title: "Wedding Quest",
     icon: "help",
+    group: "start",
+    related: ["start"],
     summary: "A light-hearted guide: a spotlight tour and missions that tick themselves off as you work.",
     steps: [
       "Press the gold button in the bottom-right corner of any page to open the quest log.",
@@ -277,11 +388,56 @@ export const HELP: HelpTopic[] = [
       "Missions such as Start your first proposal tick themselves off when you do them. Show me takes you to the right page.",
       "Each mission earns XP, taking you from Fresh Garland to Muhurtham Legend.",
     ],
+    shortcuts: [
+      { keys: "→ / ←", does: "Next / previous step of the tour" },
+      { keys: "Esc", does: "End the tour or close the quest log" },
+    ],
+  },
+  {
+    id: "shortcuts",
+    title: "Keyboard shortcuts",
+    icon: "list",
+    group: "more",
+    related: ["layout", "quest"],
+    summary: "Every key that does something, in one place.",
+    steps: [
+      "Most of Event Bridge works with a mouse or a finger; these keys save time where you work a lot, mostly in the floor plan editor.",
+      "Click the floor plan first, so the keys go to it rather than the page.",
+    ],
+    shortcuts: [
+      { keys: "Esc", does: "Close a dialog, menu, help panel or the tour" },
+      { keys: "Enter", does: "Save a field you're editing in the floor plan's panels" },
+      { keys: "Floor plan: arrows, R, + / −", does: "Move, rotate, change seats (see Venue layout & seating for all of them)" },
+      { keys: "Floor plan: V / H / M / L / F", does: "Select, Hand, Measure, Layers, Fullscreen" },
+      { keys: "Floor plan: Ctrl+Z / Ctrl+Y", does: "Undo / redo" },
+      { keys: "3D Walk: W A S D", does: "Walk round the room" },
+      { keys: "Tour: → / ←", does: "Next / previous step" },
+    ],
+  },
+  {
+    id: "data",
+    title: "Your data & backups",
+    icon: "book",
+    group: "start",
+    related: ["start", "settings"],
+    summary: "What's kept on this device, what goes to the server, and how to move your work.",
+    steps: [
+      "Proposals, enquiries, tasks, vendors, questionnaires, floor plans, settings and the cost sheet are saved in this browser as you work. Nothing needs saving by hand.",
+      "Expenses, receipt screenshots and venue drawings for floor plans are kept in this browser's larger storage, because pictures are too big for the rest.",
+      "Only what you share goes to the server: private links (Visualize, Share with client), client portals and RSVP links. They're stored encrypted.",
+      "To move work to another device, use each app's Export and Import: Back up all in Proposal Studio, Export in the CRM, Tasks, Vendors, Questionnaires and Floor Plans, Export settings in Settings, and Prepare handover for expenses.",
+    ],
+    tips: [
+      "Back up regularly: clearing the browser's site data, or a new phone, starts from empty. The Studio home reminds you after 7 days.",
+      "Another person's browser has its own copy: two people editing the same proposal on two devices don't see each other's changes until one imports the other's backup.",
+    ],
   },
   {
     id: "faq",
     title: "Questions",
     icon: "help",
+    group: "more",
+    related: ["data"],
     summary: "Common questions about data, sharing and privacy.",
     steps: ["Search above, or open a question below."],
     faqs: [
@@ -314,4 +470,51 @@ export function searchHelp(topics: HelpTopic[], query: string): HelpTopic[] {
     else if (hasAll(textOf([main, ...faqs.map((f) => `${f.q} ${f.a}`)]), terms)) out.push(t);
   }
   return out;
+}
+
+export type HitKind = "topic" | "step" | "tip" | "faq" | "shortcut";
+export interface HelpHit {
+  topic: HelpTopic;
+  kind: HitKind;
+  /** the step, tip, question or shortcut's position in its list (0 for the topic itself) */
+  index: number;
+  text: string;
+  score: number;
+}
+
+const WEIGHT: Record<HitKind, number> = { topic: 4, step: 3, faq: 3, tip: 2, shortcut: 2 };
+
+/**
+ * Search results that point at the exact step, tip, question or shortcut, for jumping straight there. An item
+ * matches when it holds every word, or when it and its topic's title do together (ranked lower). Topics whose
+ * title or summary match come first, then steps and questions, then tips and shortcuts.
+ */
+export function searchHits(topics: HelpTopic[], query: string, limit = 40): HelpHit[] {
+  const terms = query.toLowerCase().split(/\s+/).filter(Boolean);
+  if (!terms.length) return [];
+  const hits: HelpHit[] = [];
+  for (const t of topics) {
+    const title = t.title.toLowerCase();
+    const add = (kind: HitKind, index: number, text: string) => {
+      const own = text.toLowerCase();
+      if (hasAll(own, terms)) hits.push({ topic: t, kind, index, text, score: WEIGHT[kind] * 2 });
+      else if (hasAll(`${title} ${own}`, terms)) hits.push({ topic: t, kind, index, text, score: WEIGHT[kind] });
+    };
+    if (hasAll(textOf([t.title, t.summary]), terms)) hits.push({ topic: t, kind: "topic", index: 0, text: t.summary, score: WEIGHT.topic * 3 });
+    t.steps.forEach((s, i) => add("step", i, s));
+    (t.faqs ?? []).forEach((f, i) => add("faq", i, `${f.q} ${f.a}`));
+    (t.tips ?? []).forEach((s, i) => add("tip", i, s));
+    (t.shortcuts ?? []).forEach((s, i) => add("shortcut", i, `${s.keys}: ${s.does}`));
+  }
+  // stable: equal scores keep the topics' order
+  return hits.map((h, i) => ({ h, i })).sort((a, b) => b.h.score - a.h.score || a.i - b.i).slice(0, limit).map((x) => x.h);
+}
+
+/** every topic in reading order: Getting started, then the apps, then the rest */
+export const ORDERED: HelpTopic[] = GROUPS.flatMap((g) => HELP.filter((t) => t.group === g.id));
+
+/** the topic, then the next and previous ones in reading order */
+export function neighbours(topics: HelpTopic[], id: string) {
+  const i = topics.findIndex((t) => t.id === id);
+  return { topic: topics[i], prev: i > 0 ? topics[i - 1] : undefined, next: i >= 0 && i < topics.length - 1 ? topics[i + 1] : undefined };
 }

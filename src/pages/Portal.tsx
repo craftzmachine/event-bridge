@@ -106,7 +106,7 @@ export default function Portal({ store, onReauth }: { store: Store; onReauth: ()
 
   return (
     <div className="ev-page">
-      <PageHeader
+      <PageHeader help="portal"
         crumbs={[{ label: "Dashboard", href: "#/dashboard" }, { label: "Client Portal" }]}
         title="Client portals"
         subtitle="One private page per family: their proposal to approve, their to-dos, payments and questionnaires."

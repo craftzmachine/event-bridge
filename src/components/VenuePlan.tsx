@@ -10,6 +10,7 @@ import { functionHeading } from "../lib/functions";
 import { guestFunctions } from "../lib/guestList";
 import { guestOf, normalise, tablesOf } from "../lib/seating";
 import LayoutEditor from "./LayoutEditor";
+import HelpButton from "./help/HelpButton";
 import { usePlanView } from "./layout/planView";
 import type { Tone } from "./layout/PlanCanvas";
 
@@ -145,6 +146,7 @@ export default function VenuePlan({ p, mode, onUpdate, tutorial: startOn = false
             ))}
           </div>
         )}
+        <HelpButton topic={standalone ? "plans" : "layout"} />
         <button type="button" className={`btn-sm ${isFull ? "btn-primary" : "btn-ghost"}${mode === "layout" ? "" : " ml-auto"}`} onClick={() => void toggleFull()}
           title={isFull ? "Exit fullscreen (F or Esc)" : "Fullscreen (F)"} aria-pressed={isFull}>
           {isFull ? "✕ Exit fullscreen" : "⛶ Fullscreen"}

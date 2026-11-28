@@ -66,7 +66,7 @@ export default function Questionnaires({ store }: { store: Store }) {
 
   return (
     <div className="ev-page">
-      <PageHeader
+      <PageHeader help="questionnaires"
         crumbs={[{ label: "Dashboard", href: "#/dashboard" }, { label: "Questionnaires" }]}
         title="Questionnaires"
         subtitle={`${sentCount} sent to weddings · ${waiting.length} waiting for answers`}
@@ -140,7 +140,7 @@ function Editor({ template, onSave, onDelete, onCancel }: { template: Questionna
 
   return (
     <div className="ev-page">
-      <PageHeader
+      <PageHeader help="questionnaires"
         crumbs={[{ label: "Dashboard", href: "#/dashboard" }, { label: "Questionnaires", href: "#/questionnaires" }, { label: t.title || "New questionnaire" }]}
         title={template.title ? "Edit questionnaire" : "New questionnaire"}
         actions={

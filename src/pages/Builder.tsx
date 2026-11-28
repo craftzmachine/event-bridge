@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import HelpButton from "../components/help/HelpButton";
 import { assetUrl } from "../lib/asset";
 import type { Line, Proposal } from "../types";
 import { elementFits, useConfig } from "../config/context";
@@ -87,6 +88,7 @@ export default function Builder({
           <span>Grand Total</span>
           <strong>{formatINRShort(t.grandTotal)}</strong>
         </div>
+        <HelpButton topic="studio" />
         <AppearanceControls />
       </header>
       <StepRail step={step} onStep={go} canReach={canReach} />
