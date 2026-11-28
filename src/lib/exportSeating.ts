@@ -3,7 +3,7 @@
 // layoutSvg is pure and uses fixed paper colours (a printed plan doesn't follow the screen theme).
 import type { Content, TDocumentDefinitions } from "pdfmake/interfaces";
 import type { Brand, Proposal, VenueLayout } from "../types";
-import { KINDS, isTable, seatPositions } from "./layout";
+import { KINDS, drawOrder, isTable, seatPositions } from "./layout";
 import { guestOf, tablesOf, type Plan } from "./seating";
 import { listOf, guestFunctions } from "./guestList";
 import { functionHeading } from "./functions";
@@ -22,7 +22,7 @@ const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&l
 export function layoutSvg(l: VenueLayout, plan: Plan = {}): string {
   const pad = 1;
   const parts: string[] = [`<rect x="0" y="0" width="${l.w}" height="${l.h}" fill="#ffffff" stroke="${INK}" stroke-width="0.08"/>`];
-  for (const it of l.items) {
+  for (const it of drawOrder(l.items)) {
     const k = KINDS[it.kind];
     const g: string[] = [];
     if (isTable(it))

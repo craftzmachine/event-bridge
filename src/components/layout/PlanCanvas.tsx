@@ -6,7 +6,7 @@ import Konva from "konva";
 import { Group, Layer, Line, Rect, Stage, Text, Transformer } from "react-konva";
 import type { KonvaEventObject } from "konva/lib/Node";
 import type { LayoutItem, VenueLayout } from "../../types";
-import { KINDS, bounds, clampToRoom, distance, isTable, resizeItem, snap, snapGuides, type Guide } from "../../lib/layout";
+import { KINDS, bounds, boxSelect, clampToRoom, distance, drawOrder, isTable, itemsAt, resizeItem, snap, snapGuides, type Guide } from "../../lib/layout";
 import ItemNode, { type Look } from "./ItemNode";
 import { Minimap, Rulers } from "./Overlays";
 
@@ -98,8 +98,13 @@ interface Props {
   look?: Look;
   /** seat mode: the guest's name on a seat, shown when zoomed in */
   seatName?: (it: LayoutItem, seat: number) => string | undefined;
-  /** "measure": dragging draws a dimension line instead of panning */
-  tool?: "select" | "measure";
+  /**
+   * What a drag on the floor does: "select" draws a selection box (left to right: wholly inside; right to left:
+   * touching), "hand" pans, "measure" draws a dimension line. Space-drag, a middle-button drag and two fingers always pan.
+   */
+  tool?: "select" | "hand" | "measure";
+  /** fill the container's height (fullscreen) instead of keeping a 16:10 plan */
+  fill?: boolean;
   rulers?: boolean;
   minimap?: boolean;
 }
@@ -108,7 +113,7 @@ const coarse = () => typeof window !== "undefined" && window.matchMedia?.("(poin
 const r2 = (n: number) => Math.round(n * 100) / 100;
 
 const PlanCanvas = forwardRef<CanvasHandle, Props>(function PlanCanvas(props, ref) {
-  const { layout, mode, selected = [], clash, grid = true, seatTone, seatTitle, highlight, tableTitle, onSelect, onEdit, onTableClick, onMenu, overlay, ariaLabel, look = "realistic", seatName, tool = "select", rulers = false, minimap = false } = props;
+  const { layout, mode, selected = [], clash, grid = true, seatTone, seatTitle, highlight, tableTitle, onSelect, onEdit, onTableClick, onMenu, overlay, ariaLabel, look = "realistic", seatName, tool = "select", rulers = false, minimap = false, fill = false } = props;
   const [measure, setMeasure] = useState<{ a: { x: number; y: number }; b: { x: number; y: number }; live: boolean } | null>(null);
   useEffect(() => {
     if (tool !== "measure") setMeasure(null);
@@ -123,12 +128,47 @@ const PlanCanvas = forwardRef<CanvasHandle, Props>(function PlanCanvas(props, re
   const [guides, setGuides] = useState<Guide[]>([]);
   const [badge, setBadge] = useState<{ text: string; x: number; y: number } | null>(null);
   const [busy, setBusy] = useState(false);
-  const [marquee, setMarquee] = useState<{ x0: number; y0: number; x1: number; y1: number } | null>(null);
+  const [marquee, setMarquee] = useState<{ x0: number; y0: number; x1: number; y1: number; add: boolean } | null>(null);
+  const pan = useRef<{ x: number; y: number; vx: number; vy: number; moved: boolean } | null>(null);
+  const [panning, setPanning] = useState(false);
+  const [space, setSpace] = useState(false);
+  const hover = useRef(false);
+  /** a click right after a box selection or a pan isn't "click the floor to clear" */
+  const swallow = useRef(false);
+  /** pressed on one item of a multi-selection: a click (no drag) narrows to it */
+  const pending = useRef<string | null>(null);
+  const dragged = useRef(false);
   const [tip, setTip] = useState<{ text: string; x: number; y: number } | null>(null);
   const pinch = useRef<{ dist: number; scale: number; mid: { x: number; y: number }; pos: { x: number; y: number } } | null>(null);
   const press = useRef<number | null>(null);
   const fitted = useRef(false);
   const big = coarse();
+  const hitPx = big ? 28 : 16;
+  const visible = useMemo(() => drawOrder(layout.items.filter((i) => !i.hidden)), [layout.items]);
+  const panMode = tool === "hand" || space;
+
+  // Space held over the plan pans, as in drawing apps
+  useEffect(() => {
+    const typing = (t: EventTarget | null) => !!(t as HTMLElement)?.closest?.("input, textarea, select, [contenteditable]");
+    const down = (e: KeyboardEvent) => {
+      if (e.key === " " && hover.current && !typing(e.target)) {
+        e.preventDefault();
+        setSpace(true);
+      }
+    };
+    const up = (e: KeyboardEvent) => {
+      if (e.key === " ") setSpace(false);
+    };
+    const blur = () => setSpace(false);
+    window.addEventListener("keydown", down);
+    window.addEventListener("keyup", up);
+    window.addEventListener("blur", blur);
+    return () => {
+      window.removeEventListener("keydown", down);
+      window.removeEventListener("keyup", up);
+      window.removeEventListener("blur", blur);
+    };
+  }, []);
 
   // the canvas follows its container's width; height keeps a 16:10 plan, at least 320 px
   useEffect(() => {
@@ -136,11 +176,11 @@ const PlanCanvas = forwardRef<CanvasHandle, Props>(function PlanCanvas(props, re
     if (!el) return;
     const ro = new ResizeObserver(() => {
       const w = Math.max(280, el.clientWidth);
-      setSize({ w, h: Math.max(320, Math.round(Math.min(w * 0.62, window.innerHeight * 0.72))) });
+      setSize({ w, h: fill ? Math.max(320, el.clientHeight) : Math.max(320, Math.round(Math.min(w * 0.62, window.innerHeight * 0.72))) });
     });
     ro.observe(el);
     return () => ro.disconnect();
-  }, []);
+  }, [fill]);
 
   const fit = useCallback(() => {
     const pad = 1.2;
@@ -188,7 +228,7 @@ const PlanCanvas = forwardRef<CanvasHandle, Props>(function PlanCanvas(props, re
   }));
 
   // the transformer wraps the selected, unlocked items (edit mode)
-  const editable = mode === "edit" ? selected.filter((id) => !layout.items.find((i) => i.id === id)?.locked) : [];
+  const editable = mode === "edit" && !panMode ? selected.filter((id) => !layout.items.find((i) => i.id === id)?.locked) : [];
   const single = editable.length === 1 ? layout.items.find((i) => i.id === editable[0]) : undefined;
   useEffect(() => {
     const t = tr.current;
@@ -197,10 +237,32 @@ const PlanCanvas = forwardRef<CanvasHandle, Props>(function PlanCanvas(props, re
     t.getLayer()?.batchDraw();
   });
 
+  // ---- pressing items: Shift toggles, Alt reaches the item underneath, a click inside a multi-selection narrows it ----
+  const pressItem = (it: LayoutItem, mods: { shift: boolean; alt: boolean }) => {
+    dragged.current = false;
+    pending.current = null;
+    if (mods.shift) return onSelect?.(selected.includes(it.id) ? selected.filter((x) => x !== it.id) : [...selected, it.id]);
+    if (mods.alt) {
+      const pos = stage.current?.getPointerPosition();
+      const stack = pos ? itemsAt(layout.items, toRoomPx(pos), hitPx / 2 / view.scale) : [];
+      if (stack.length > 1) {
+        const cur = selected.length === 1 ? stack.findIndex((i) => i.id === selected[0]) : -1;
+        return onSelect?.([stack[cur < 0 ? 1 : (cur + 1) % stack.length].id]);
+      }
+    }
+    if (!selected.includes(it.id)) onSelect?.([it.id]);
+    else if (selected.length > 1) pending.current = it.id;
+  };
+  const releaseItem = (it: LayoutItem) => {
+    if (!dragged.current && pending.current === it.id) onSelect?.([it.id]);
+    pending.current = null;
+  };
+
   // ---- drag: snap to the grid and to other items' edges and centres; several selected items move together ----
   const dragStart = useRef<{ id: string; x: number; y: number; others: Map<string, { x: number; y: number }> } | null>(null);
   const onDragStart = (e: KonvaEventObject<DragEvent>, it: LayoutItem) => {
     setBusy(true);
+    dragged.current = true;
     const ids = selected.includes(it.id) ? selected : [it.id];
     if (!selected.includes(it.id)) onSelect?.([it.id]);
     dragStart.current = {
@@ -284,7 +346,8 @@ const PlanCanvas = forwardRef<CanvasHandle, Props>(function PlanCanvas(props, re
     }), "end");
   };
 
-  // ---- stage: wheel zoom, drag to pan, Shift-drag to select a box, pinch on touch, right-click / long-press menu ----
+  // ---- stage: wheel zoom, floor drag selects a box (or pans with the hand tool, Space, the middle button or two
+  // fingers), pinch on touch, right-click / long-press menu ----
   const onWheel = (e: KonvaEventObject<WheelEvent>) => {
     e.evt.preventDefault();
     const p = stage.current?.getPointerPosition();
@@ -295,25 +358,38 @@ const PlanCanvas = forwardRef<CanvasHandle, Props>(function PlanCanvas(props, re
     const st = stage.current;
     if (!st) return;
     const pos = st.getPointerPosition();
-    if (tool === "measure" && pos && !("touches" in e.evt && e.evt.touches.length > 1)) {
-      st.draggable(false);
+    const touches = "touches" in e.evt ? e.evt.touches.length : 0;
+    if (touches > 1 || !pos) {
+      pan.current = null;
+      setMarquee(null);
+      return;
+    }
+    const button = touches ? 0 : (e.evt as MouseEvent).button;
+    if (button === 2) return;
+    swallow.current = false;
+    if (tool === "measure" && button === 0) {
       const p = toRoomPx(pos);
       setMeasure({ a: p, b: p, live: true });
       return;
     }
-    if (mode === "edit" && isFloor(e) && (e.evt as MouseEvent).shiftKey && pos) {
-      st.draggable(false);
+    if (panMode || button === 1 || mode !== "edit") {
+      if (button === 1) e.evt.preventDefault();
+      pan.current = { x: pos.x, y: pos.y, vx: view.x, vy: view.y, moved: false };
+      setPanning(true);
+    } else if (button === 0 && (isFloor(e) || (e.target.findAncestor(".item") as Konva.Group | undefined)?.getAttr("locked"))) {
       const p = toRoomPx(pos);
-      setMarquee({ x0: p.x, y0: p.y, x1: p.x, y1: p.y });
-      return;
+      setMarquee({ x0: p.x, y0: p.y, x1: p.x, y1: p.y, add: !touches && (e.evt as MouseEvent).shiftKey });
     }
     // long-press opens the menu on touch screens
-    if ("touches" in e.evt && e.evt.touches.length === 1 && onMenu && pos) {
-      const t = e.evt.touches[0];
+    if (touches === 1 && onMenu) {
+      const t = (e.evt as TouchEvent).touches[0];
       const target = e.target.findAncestor(".item") as Konva.Group | undefined;
       press.current = window.setTimeout(() => {
         onMenu({ itemId: target?.getAttr("itemId"), clientX: t.clientX, clientY: t.clientY, room: toRoomPx(pos) });
         press.current = null;
+        pan.current = null;
+        setPanning(false);
+        setMarquee(null);
       }, 550);
     }
   };
@@ -322,11 +398,13 @@ const PlanCanvas = forwardRef<CanvasHandle, Props>(function PlanCanvas(props, re
     press.current = null;
   };
   const onMove = (e: KonvaEventObject<MouseEvent | TouchEvent>) => {
-    cancelPress();
     const st = stage.current;
     if (!st) return;
     if ("touches" in e.evt && e.evt.touches.length === 2) {
+      cancelPress();
       e.evt.preventDefault();
+      pan.current = null;
+      if (marquee) setMarquee(null);
       const [a, b] = [e.evt.touches[0], e.evt.touches[1]];
       const r = box.current!.getBoundingClientRect();
       const mid = { x: (a.clientX + b.clientX) / 2 - r.left, y: (a.clientY + b.clientY) / 2 - r.top };
@@ -340,43 +418,70 @@ const PlanCanvas = forwardRef<CanvasHandle, Props>(function PlanCanvas(props, re
       setView({ scale, x: mid.x - pinch.current.mid.x * scale, y: mid.y - pinch.current.mid.y * scale });
       return;
     }
-    if (measure?.live) {
-      const pos = st.getPointerPosition();
-      if (pos) {
-        const p = toRoomPx(pos);
-        // Shift keeps the line straight across or down
-        const straight = (e.evt as MouseEvent).shiftKey ? (Math.abs(p.x - measure.a.x) > Math.abs(p.y - measure.a.y) ? { x: p.x, y: measure.a.y } : { x: measure.a.x, y: p.y }) : p;
-        setMeasure({ ...measure, b: straight });
+    const pos = st.getPointerPosition();
+    if (!pos) return;
+    const pn = pan.current;
+    if (pn) {
+      const dx = pos.x - pn.x;
+      const dy = pos.y - pn.y;
+      if (!pn.moved && Math.hypot(dx, dy) > 4) {
+        pn.moved = true;
+        cancelPress();
       }
+      if (pn.moved) setView((v) => ({ ...v, x: pn.vx + dx, y: pn.vy + dy }));
+      return;
+    }
+    if (measure?.live) {
+      const p = toRoomPx(pos);
+      // Shift keeps the line straight across or down
+      const straight = (e.evt as MouseEvent).shiftKey ? (Math.abs(p.x - measure.a.x) > Math.abs(p.y - measure.a.y) ? { x: p.x, y: measure.a.y } : { x: measure.a.x, y: p.y }) : p;
+      setMeasure({ ...measure, b: straight });
       return;
     }
     if (marquee) {
-      const pos = st.getPointerPosition();
-      if (pos) {
-        const p = toRoomPx(pos);
-        setMarquee({ ...marquee, x1: p.x, y1: p.y });
-      }
+      const p = toRoomPx(pos);
+      if (Math.hypot(p.x - marquee.x0, p.y - marquee.y0) * view.scale > 4) cancelPress();
+      setMarquee({ ...marquee, x1: p.x, y1: p.y });
     }
   };
+  const boxBig = (m: { x0: number; y0: number; x1: number; y1: number }) => Math.max(Math.abs(m.x1 - m.x0), Math.abs(m.y1 - m.y0)) * view.scale > 4;
+  // released anywhere, even outside the canvas
   const onUp = () => {
     cancelPress();
     pinch.current = null;
-    stage.current?.draggable(tool !== "measure");
+    if (pan.current) {
+      if (pan.current.moved) swallow.current = true;
+      pan.current = null;
+      setPanning(false);
+    }
     if (measure?.live) setMeasure({ ...measure, live: false });
     if (!marquee) return;
-    const x0 = Math.min(marquee.x0, marquee.x1);
-    const x1 = Math.max(marquee.x0, marquee.x1);
-    const y0 = Math.min(marquee.y0, marquee.y1);
-    const y1 = Math.max(marquee.y0, marquee.y1);
     setMarquee(null);
-    if (x1 - x0 < 0.1 && y1 - y0 < 0.1) return;
-    onSelect?.(layout.items.filter((it) => {
-      const b = bounds(it);
-      return b.x0 >= x0 && b.x1 <= x1 && b.y0 >= y0 && b.y1 <= y1;
-    }).map((i) => i.id));
+    if (!boxBig(marquee)) return;
+    swallow.current = true;
+    const ids = boxSelect(layout.items, marquee, marquee.x1 < marquee.x0 ? "touch" : "inside");
+    onSelect?.(marquee.add ? [...new Set([...selected, ...ids])] : ids);
   };
+  const upRef = useRef(onUp);
+  upRef.current = onUp;
+  useEffect(() => {
+    const up = () => upRef.current();
+    window.addEventListener("mouseup", up);
+    window.addEventListener("touchend", up);
+    window.addEventListener("touchcancel", up);
+    return () => {
+      window.removeEventListener("mouseup", up);
+      window.removeEventListener("touchend", up);
+      window.removeEventListener("touchcancel", up);
+    };
+  }, []);
   const onClickStage = (e: KonvaEventObject<MouseEvent | TouchEvent>) => {
-    if (isFloor(e) && !marquee) onSelect?.([]);
+    // the click arrives before the window's mouseup, so look at the gesture itself
+    if (!isFloor(e) || pan.current?.moved || (marquee && boxBig(marquee)) || swallow.current) {
+      swallow.current = false;
+      return;
+    }
+    onSelect?.([]);
   };
   const onContext = (e: KonvaEventObject<PointerEvent>) => {
     e.evt.preventDefault();
@@ -403,14 +508,17 @@ const PlanCanvas = forwardRef<CanvasHandle, Props>(function PlanCanvas(props, re
     return out;
   }, [grid, layout.w, layout.h]);
 
+  const cursor = marquee || tool === "measure" ? "crosshair" : panning ? "grabbing" : panMode || mode === "seat" ? "grab" : "default";
+
   return (
-    <div ref={box} className="relative w-full select-none overflow-hidden rounded-lg border border-line" style={{ background: c.paper2, touchAction: "none", height: size.h }}
-      role="application" aria-label={ariaLabel} onContextMenu={(e) => e.preventDefault()}>
+    <div ref={box} className="relative w-full select-none overflow-hidden rounded-lg border border-line" style={{ background: c.paper2, touchAction: "none", height: fill ? "100%" : size.h }}
+      role="application" aria-label={ariaLabel} onContextMenu={(e) => e.preventDefault()}
+      onMouseEnter={() => { hover.current = true; }} onMouseLeave={() => { hover.current = false; }}>
       <Stage ref={stage} width={size.w} height={size.h} x={view.x} y={view.y} scaleX={view.scale} scaleY={view.scale}
-        draggable onDragEnd={(e) => { if (e.target === stage.current) setView((v) => ({ ...v, x: e.target.x(), y: e.target.y() })); }}
-        onWheel={onWheel} onMouseDown={onDown} onTouchStart={onDown} onMouseMove={onMove} onTouchMove={onMove} onMouseUp={onUp} onTouchEnd={onUp}
+        baseCursor={cursor}
+        onWheel={onWheel} onMouseDown={onDown} onTouchStart={onDown} onMouseMove={onMove} onTouchMove={onMove}
         onClick={onClickStage} onTap={onClickStage} onContextMenu={onContext}
-        style={{ cursor: marquee || tool === "measure" ? "crosshair" : "grab" }}>
+        style={{ cursor }}>
         <Layer listening={false}>
           <Rect x={0} y={0} width={layout.w} height={layout.h} fill={c.paper} stroke={c.ink2} strokeWidth={2} strokeScaleEnabled={false} />
           {gridLines.map((l, i) => <Line key={i} points={l.pts} stroke={c.line} strokeWidth={l.strong ? 1.2 : 0.6} strokeScaleEnabled={false} perfectDrawEnabled={false} />)}
@@ -424,11 +532,11 @@ const PlanCanvas = forwardRef<CanvasHandle, Props>(function PlanCanvas(props, re
         <Layer>
           {/* an invisible floor so clicks on the room count as "the floor" */}
           <Rect name="floor" x={0} y={0} width={layout.w} height={layout.h} fill="transparent" />
-          {layout.items.map((it) => (
-            <ItemNode key={it.id} it={it} c={c} mode={mode} look={look} zoom={view.scale} selected={selected.includes(it.id)} clash={!!clash?.has(it.id)} highlight={highlight === it.id}
+          {visible.map((it) => (
+            <ItemNode key={it.id} it={it} hitPx={hitPx} still={panMode} c={c} mode={mode} look={look} zoom={view.scale} selected={selected.includes(it.id)} clash={!!clash?.has(it.id)} highlight={highlight === it.id}
               seatTone={seatTone} seatName={seatName} title={tableTitle}
               register={(n) => { if (n) nodes.current.set(it.id, n); else nodes.current.delete(it.id); }}
-              onSelect={(additive) => onSelect?.(additive ? (selected.includes(it.id) ? selected.filter((x) => x !== it.id) : [...selected, it.id]) : [it.id])}
+              onPress={(m) => pressItem(it, m)} onRelease={() => releaseItem(it)}
               onDragStart={onDragStart} onDragMove={onDragMove} onDragEnd={onDragEnd}
               onTable={onTableClick}
               onSeatHover={(seat, on) => {
@@ -453,7 +561,7 @@ const PlanCanvas = forwardRef<CanvasHandle, Props>(function PlanCanvas(props, re
           )}
           {marquee && (
             <Rect x={Math.min(marquee.x0, marquee.x1)} y={Math.min(marquee.y0, marquee.y1)} width={Math.abs(marquee.x1 - marquee.x0)} height={Math.abs(marquee.y1 - marquee.y0)}
-              fill={c.goldSoft} opacity={0.35} stroke={c.gold} strokeWidth={1} dash={[6, 4]} strokeScaleEnabled={false} listening={false} />
+              fill={c.goldSoft} opacity={0.35} stroke={c.gold} strokeWidth={1} dash={marquee.x1 < marquee.x0 ? [6, 4] : undefined} strokeScaleEnabled={false} listening={false} />
           )}
           {mode === "edit" && (
             <Transformer ref={tr}

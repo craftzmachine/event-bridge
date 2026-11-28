@@ -4,7 +4,7 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState, type PointerEvent as RPointerEvent } from "react";
 import type { LayoutItem, LayoutKind, Proposal, VenueLayout } from "../types";
 import { useConfig } from "../config/context";
-import { GRID, ITEMS_MAX, KINDS, PALETTE_GROUPS, ROOM_MAX, SIZE_PRESETS, ROOM_MIN, SEATS_MAX, STARTERS, arrayItems, clampToRoom, clashes, cloneItems, emptyLayout, isTable, layoutCapacity, newItem, renumberTables, resizeItem, snap, starterLayout } from "../lib/layout";
+import { GRID, ITEMS_MAX, KINDS, PALETTE_GROUPS, ROOM_MAX, SIZE_PRESETS, ROOM_MIN, SEATS_MAX, STARTERS, arrayItems, reorder as reorderItems, clampToRoom, clashes, cloneItems, emptyLayout, isTable, layoutCapacity, newItem, renumberTables, resizeItem, snap, starterLayout } from "../lib/layout";
 import { safeFilePart } from "../lib/format";
 import { usePlanView } from "./layout/planView";
 import { confirmedHeadcount } from "../lib/guestList";
@@ -78,7 +78,8 @@ function Editor({ initial, p, onSave, onEvent }: { initial: VenueLayout; p: Prop
   const [menu, setMenu] = useState<Menu | null>(null);
   const [ghost, setGhost] = useState<{ kind: LayoutKind; x: number; y: number } | null>(null);
   const [view, setView] = usePlanView();
-  const [tool, setTool] = useState<"select" | "measure">("select");
+  // phones and tablets start with the hand (one finger pans); a mouse starts with box selection
+  const [tool, setTool] = useState<"select" | "hand" | "measure">(() => (window.matchMedia?.("(pointer: coarse)").matches ? "hand" : "select"));
   const [arrayOpen, setArrayOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [find, setFind] = useState("");
@@ -180,10 +181,8 @@ function Editor({ initial, p, onSave, onEvent }: { initial: VenueLayout; p: Prop
     const lock = layout.items.some((i) => ids.includes(i.id) && !i.locked);
     setItems(layout.items.map((i) => (ids.includes(i.id) ? { ...i, locked: lock || undefined } : i)));
   };
-  const reorder = (ids: string[], front: boolean) => {
-    const picked = layout.items.filter((i) => ids.includes(i.id));
-    const rest = layout.items.filter((i) => !ids.includes(i.id));
-    setItems(front ? [...rest, ...picked] : [...picked, ...rest]);
+  const reorder = (ids: string[], how: "front" | "back" | "forward" | "backward") => {
+    if (ids.length) setItems(reorderItems(layout.items, ids, how));
   };
 
   // keyboard shortcuts while the editor has focus
@@ -199,11 +198,16 @@ function Editor({ initial, p, onSave, onEvent }: { initial: VenueLayout; p: Prop
     else if (mod && key === "c") clipboard.current = selected.map((i) => ({ ...i }));
     else if (mod && key === "v") paste(clipboard.current);
     else if (mod && key === "a") setSel(layout.items.map((i) => i.id));
+    else if (mod && e.key === "]") reorder(sel, e.shiftKey ? "front" : "forward");
+    else if (mod && e.key === "[") reorder(sel, e.shiftKey ? "back" : "backward");
+    else if (mod && (e.code === "BracketRight" || e.code === "BracketLeft")) reorder(sel, e.code === "BracketRight" ? (e.shiftKey ? "front" : "forward") : e.shiftKey ? "back" : "backward");
     else if (e.key === "Escape") {
       setMenu(null);
       setSel([]);
-      setTool("select");
+      if (tool === "measure") setTool("select");
     } else if (!mod && key === "m") setTool((t) => (t === "measure" ? "select" : "measure"));
+    else if (!mod && key === "v") setTool("select");
+    else if (!mod && key === "h") setTool("hand");
     else if (!sel.length) return;
     else if (e.key === "ArrowLeft") nudge(-step, 0);
     else if (e.key === "ArrowRight") nudge(step, 0);
@@ -293,6 +297,10 @@ function Editor({ initial, p, onSave, onEvent }: { initial: VenueLayout; p: Prop
           <ToolBtn label={view.look === "realistic" ? "Show plain shapes" : "Show furniture"} pressed={view.look === "realistic"} onClick={() => setView({ look: view.look === "realistic" ? "simple" : "realistic" })}>
             {view.look === "realistic" ? "Realistic" : "Simple"}
           </ToolBtn>
+          <span className="flex overflow-hidden rounded-sm border border-solid border-line" role="group" aria-label="Drag on the floor to">
+            <ToolBtn bare label="Select: drag a box to select (V)" pressed={tool === "select"} onClick={() => setTool("select")}>⬚ Select</ToolBtn>
+            <ToolBtn bare label="Hand: drag to move the view (H, or hold Space)" pressed={tool === "hand"} onClick={() => setTool("hand")}>✋ Hand</ToolBtn>
+          </span>
           <ToolBtn label="Measure a distance (M)" pressed={tool === "measure"} onClick={() => setTool(tool === "measure" ? "select" : "measure")}>📏 Measure</ToolBtn>
           <span className="mx-1 h-6 w-px bg-line" aria-hidden="true" />
           <ToolBtn label="Add a grid of tables" onClick={() => setArrayOpen(true)}>▦ Grid of tables</ToolBtn>
@@ -382,7 +390,7 @@ function Editor({ initial, p, onSave, onEvent }: { initial: VenueLayout; p: Prop
           </Suspense>
         </div>
         <p className="m-0 mt-2 text-xs text-stone">
-          Drag tables to move them (they snap and line up with their neighbours; hold Alt to place freely) · pull a handle to resize, the top knob to rotate · right-click for more · drag the floor to pan, scroll or pinch to zoom · Shift-drag to select several.
+          Click a table or any of its chairs to select it · drag across empty floor to select several (left to right: wholly inside; right to left: anything touched; Shift adds) · Alt-click picks the item underneath · drag to move (hold Alt to place freely) · handles resize, the top knob rotates · Space-drag, the middle button, the Hand tool or two fingers pan · scroll or pinch to zoom · right-click for more.
         </p>
         {/* the same items as a list, for keyboards and screen readers */}
         <ul className="sr-only">
@@ -487,8 +495,10 @@ function Editor({ initial, p, onSave, onEvent }: { initial: VenueLayout; p: Prop
               <MenuItem onClick={() => { duplicate(); setMenu(null); }} hint="Ctrl+D">Duplicate</MenuItem>
               <MenuItem onClick={() => { clipboard.current = selected.map((i) => ({ ...i })); setMenu(null); }} hint="Ctrl+C">Copy</MenuItem>
               <MenuItem onClick={() => { rotateBy(90, sel); setMenu(null); }} hint="R">Rotate 90°</MenuItem>
-              <MenuItem onClick={() => { reorder(sel, true); setMenu(null); }}>Bring to front</MenuItem>
-              <MenuItem onClick={() => { reorder(sel, false); setMenu(null); }}>Send to back</MenuItem>
+              <MenuItem onClick={() => { reorder(sel, "forward"); setMenu(null); }} hint="Ctrl+]">Bring forward</MenuItem>
+              <MenuItem onClick={() => { reorder(sel, "front"); setMenu(null); }} hint="Ctrl+Shift+]">Bring to front</MenuItem>
+              <MenuItem onClick={() => { reorder(sel, "backward"); setMenu(null); }} hint="Ctrl+[">Send backward</MenuItem>
+              <MenuItem onClick={() => { reorder(sel, "back"); setMenu(null); }} hint="Ctrl+Shift+[">Send to back</MenuItem>
               <MenuItem onClick={() => { toggleLock(); setMenu(null); }}>{selected.every((i) => i.locked) ? "Unlock" : "Lock in place"}</MenuItem>
               <MenuItem danger onClick={() => { remove(); setMenu(null); }} hint="Del">Delete</MenuItem>
             </>
@@ -617,10 +627,10 @@ function KindIcon({ kind }: { kind: LayoutKind }) {
   );
 }
 
-function ToolBtn({ label, children, onClick, disabled, pressed }: { label: string; children: React.ReactNode; onClick: () => void; disabled?: boolean; pressed?: boolean }) {
+function ToolBtn({ label, children, onClick, disabled, pressed, bare }: { label: string; children: React.ReactNode; onClick: () => void; disabled?: boolean; pressed?: boolean; bare?: boolean }) {
   return (
     <button type="button" title={label} aria-label={label} aria-pressed={pressed} disabled={disabled} onClick={onClick}
-      className={`grid h-9 min-w-9 place-items-center rounded-sm border border-solid px-2 text-sm ${pressed ? "border-gold bg-gold-soft text-ink" : "border-line bg-card text-ink"}`}>
+      className={`grid h-9 min-w-9 place-items-center px-2 text-sm ${bare ? "rounded-none border-0" : "rounded-sm border border-solid"} ${pressed ? "border-gold bg-gold-soft text-ink" : "border-line bg-card text-ink"}`}>
       {children}
     </button>
   );

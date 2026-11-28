@@ -429,6 +429,8 @@ export interface LayoutItem {
   label?: string;
   /** can't be moved, resized or rotated until unlocked */
   locked?: boolean;
+  /** hidden in the editor (Layers panel); still counted and exported */
+  hidden?: boolean;
 }
 
 export interface VenueLayout {

@@ -106,7 +106,7 @@ export function clampToRoom(it: LayoutItem, room: Pick<VenueLayout, "w" | "h">):
 }
 
 /** do two items' rotated shapes overlap? (separating axis test on the two rectangles) */
-export function overlaps(a: LayoutItem, b: LayoutItem): boolean {
+export function overlaps(a: Pick<LayoutItem, "x" | "y" | "w" | "h" | "rot">, b: Pick<LayoutItem, "x" | "y" | "w" | "h" | "rot">): boolean {
   const pa = corners(a);
   const pb = corners(b);
   for (const poly of [pa, pb]) {
@@ -364,3 +364,80 @@ export function arrayItems(kind: LayoutKind, rows: number, cols: number, gapX: n
 }
 
 export const distance = (a: { x: number; y: number }, b: { x: number; y: number }) => Math.hypot(b.x - a.x, b.y - a.y);
+
+// ---- drawing order, hit tests and selection ---------------------------------------------------
+
+/**
+ * Items draw in tiers, so a dance floor or aisle added after the tables never covers them: floor coverings, then
+ * furniture, then walls and pillars, then labels. Within a tier the array order decides (later is in front).
+ */
+const FLOOR_TIER = new Set<LayoutKind>(["aisle", "dance", "kids", "stage", "mandap", "entrance"]);
+export function tierOf(kind: LayoutKind): number {
+  if (FLOOR_TIER.has(kind)) return 0;
+  if (kind === "wall" || kind === "pillar") return 2;
+  if (kind === "label") return 3;
+  return 1;
+}
+export const TIER_NAMES = ["Floor & stage", "Furniture & décor", "Walls & pillars", "Labels"];
+
+/** back to front, as the canvas, the PDF and the image draw them */
+export function drawOrder<T extends Pick<LayoutItem, "kind">>(items: T[]): T[] {
+  return items.map((it, i) => ({ it, i })).sort((a, b) => tierOf(a.it.kind) - tierOf(b.it.kind) || a.i - b.i).map((x) => x.it);
+}
+
+/** does a room point fall on the item: its rotated body (ellipse for round ones) or one of its chairs, `pad` metres wider */
+export function hits(it: LayoutItem, p: { x: number; y: number }, pad = 0): boolean {
+  const a = (it.rot * Math.PI) / 180;
+  const dx = p.x - it.x;
+  const dy = p.y - it.y;
+  const lx = dx * Math.cos(a) + dy * Math.sin(a);
+  const ly = -dx * Math.sin(a) + dy * Math.cos(a);
+  const rx = it.w / 2 + pad;
+  const ry = it.h / 2 + pad;
+  if (KINDS[it.kind].round ? (lx * lx) / (rx * rx) + (ly * ly) / (ry * ry) <= 1 : Math.abs(lx) <= rx && Math.abs(ly) <= ry) return true;
+  return isTable(it) && seatPositions(it).some((s) => Math.hypot(lx - s.x, ly - s.y) <= 0.3 + pad);
+}
+
+/** the visible items under a point, front first (for Alt-click to reach the one underneath) */
+export function itemsAt(items: LayoutItem[], p: { x: number; y: number }, pad = 0): LayoutItem[] {
+  return drawOrder(items.filter((i) => !i.hidden)).reverse().filter((i) => hits(i, p, pad));
+}
+
+/**
+ * Box selection, the CAD way: dragged left to right ("inside") picks items wholly inside the box; right to left
+ * ("touch") picks anything the box touches. Hidden items are never picked.
+ */
+export function boxSelect(items: LayoutItem[], box: { x0: number; y0: number; x1: number; y1: number }, mode: "inside" | "touch"): string[] {
+  const x0 = Math.min(box.x0, box.x1);
+  const x1 = Math.max(box.x0, box.x1);
+  const y0 = Math.min(box.y0, box.y1);
+  const y1 = Math.max(box.y0, box.y1);
+  const area = { x: (x0 + x1) / 2, y: (y0 + y1) / 2, w: x1 - x0, h: y1 - y0, rot: 0 };
+  return items.filter((it) => {
+    if (it.hidden) return false;
+    const b = bounds(it);
+    if (mode === "inside") return b.x0 >= x0 && b.x1 <= x1 && b.y0 >= y0 && b.y1 <= y1;
+    return b.x1 >= x0 && b.x0 <= x1 && b.y1 >= y0 && b.y0 <= y1 && overlaps(it, area);
+  }).map((i) => i.id);
+}
+
+/**
+ * Z-order within a tier: to the front or back, or one step past the next item of the same tier. The array order is
+ * what's stored; drawOrder applies the tiers on top.
+ */
+export function reorder(items: LayoutItem[], ids: string[], how: "front" | "back" | "forward" | "backward"): LayoutItem[] {
+  const pick = new Set(ids);
+  if (how === "front") return [...items.filter((i) => !pick.has(i.id)), ...items.filter((i) => pick.has(i.id))];
+  if (how === "back") return [...items.filter((i) => pick.has(i.id)), ...items.filter((i) => !pick.has(i.id))];
+  const out = [...items];
+  const step = how === "forward" ? 1 : -1;
+  const idx = out.map((_, i) => i).filter((i) => pick.has(out[i].id));
+  for (const i of how === "forward" ? idx.reverse() : idx) {
+    const t = tierOf(out[i].kind);
+    let j = i + step;
+    while (j >= 0 && j < out.length && tierOf(out[j].kind) !== t) j += step;
+    if (j < 0 || j >= out.length || pick.has(out[j].id)) continue;
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
+}
