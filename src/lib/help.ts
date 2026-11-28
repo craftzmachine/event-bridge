@@ -232,6 +232,8 @@ export const HELP: HelpTopic[] = [
       "Lock the stage, mandap and walls once they're placed, so they don't move while you arrange tables round them.",
       "Realistic shows chairs, tablecloths with table numbers, a chequered dance floor and the mandap's pillars; Simple shows plain shapes. Rulers adds metre rulers; Measure (or M) lets you drag to measure a distance. The minimap in the corner jumps to any part of the room.",
       "Grid of tables adds rows × columns of tables in one go; Renumber numbers them left to right, top to bottom; Image downloads the plan as a picture to send to the family or the venue.",
+      "Select an item to type its exact size in metres, or pick a common size (mandap 4 × 4 to 8 × 8 m, stage, aisle, table sizes). Tables ▾ sets every table to the same number of seats or spreads a number of guests across them.",
+      "The Counts panel totals tables, chairs and every item as you work; Inventory ▾ downloads the list for the rental vendor as PDF or Excel. New to it? Press 🎓 Tutorial for a step-by-step walk-through.",
       "Press 3D (top right) to look round the room in 3D: Overview, Top, From the entrance, From the stage, or Walk (drag to look, W A S D or the arrow keys to move). Save image keeps a picture. In the Seating tab, the 3D chairs show who sits where. Switch back to 2D to make changes.",
       "Save as a venue plan to reuse the room for the next wedding there.",
       "Seating flags anyone seated who has since said no, households split over tables, and people who lost a seat when a table changed.",
