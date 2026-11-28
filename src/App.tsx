@@ -26,6 +26,8 @@ const Help = lazy(() => import("./pages/Help"));
 const Settings = lazy(() => import("./pages/Settings"));
 // every wedding's guests, floor plans and seating, with links into each workspace's tabs
 const Guests = lazy(() => import("./pages/Guests"));
+// standalone floor plans, not tied to a wedding
+const Plans = lazy(() => import("./pages/Plans"));
 // a guest's RSVP page: public, so it loads on its own
 const Rsvp = lazy(() => import("./pages/Rsvp"));
 import ClientView from "./pages/ClientView";
@@ -38,9 +40,9 @@ import { ApiError, api } from "./lib/api";
  * #/ (landing), #/login, the signed-in #/dashboard (team overview) and feature apps #/studio (Proposal Studio), #/venues (Venue Directory) and
  * #/visualize (Visualize Proposal), and the public #/view/<token> where a client opens a shared proposal.
  */
-type Route = "landing" | "login" | "dashboard" | "events" | "guests" | "crm" | "tasks" | "vendors" | "questionnaires" | "portal" | "expenses" | "studio" | "venues" | "visualize" | "help" | "settings" | "view" | "rsvp";
+type Route = "landing" | "login" | "dashboard" | "events" | "guests" | "plans" | "crm" | "tasks" | "vendors" | "questionnaires" | "portal" | "expenses" | "studio" | "venues" | "visualize" | "help" | "settings" | "view" | "rsvp";
 type AppRoute = Exclude<Route, "landing" | "login" | "view" | "rsvp">;
-const APP_ROUTES: Route[] = ["dashboard", "events", "guests", "crm", "tasks", "vendors", "questionnaires", "portal", "expenses", "studio", "venues", "visualize", "help", "settings"];
+const APP_ROUTES: Route[] = ["dashboard", "events", "guests", "plans", "crm", "tasks", "vendors", "questionnaires", "portal", "expenses", "studio", "venues", "visualize", "help", "settings"];
 const readRoute = (hash: string): Route => {
   const h = hash.replace(/^#\/?/, "").split("/")[0].toLowerCase();
   return h === "login" || h === "view" || h === "rsvp" || APP_ROUTES.includes(h as Route) ? (h as Route) : "landing";
@@ -211,6 +213,10 @@ export default function App() {
             ) : route === "help" ? (
               <Suspense fallback={<p className="hint" role="status" style={{ padding: 24 }}>Opening help…</p>}>
                 <Help path={hash.replace(/^#\/?/, "").split("/").slice(1)} />
+              </Suspense>
+            ) : route === "plans" ? (
+              <Suspense fallback={<p className="hint" role="status" style={{ padding: 24 }}>Opening floor plans…</p>}>
+                <Plans path={hash.replace(/^#\/?/, "").split("/").slice(1)} proposals={store.list} onCopyToWedding={(id, fn) => store.update(id, fn)} />
               </Suspense>
             ) : route === "guests" ? (
               <Suspense fallback={<p className="hint" role="status" style={{ padding: 24 }}>Opening guests…</p>}>

@@ -1,6 +1,6 @@
 // The signed-in apps. There's no menu: the Dashboard shows them as tiles, and every other page links back to it.
-export type NavId = "dashboard" | "events" | "guests" | "studio" | "crm" | "tasks" | "vendors" | "questionnaires" | "portal" | "expenses" | "venues" | "visualize" | "help" | "settings";
-export type IconName = "home" | "calendar" | "file" | "wallet" | "pin" | "eye" | "users" | "check" | "book" | "list" | "heart" | "help" | "settings" | "seats";
+export type NavId = "dashboard" | "events" | "guests" | "plans" | "studio" | "crm" | "tasks" | "vendors" | "questionnaires" | "portal" | "expenses" | "venues" | "visualize" | "help" | "settings";
+export type IconName = "home" | "calendar" | "file" | "wallet" | "pin" | "eye" | "users" | "check" | "book" | "list" | "heart" | "help" | "settings" | "seats" | "plan";
 
 export interface AppItem {
   id: Exclude<NavId, "dashboard" | "help" | "settings">;
@@ -14,6 +14,7 @@ export interface AppItem {
 export const APPS: AppItem[] = [
   { id: "events", label: "Events", description: "Every wedding in play, each with its own workspace", href: "#/events", icon: "calendar" },
   { id: "guests", label: "Guests & Seating", description: "Guest lists, RSVP links, floor plans and seating for every wedding", href: "#/guests", icon: "seats" },
+  { id: "plans", label: "Floor Plans", description: "Venue layouts, seating and chair counts that aren't tied to a wedding", href: "#/plans", icon: "plan" },
   { id: "studio", label: "Proposal Studio", description: "Build, price and send proposals", href: "#/studio", icon: "file" },
   { id: "crm", label: "CRM", description: "Enquiries from first message to booking, and your clients", href: "#/crm", icon: "users" },
   { id: "tasks", label: "Tasks", description: "The team's tasks and every wedding's checklist, as a list, board or calendar", href: "#/tasks", icon: "check" },

@@ -13,6 +13,7 @@ Event Bridge is a workspace for wedding planners: build and send proposals, run 
 | [Events and the wedding workspace](04-events.md) | Every wedding in play: checklist, coordination sheet, payments, expenses |
 | [Guests & RSVP](14-guests-rsvp.md) | The **Guests & Seating** app: the guest list, and a link guests answer on, per function |
 | [Venue layout & seating](15-layout-seating.md) | An interactive floor plan per function, seating, and a printable seating plan |
+| [Floor Plans](16-floor-plans.md) | Floor plans and seating not tied to a wedding, the vendor inventory, and the hands-on tutorial |
 | [Expenses](05-expenses.md) | Event and company spending with proof, staff advances and handovers |
 | [CRM](06-crm.md) | Enquiries from first message to booking, and your clients |
 | [Tasks](07-tasks.md) | The team's tasks and every wedding's checklist |

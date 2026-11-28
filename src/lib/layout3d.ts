@@ -125,6 +125,34 @@ export function buildScene(l: VenueLayout): Scene3D {
       case "wall":
         add(it, "box", 0, 0, HEIGHTS.wall / 2, it.w, HEIGHTS.wall, Math.max(0.1, it.h), "wall");
         break;
+      case "aisle":
+        add(it, "box", 0, 0, 0.01, it.w, 0.02, it.h, "carpet");
+        break;
+      case "pillar":
+        add(it, "cyl", 0, 0, 1.5, Math.min(hw, hd), 3, 0, "wall");
+        break;
+      case "plant":
+        add(it, "cyl", 0, 0, 0.5, Math.min(hw, hd) * 0.3, 1, 0, "gold");
+        add(it, "cyl", 0, 0, 1.15, Math.min(hw, hd), 0.3, 0, "floral");
+        break;
+      case "sofa":
+        add(it, "box", 0, 0, 0.22, it.w, 0.44, it.h, "linen");
+        add(it, "box", 0, -hd + 0.12, 0.6, it.w, 0.5, 0.24, "linen");
+        break;
+      case "screen":
+        add(it, "box", 0, 0, 1.75, it.w, 2.5, Math.max(0.1, it.h), "dark");
+        break;
+      case "desk":
+        add(it, "box", 0, 0, HEIGHTS.counter / 2, it.w, HEIGHTS.counter, it.h, "wood");
+        add(it, "box", 0, 0, HEIGHTS.counter + 0.01, it.w + 0.04, 0.03, it.h + 0.04, "linen");
+        break;
+      case "gifts":
+        add(it, "box", 0, 0, (HEIGHTS.table - 0.04) / 2, it.w, HEIGHTS.table - 0.04, it.h, "linen");
+        for (const dx of [-0.5, 0, 0.5]) add(it, "box", dx * hw, 0, HEIGHTS.table + 0.1, 0.3, 0.2, 0.3, "floral");
+        break;
+      case "kids":
+        add(it, "box", 0, 0, 0.01, it.w, 0.02, it.h, "floral");
+        break;
       default:
         break;
     }

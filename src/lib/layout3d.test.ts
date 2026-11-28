@@ -34,3 +34,24 @@ describe("3D scene", () => {
     expect([w.x, w.z]).toEqual([10, 10]);
   });
 });
+
+describe("3D scene: new items", () => {
+  it("draws every kind on or above the floor, with the aisle as a flat runner", () => {
+    const kinds = ["aisle", "pillar", "plant", "sofa", "screen", "desk", "gifts", "kids"] as const;
+    const items = kinds.map((k, i) => newItem(k, { x: 4 + i * 4, y: 10 }));
+    const s = buildScene({ w: 40, h: 40, items });
+    for (const it of items) expect(s.parts.some((p) => p.itemId === it.id), it.kind).toBe(true);
+    expect(s.parts.every((p) => p.y - p.h / 2 >= -1e-9)).toBe(true);
+    const aisle = s.parts.find((p) => p.paint === "carpet")!;
+    expect(aisle.h).toBeLessThan(0.05);
+  });
+
+  it("gives the ceremony starter a centre aisle that doesn't clash with the rows", async () => {
+    const { clashes } = await import("./layout");
+    const l = starterLayout("ceremony", 160);
+    const aisle = l.items.find((i) => i.kind === "aisle");
+    expect(aisle).toBeDefined();
+    expect(aisle!.x).toBeCloseTo(l.w / 2);
+    expect(clashes(l.items).size).toBe(0);
+  });
+});

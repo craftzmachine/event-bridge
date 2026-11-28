@@ -33,10 +33,37 @@ export const KINDS: Record<LayoutKind, KindInfo> = {
   photo: { label: "Photo booth", w: 3, h: 2.5, zone: true },
   wall: { label: "Wall / divider", w: 6, h: 0.2, zone: true },
   label: { label: "Text label", w: 4, h: 0.8 },
+  aisle: { label: "Aisle / runner", w: 1.5, h: 10, zone: true },
+  pillar: { label: "Pillar", w: 0.6, h: 0.6, round: true, zone: true },
+  sofa: { label: "Sofa / lounge", w: 2.2, h: 0.9, zone: true },
+  screen: { label: "LED wall / screen", w: 4, h: 0.3, zone: true },
+  plant: { label: "Flower stand", w: 0.6, h: 0.6, round: true, zone: true },
+  desk: { label: "Welcome desk", w: 2, h: 0.7, zone: true },
+  gifts: { label: "Gifts table", w: 2, h: 0.8, zone: true },
+  kids: { label: "Kids' area", w: 5, h: 5, zone: true },
 };
 
-/** the order of the editor's palette */
-export const PALETTE: LayoutKind[] = ["round", "rect", "row", "stage", "mandap", "dance", "buffet", "bar", "dj", "photo", "entrance", "wall", "label"];
+/** the editor's palette, in groups */
+export const PALETTE_GROUPS: { title: string; kinds: LayoutKind[] }[] = [
+  { title: "Seating", kinds: ["round", "rect", "row", "sofa"] },
+  { title: "Ceremony & stage", kinds: ["mandap", "stage", "aisle", "screen", "dance", "dj"] },
+  { title: "Food & bar", kinds: ["buffet", "bar"] },
+  { title: "Décor & venue", kinds: ["entrance", "photo", "plant", "pillar", "desk", "gifts", "kids", "wall", "label"] },
+];
+export const PALETTE: LayoutKind[] = PALETTE_GROUPS.flatMap((g) => g.kinds);
+
+/** common sizes per kind (metres), offered in the editor's size panel */
+export const SIZE_PRESETS: Partial<Record<LayoutKind, { label: string; w: number; h: number; seats?: number }[]>> = {
+  mandap: [{ label: "4 × 4 m", w: 4, h: 4 }, { label: "5 × 5 m", w: 5, h: 5 }, { label: "6 × 6 m", w: 6, h: 6 }, { label: "8 × 8 m", w: 8, h: 8 }],
+  stage: [{ label: "6 × 3 m", w: 6, h: 3 }, { label: "8 × 4 m", w: 8, h: 4 }, { label: "10 × 5 m", w: 10, h: 5 }, { label: "12 × 6 m", w: 12, h: 6 }],
+  dance: [{ label: "5 × 5 m", w: 5, h: 5 }, { label: "6 × 6 m", w: 6, h: 6 }, { label: "8 × 8 m", w: 8, h: 8 }],
+  aisle: [{ label: "1.2 × 8 m", w: 1.2, h: 8 }, { label: "1.5 × 10 m", w: 1.5, h: 10 }, { label: "2 × 12 m", w: 2, h: 12 }, { label: "2 × 16 m", w: 2, h: 16 }],
+  round: [{ label: "Ø 1.5 m · 8", w: 1.5, h: 1.5, seats: 8 }, { label: "Ø 1.8 m · 10", w: 1.8, h: 1.8, seats: 10 }, { label: "Ø 2.1 m · 12", w: 2.1, h: 2.1, seats: 12 }],
+  rect: [{ label: "1.8 × 0.75 m · 6", w: 1.8, h: 0.75, seats: 6 }, { label: "2.4 × 0.9 m · 8", w: 2.4, h: 0.9, seats: 8 }, { label: "3 × 0.9 m · 10", w: 3, h: 0.9, seats: 10 }],
+  row: [{ label: "6 chairs", w: 3, h: 0.6, seats: 6 }, { label: "10 chairs", w: 5, h: 0.6, seats: 10 }, { label: "16 chairs", w: 8, h: 0.6, seats: 16 }],
+  screen: [{ label: "3 × 0.3 m", w: 3, h: 0.3 }, { label: "4 × 0.3 m", w: 4, h: 0.3 }, { label: "6 × 0.3 m", w: 6, h: 0.3 }],
+  kids: [{ label: "4 × 4 m", w: 4, h: 4 }, { label: "5 × 5 m", w: 5, h: 5 }, { label: "6 × 6 m", w: 6, h: 6 }],
+};
 
 export const isTable = (it: Pick<LayoutItem, "kind">) => it.kind === "round" || it.kind === "rect" || it.kind === "row";
 export const snap = (n: number, step = GRID) => Math.round(n / step) * step;
@@ -97,13 +124,18 @@ export function overlaps(a: LayoutItem, b: LayoutItem): boolean {
   return true;
 }
 
-/** ids of items that overlap another (labels and walls are allowed to cross things) */
+/**
+ * ids of items that overlap another. Labels and walls may cross things, and an aisle runner is a floor covering, so it
+ * only clashes with seating standing on it.
+ */
 export function clashes(items: LayoutItem[]): Set<string> {
   const solid = items.filter((i) => i.kind !== "label" && i.kind !== "wall");
   const out = new Set<string>();
+  const floor = (i: LayoutItem) => i.kind === "aisle";
   for (let i = 0; i < solid.length; i++)
     for (let j = i + 1; j < solid.length; j++)
-      if (overlaps(solid[i], solid[j])) {
+      if ((floor(solid[i]) || floor(solid[j])) && !isTable(floor(solid[i]) ? solid[j] : solid[i])) continue;
+      else if (overlaps(solid[i], solid[j])) {
         out.add(solid[i].id);
         out.add(solid[j].id);
       }
@@ -195,6 +227,9 @@ export function starterLayout(kind: Starter, guests: number): VenueLayout {
       add("row", w / 2 - 3.5 - 0.25, y, { seats: perRow, label: `Row ${r + 1} L` });
       add("row", w / 2 + 3.5 + 0.25, y, { seats: perRow, label: `Row ${r + 1} R` });
     }
+    // a runner down the middle, from the mandap to the back row
+    const aisleEnd = 9 + (rows - 1) * 1.1 + 0.6;
+    add("aisle", w / 2, (7.2 + aisleEnd) / 2, { w: 1.5, h: snap(aisleEnd - 7.2), label: "Aisle" });
     add("entrance", w / 2, h - 0.5);
     return { w: snap(w), h: snap(h), items };
   }

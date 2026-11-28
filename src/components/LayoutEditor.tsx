@@ -4,22 +4,25 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState, type PointerEvent as RPointerEvent } from "react";
 import type { LayoutItem, LayoutKind, Proposal, VenueLayout } from "../types";
 import { useConfig } from "../config/context";
-import { GRID, ITEMS_MAX, KINDS, PALETTE, ROOM_MAX, ROOM_MIN, SEATS_MAX, STARTERS, arrayItems, clampToRoom, clashes, cloneItems, emptyLayout, isTable, layoutCapacity, newItem, renumberTables, resizeItem, snap, starterLayout } from "../lib/layout";
+import { GRID, ITEMS_MAX, KINDS, PALETTE_GROUPS, ROOM_MAX, SIZE_PRESETS, ROOM_MIN, SEATS_MAX, STARTERS, arrayItems, clampToRoom, clashes, cloneItems, emptyLayout, isTable, layoutCapacity, newItem, renumberTables, resizeItem, snap, starterLayout } from "../lib/layout";
 import { safeFilePart } from "../lib/format";
 import { usePlanView } from "./layout/planView";
 import { confirmedHeadcount } from "../lib/guestList";
 import { venueCapacity } from "../lib/guests";
 import { removeTemplate, saveTemplate, templatesFor } from "../state/layouts";
 import type { CanvasHandle, MenuRequest } from "./layout/PlanCanvas";
+import type { TutorialEvent } from "../lib/planTutorial";
+import { fitSeats, setSeatsFor } from "../lib/inventory";
+import CountsPanel from "./layout/CountsPanel";
 
 const PlanCanvas = lazy(() => import("./layout/PlanCanvas"));
 
 const r2 = (n: number) => Math.round(n * 100) / 100;
 const HISTORY = 80;
 
-export default function LayoutEditor({ p, fnId, onSave }: { p: Proposal; fnId: string; onSave: (l: VenueLayout | undefined) => void }) {
+export default function LayoutEditor({ p, fnId, onSave, onEvent }: { p: Proposal; fnId: string; onSave: (l: VenueLayout | undefined) => void; onEvent?: (e: TutorialEvent) => void }) {
   const saved = p.layouts?.[fnId];
-  return saved ? <Editor key={fnId} initial={saved} p={p} onSave={onSave} /> : <Start p={p} onPick={onSave} />;
+  return saved ? <Editor key={fnId} initial={saved} p={p} onSave={onSave} onEvent={onEvent} /> : <Start p={p} onPick={onSave} />;
 }
 
 /** No plan yet: pick a starter sized for the guests, a saved venue plan, or an empty room. */
@@ -61,8 +64,11 @@ function Start({ p, onPick }: { p: Proposal; onPick: (l: VenueLayout) => void })
 
 type Menu = MenuRequest & { left: number; top: number };
 
-function Editor({ initial, p, onSave }: { initial: VenueLayout; p: Proposal; onSave: (l: VenueLayout | undefined) => void }) {
-  const { venues } = useConfig();
+function Editor({ initial, p, onSave, onEvent }: { initial: VenueLayout; p: Proposal; onSave: (l: VenueLayout | undefined) => void; onEvent?: (e: TutorialEvent) => void }) {
+  const { venues, brand } = useConfig();
+  const emit = (e: TutorialEvent) => onEvent?.(e);
+  const [pop, setPop] = useState<"tables" | "inventory" | null>(null);
+  const [bulk, setBulk] = useState({ seats: 8, guests: 0, kind: "round" as "round" | "rect" | "all" });
   const [layout, setLayout] = useState(initial);
   const [sel, setSel] = useState<string[]>([]);
   const [past, setPast] = useState<VenueLayout[]>([]);
@@ -75,6 +81,7 @@ function Editor({ initial, p, onSave }: { initial: VenueLayout; p: Proposal; onS
   const [tool, setTool] = useState<"select" | "measure">("select");
   const [arrayOpen, setArrayOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [find, setFind] = useState("");
   const canvas = useRef<CanvasHandle>(null);
   const wrap = useRef<HTMLDivElement>(null);
   const latest = useRef(layout);
@@ -91,6 +98,7 @@ function Editor({ initial, p, onSave }: { initial: VenueLayout; p: Proposal; onS
   };
   const undo = () => {
     if (!past.length) return;
+    emit("undo");
     setFuture((f) => [layout, ...f]);
     const prev = past[past.length - 1];
     setPast((h) => h.slice(0, -1));
@@ -109,6 +117,11 @@ function Editor({ initial, p, onSave }: { initial: VenueLayout; p: Proposal; onS
   const patchItems = (ids: string[], fn: (it: LayoutItem) => LayoutItem) => setItems(layout.items.map((it) => (ids.includes(it.id) ? clampToRoom(fn(it), layout) : it)));
 
   const selected = layout.items.filter((i) => sel.includes(i.id));
+  // however several got selected (box, Shift-click, Ctrl+A, the menu), the tutorial counts it
+  const many = sel.length > 1;
+  useEffect(() => {
+    if (many) emit("multi");
+  }, [many]);
   const one = selected.length === 1 ? selected[0] : null;
   const movable = sel.filter((id) => !layout.items.find((i) => i.id === id)?.locked);
   const clash = useMemo(() => clashes(layout.items), [layout.items]);
@@ -122,6 +135,7 @@ function Editor({ initial, p, onSave }: { initial: VenueLayout; p: Proposal; onS
     const it = clampToRoom(newItem(kind, { x: Math.min(Math.max(c.x, 0.5), layout.w - 0.5), y: Math.min(Math.max(c.y, 0.5), layout.h - 0.5) }, layout.items), layout);
     setItems([...layout.items, it]);
     setSel([it.id]);
+    emit(`add:${kind}`);
   };
   const remove = (ids = sel) => {
     if (!ids.length) return;
@@ -142,7 +156,26 @@ function Editor({ initial, p, onSave }: { initial: VenueLayout; p: Proposal; onS
   const duplicate = (ids = sel) => paste(layout.items.filter((i) => ids.includes(i.id)));
   const nudge = (dx: number, dy: number) => patchItems(movable, (it) => ({ ...it, x: r2(it.x + dx), y: r2(it.y + dy) }));
   const rotateBy = (d: number, ids = movable) => patchItems(ids, (it) => ({ ...it, rot: (((it.rot + d) % 360) + 360) % 360 }));
-  const setSeats = (it: LayoutItem, n: number) => patchItems([it.id], (x) => ({ ...x, seats: Math.max(1, Math.min(SEATS_MAX[x.kind] ?? 24, n)) }));
+  const setSeats = (it: LayoutItem, n: number) => {
+    patchItems([it.id], (x) => ({ ...x, seats: Math.max(1, Math.min(SEATS_MAX[x.kind] ?? 24, n)) }));
+    emit("seats");
+  };
+  // chairs for many tables at once: the selection, or every table of a kind
+  const bulkIds = (kind: "round" | "rect" | "all") =>
+    (sel.length > 1 ? selected : layout.items).filter((i) => isTable(i) && !i.locked && (kind === "all" || i.kind === kind)).map((i) => i.id);
+  const applySeats = (ids: string[], n: number) => {
+    if (!ids.length) return setNote("No tables to change.");
+    setItems(setSeatsFor(layout.items, ids, n));
+    setNote(`${ids.length} ${ids.length === 1 ? "item" : "items"} set to ${n} seats.`);
+    emit("bulkSeats");
+  };
+  const seatGuests = (ids: string[], n: number) => {
+    if (!ids.length) return setNote("No tables to change.");
+    const r = fitSeats(layout.items, ids, n);
+    setItems(r.items);
+    setNote(r.short ? `${r.short} guests don't fit: add tables or use bigger ones.` : `${n} seats spread over ${ids.length} tables.`);
+    emit("bulkSeats");
+  };
   const toggleLock = (ids = sel) => {
     const lock = layout.items.some((i) => ids.includes(i.id) && !i.locked);
     setItems(layout.items.map((i) => (ids.includes(i.id) ? { ...i, locked: lock || undefined } : i)));
@@ -194,6 +227,12 @@ function Editor({ initial, p, onSave }: { initial: VenueLayout; p: Proposal; onS
     const prev = before.current ?? latest.current;
     before.current = null;
     commit({ ...latest.current, items }, prev);
+    // tell the tutorial what kind of change it was
+    const was = new Map(prev.items.map((i) => [i.id, i]));
+    const changed = items.filter((i) => was.get(i.id) !== i && was.has(i.id));
+    if (changed.some((i) => was.get(i.id)!.w !== i.w || was.get(i.id)!.h !== i.h)) emit("resize");
+    else if (changed.some((i) => was.get(i.id)!.rot !== i.rot)) emit("rotate");
+    else if (changed.some((i) => was.get(i.id)!.x !== i.x || was.get(i.id)!.y !== i.y)) emit("move");
   };
 
   // palette: click adds in the middle of the view; drag drops it where you let go
@@ -243,7 +282,7 @@ function Editor({ initial, p, onSave }: { initial: VenueLayout; p: Proposal; onS
     <div ref={wrap} className="relative grid gap-4 lg:grid-cols-[minmax(0,1fr)_280px]" onKeyDown={onKey}>
       <div className="min-w-0">
         <div className="mb-2 flex flex-wrap items-center gap-1.5" role="toolbar" aria-label="Floor plan tools">
-          <ToolBtn label="Undo (Ctrl+Z)" disabled={!past.length} onClick={undo}>↶</ToolBtn>
+          <span data-tutorial="undo"><ToolBtn label="Undo (Ctrl+Z)" disabled={!past.length} onClick={undo}>↶</ToolBtn></span>
           <ToolBtn label="Redo (Ctrl+Y)" disabled={!future.length} onClick={redo}>↷</ToolBtn>
           <span className="mx-1 h-6 w-px bg-line" aria-hidden="true" />
           <ToolBtn label="Zoom out" onClick={() => canvas.current?.zoomBy(0.8)}>−</ToolBtn>
@@ -258,6 +297,8 @@ function Editor({ initial, p, onSave }: { initial: VenueLayout; p: Proposal; onS
           <span className="mx-1 h-6 w-px bg-line" aria-hidden="true" />
           <ToolBtn label="Add a grid of tables" onClick={() => setArrayOpen(true)}>▦ Grid of tables</ToolBtn>
           <ToolBtn label="Number the tables left to right, top to bottom" onClick={() => setItems(renumberTables(layout.items))}>1·2·3 Renumber</ToolBtn>
+          <span data-tutorial="bulk-seats"><ToolBtn label="Set chairs for many tables" pressed={pop === "tables"} onClick={() => setPop(pop === "tables" ? null : "tables")}>Tables ▾</ToolBtn></span>
+          <span data-tutorial="inventory"><ToolBtn label="Inventory for the vendor" pressed={pop === "inventory"} onClick={() => setPop(pop === "inventory" ? null : "inventory")}>Inventory ▾</ToolBtn></span>
           <ToolBtn label="Download the plan as an image" disabled={saving} onClick={async () => {
             setSaving(true);
             try {
@@ -272,7 +313,52 @@ function Editor({ initial, p, onSave }: { initial: VenueLayout; p: Proposal; onS
           }}>{saving ? "Saving…" : "⤓ Image"}</ToolBtn>
           <span className="ml-auto text-xs text-stone" aria-live="polite">{layout.items.length} items · {capacity} seats{clash.size ? ` · ${clash.size} overlapping` : ""}</span>
         </div>
-        <div tabIndex={0} className="rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-gold">
+        {pop === "tables" && (
+          <div data-plan-menu className="mb-2 grid gap-3 rounded-md border border-solid border-line bg-card p-3 text-sm sm:grid-cols-2">
+            <div className="grid gap-2">
+              <p className="m-0 text-xs text-ink-2">{sel.length > 1 ? `The ${selected.length} selected items` : "Every table of a kind"}</p>
+              <div className="flex flex-wrap items-center gap-2">
+                <select className="rounded-sm border border-line bg-card px-2 py-1.5" aria-label="Which tables" value={bulk.kind} onChange={(e) => setBulk({ ...bulk, kind: e.target.value as typeof bulk.kind })}>
+                  <option value="round">Round tables</option>
+                  <option value="rect">Long tables</option>
+                  <option value="all">All tables and rows</option>
+                </select>
+                <span className="text-ink-2">to</span>
+                <input className="w-16 rounded-sm border border-line bg-card px-2 py-1.5" type="number" min={1} max={40} aria-label="Seats each" value={bulk.seats} onChange={(e) => setBulk({ ...bulk, seats: Math.max(1, Math.round(Number(e.target.value) || 1)) })} />
+                <span className="text-ink-2">seats</span>
+                <button type="button" className="btn-primary btn-sm" onClick={() => applySeats(bulkIds(bulk.kind), bulk.seats)}>Set</button>
+              </div>
+            </div>
+            <div className="grid gap-2">
+              <p className="m-0 text-xs text-ink-2">Seat a number of guests across those tables</p>
+              <div className="flex flex-wrap items-center gap-2">
+                <input className="w-20 rounded-sm border border-line bg-card px-2 py-1.5" type="number" min={1} aria-label="Guests" placeholder={String(Math.max(coming, p.client.guests ?? 0) || 100)} value={bulk.guests || ""} onChange={(e) => setBulk({ ...bulk, guests: Math.max(0, Math.round(Number(e.target.value) || 0)) })} />
+                <span className="text-ink-2">guests</span>
+                <button type="button" className="btn-ghost btn-sm" onClick={() => seatGuests(bulkIds(bulk.kind), bulk.guests || Math.max(coming, p.client.guests ?? 0) || 100)}>Spread seats</button>
+              </div>
+            </div>
+          </div>
+        )}
+        {pop === "inventory" && (
+          <div data-plan-menu className="mb-2 flex flex-wrap items-center gap-2 rounded-md border border-solid border-line bg-card p-3 text-sm">
+            <span className="mr-auto text-ink-2">Chairs, tables, linens, centrepieces and décor with sizes, for the rental vendor.</span>
+            {(["pdf", "xlsx"] as const).map((k) => (
+              <button key={k} type="button" className="btn-ghost btn-sm" disabled={saving} onClick={async () => {
+                setSaving(true);
+                try {
+                  const { downloadInventory } = await import("../lib/exportInventory");
+                  await downloadInventory(k, p.client.name || "Floor plan", p.client.venue, layout, brand);
+                  emit("inventory");
+                } catch (e) {
+                  setNote((e as Error).message);
+                } finally {
+                  setSaving(false);
+                }
+              }}>{k === "pdf" ? "⤓ PDF" : "⤓ Excel"}</button>
+            ))}
+          </div>
+        )}
+        <div tabIndex={0} data-tutorial="canvas" className="rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-gold">
           <Suspense fallback={<div className="grid h-80 place-items-center rounded-lg border border-line bg-paper-2 text-sm text-stone">Opening the floor plan…</div>}>
             <PlanCanvas
               ref={canvas}
@@ -313,20 +399,32 @@ function Editor({ initial, p, onSave }: { initial: VenueLayout; p: Proposal; onS
       <aside className="grid content-start gap-4">
         <section className="rounded-lg border border-line bg-card p-4">
           <h3 className="m-0 mb-1 text-sm font-medium text-ink-2">Add</h3>
-          <p className="m-0 mb-3 text-xs text-stone">Click, or drag onto the plan.</p>
-          <div className="grid grid-cols-2 gap-1.5">
-            {PALETTE.map((k) => (
-              <button key={k} type="button" className="flex touch-none items-center gap-2 rounded-sm border border-solid border-line bg-paper px-2 py-2 text-left text-xs text-ink hover:border-gold"
-                onPointerDown={(e) => paletteDown(e, k)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); addAt(k); } }}>
-                <KindIcon kind={k} />
-                {KINDS[k].label}
-              </button>
-            ))}
+          <p className="m-0 mb-2 text-xs text-stone">Click, or drag onto the plan.</p>
+          <input className="search mb-2" type="search" placeholder="Find an item" aria-label="Find an item to add" value={find} onChange={(e) => setFind(e.target.value)} />
+          <div className="grid gap-3" data-tutorial="palette">
+            {PALETTE_GROUPS.map((g) => {
+              const kinds = g.kinds.filter((k) => !find.trim() || KINDS[k].label.toLowerCase().includes(find.trim().toLowerCase()));
+              if (!kinds.length) return null;
+              return (
+                <div key={g.title}>
+                  <p className="m-0 mb-1 text-[11px] font-medium text-stone">{g.title}</p>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {kinds.map((k) => (
+                      <button key={k} type="button" data-tutorial={`add-${k}`} className="flex touch-none items-center gap-2 rounded-sm border border-solid border-line bg-paper px-2 py-2 text-left text-xs text-ink hover:border-gold"
+                        onPointerDown={(e) => paletteDown(e, k)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); addAt(k); } }}>
+                        <KindIcon kind={k} />
+                        {KINDS[k].label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </section>
 
         {one ? (
-          <Inspector it={one} onChange={(patch) => patchItems([one.id], (it) => (patch.w !== undefined || patch.h !== undefined ? { ...resizeItem({ ...it, ...patch }, patch.w ?? it.w, patch.h ?? it.h, false), ...("seats" in patch ? { seats: patch.seats } : {}) } : { ...it, ...patch }))}
+          <Inspector it={one} onPreset={(s) => { patchItems([one.id], (it) => ({ ...it, w: s.w, h: s.h, ...(s.seats ? { seats: s.seats } : {}) })); emit("preset"); }} onChange={(patch) => patchItems([one.id], (it) => (patch.w !== undefined || patch.h !== undefined ? { ...resizeItem({ ...it, ...patch }, patch.w ?? it.w, patch.h ?? it.h, false), ...("seats" in patch ? { seats: patch.seats } : {}) } : { ...it, ...patch }))}
             onDuplicate={() => duplicate()} onDelete={() => remove()} onLock={() => toggleLock()} />
         ) : selected.length > 1 ? (
           <section className="rounded-lg border border-line bg-card p-4">
@@ -339,6 +437,13 @@ function Editor({ initial, p, onSave }: { initial: VenueLayout; p: Proposal; onS
               <button type="button" className="btn-ghost btn-sm" disabled={selected.length < 3} onClick={distribute}>Space evenly</button>
               <button type="button" className="btn-ghost btn-sm" onClick={() => duplicate()}>Duplicate</button>
             </div>
+            {selected.some(isTable) && (
+              <div className="mt-3 flex items-center gap-2 text-sm">
+                <span className="text-ink-2">Seats each</span>
+                <input className="w-16 rounded-sm border border-line bg-card px-2 py-1" type="number" min={1} max={40} aria-label="Seats each for the selected tables" value={bulk.seats} onChange={(e) => setBulk({ ...bulk, seats: Math.max(1, Math.round(Number(e.target.value) || 1)) })} />
+                <button type="button" className="btn-ghost btn-sm" onClick={() => applySeats(selected.filter((i) => isTable(i) && !i.locked).map((i) => i.id), bulk.seats)}>Apply</button>
+              </div>
+            )}
             <button type="button" className="link-btn link-danger mt-3" onClick={() => remove()}>Remove {selected.length} items</button>
           </section>
         ) : (
@@ -357,6 +462,8 @@ function Editor({ initial, p, onSave }: { initial: VenueLayout; p: Proposal; onS
             {coming > capacity && <p className="m-0 mt-2 text-xs text-danger-ink">{coming - capacity} more seats needed for everyone who said yes.</p>}
           </section>
         )}
+
+        <CountsPanel layout={layout} onOpen={() => emit("inventory")} />
 
         <section className="rounded-lg border border-line bg-card p-4">
           <h3 className="m-0 mb-2 text-sm font-medium text-ink-2">Plan</h3>
@@ -450,7 +557,7 @@ function SelectionBar({ box, items, onSeats, onRotate, onDuplicate, onLock, onDe
   const top = box.top - 52 < 4 ? box.bottom + 10 : box.top - 52;
   const btn = "grid h-8 min-w-8 place-items-center rounded-sm border-0 bg-transparent px-2 text-sm text-ink hover:bg-gold-soft disabled:opacity-40";
   return (
-    <div className="absolute z-20 flex -translate-x-1/2 items-center gap-0.5 rounded-md border border-solid border-line bg-card p-1" style={{ left: Math.max(120, (box.left + box.right) / 2), top }}
+    <div data-tutorial="selection-bar" className="absolute z-20 flex -translate-x-1/2 items-center gap-0.5 rounded-md border border-solid border-line bg-card p-1" style={{ left: Math.max(120, (box.left + box.right) / 2), top }}
       onPointerDown={(e) => e.stopPropagation()} role="toolbar" aria-label="Selected item">
       {one && isTable(one) && (
         <>
@@ -498,6 +605,10 @@ function KindIcon({ kind }: { kind: LayoutKind }) {
         [2.5, 6.8, 11.2, 15.5].map((x) => <circle key={x} cx={x} cy={9} r={1.8} fill="var(--taupe)" />)
       ) : kind === "label" ? (
         <text x={9} y={13} textAnchor="middle" fontSize={12} fill="var(--ink)" fontFamily="serif">T</text>
+      ) : k.round ? (
+        <circle cx={9} cy={9} r={6} fill="var(--gold-soft)" stroke="var(--taupe)" strokeWidth={1.2} />
+      ) : kind === "aisle" ? (
+        <rect x={6} y={1} width={6} height={16} rx={1} fill="var(--gold-soft)" stroke="var(--gold)" strokeWidth={1.2} />
       ) : (
         <rect x={k.w >= k.h * 2 ? 1 : 3} y={k.w >= k.h * 2 ? 6 : 3} width={k.w >= k.h * 2 ? 16 : 12} height={k.w >= k.h * 2 ? 6 : 12} rx={1.5}
           fill="var(--gold-soft)" stroke="var(--taupe)" strokeWidth={1.2} strokeDasharray={kind === "entrance" ? "2 1.5" : undefined} />
@@ -515,8 +626,9 @@ function ToolBtn({ label, children, onClick, disabled, pressed }: { label: strin
   );
 }
 
-function Inspector({ it, onChange, onDuplicate, onDelete, onLock }: { it: LayoutItem; onChange: (p: Partial<LayoutItem>) => void; onDuplicate: () => void; onDelete: () => void; onLock: () => void }) {
+function Inspector({ it, onChange, onPreset, onDuplicate, onDelete, onLock }: { it: LayoutItem; onChange: (p: Partial<LayoutItem>) => void; onPreset: (s: { w: number; h: number; seats?: number }) => void; onDuplicate: () => void; onDelete: () => void; onLock: () => void }) {
   const k = KINDS[it.kind];
+  const presets = SIZE_PRESETS[it.kind] ?? [];
   return (
     <section className="rounded-lg border border-line bg-card p-4">
       <h3 className="m-0 mb-3 text-sm font-medium text-ink-2">{k.label}{it.locked ? " · locked" : ""}</h3>
@@ -528,8 +640,24 @@ function Inspector({ it, onChange, onDuplicate, onDelete, onLock }: { it: Layout
         {isTable(it) && <NumField label="Seats" value={it.seats ?? 0} min={1} max={SEATS_MAX[it.kind] ?? 24} step={1} onCommit={(n) => onChange({ seats: Math.round(n) })} />}
         <NumField label="Rotation (°)" value={it.rot} min={0} max={359} step={15} onCommit={(n) => onChange({ rot: ((Math.round(n) % 360) + 360) % 360 })} />
         <NumField label={k.round ? "Diameter (m)" : "Width (m)"} value={it.w} min={0.4} max={60} step={GRID} onCommit={(n) => onChange(k.round ? { w: n, h: n } : { w: n })} />
-        {!k.round && <NumField label="Depth (m)" value={it.h} min={0.1} max={60} step={GRID} onCommit={(n) => onChange({ h: n })} />}
+        {!k.round && <NumField label="Length (m)" value={it.h} min={0.1} max={60} step={GRID} onCommit={(n) => onChange({ h: n })} />}
       </div>
+      {presets.length > 0 && (
+        <div className="mt-3" data-tutorial="presets">
+          <p className="m-0 mb-1 text-xs text-ink-2">Common sizes</p>
+          <div className="flex flex-wrap gap-1.5">
+            {presets.map((s) => {
+              const on = Math.abs(s.w - it.w) < 0.01 && Math.abs(s.h - it.h) < 0.01;
+              return (
+                <button key={s.label} type="button" aria-pressed={on} onClick={() => onPreset(s)}
+                  className={`rounded-sm border border-solid px-2 py-1 text-xs ${on ? "border-gold bg-gold-soft text-ink" : "border-line bg-paper text-ink-2 hover:border-gold"}`}>
+                  {s.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
       <div className="mt-3 flex flex-wrap items-center gap-2">
         <button type="button" className="btn-ghost btn-sm" onClick={onDuplicate}>Duplicate</button>
         <button type="button" className="btn-ghost btn-sm" onClick={onLock}>{it.locked ? "Unlock" : "Lock"}</button>

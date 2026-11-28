@@ -22,7 +22,8 @@ Starters are sized for your guests (the confirmed headcount, or the proposal's g
 | Move | Drag it. It snaps to 25 cm and **lines up with its neighbours** (gold guide lines show when edges or centres match); hold Alt to place it freely. Or use the arrow keys (Shift for 1 m steps) |
 | Resize | Pull any of the **eight handles**. Round tables stay round. The size and seats show next to the pointer, and **the chairs follow the table's size** (a smaller table loses chairs) |
 | Rotate | Drag the knob above the table (snaps every 15°), press R, or ⟳ on the toolbar for 90° |
-| Change seats | **−** and **+** on the toolbar above the selected table, the + and − keys, or the Seats box in the panel |
+| Change seats | **−** and **+** on the toolbar above the selected table, the + and − keys, or the Seats box in the panel. For many tables at once: select them and use **Seats each … Apply**, or **Tables ▾** to set every round (or long) table to the same number, or spread a number of guests across them |
+| Exact sizes | Select an item: the panel shows its width and length (or diameter) in metres, and **Common sizes** such as mandap 4 × 4, 5 × 5, 6 × 6 or 8 × 8 m, stage 8 × 4 m, aisle 1.5 × 10 m, or round tables Ø1.5 m (8), Ø1.8 m (10), Ø2.1 m (12) |
 | Lock in place | 🔒 on the toolbar or *Lock in place* in the right-click menu: a locked item can't be moved, resized or rotated |
 | Copy, paste, duplicate | Ctrl+C / Ctrl+V (or right-click → *Paste here*), Ctrl+D, ⧉ on the toolbar |
 | Front / back | Right-click → *Bring to front* / *Send to back* |
@@ -32,6 +33,21 @@ Starters are sized for your guests (the confirmed headcount, or the proposal's g
 | Pan and zoom | Drag the empty floor, scroll or pinch, or use − + and **Fit** |
 
 On a phone, press and hold an item for the menu; the handles are bigger for fingers.
+
+### What you can add
+The **Add** panel is grouped (type in **Find an item** to filter):
+- **Seating:** round tables, long tables, chair rows, sofas / lounge seating
+- **Ceremony & stage:** mandap, stage, **aisle / runner**, LED wall / screen, dance floor, DJ / sound
+- **Food & bar:** buffet counter, bar / juice counter
+- **Décor & venue:** entrance, photo booth, flower stand, pillar, welcome desk, gifts table, kids' area, wall / divider, text label
+
+The *Mandap with chair rows* starter now includes a centre aisle. An aisle is a floor covering, so it only counts as overlapping when a table or chair row stands on it.
+
+### Counts and inventory
+The **Counts** panel (right-hand side) totals tables by size and seats, chairs, chair rows and every other item with its size, as you work. **Inventory ▾** downloads the list for the rental vendor as PDF or Excel: chairs, tables by size, tablecloths to the floor, runners, centrepieces and décor with sizes.
+
+### Tutorial
+**🎓 Tutorial** (top of the Layout tab) walks you through the editor step by step on the plan you're in; each step ticks off when you do it. For a practice plan, use **Start the tutorial** in [Floor Plans](16-floor-plans.md).
 
 ### Seeing it clearly
 | Tool | What it does |
