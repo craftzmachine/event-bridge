@@ -93,7 +93,7 @@ export default function Venues({ onStartProposal }: { onStartProposal: (v: Venue
 
   return (
     <div className="venues-page">
-      <PageHeader crumbs={[{ label: "Dashboard", href: "#/dashboard" }, { label: "Venue Directory" }]} title="Hotels, resorts & venues" subtitle="Thiruvananthapuram & around" />
+      <PageHeader help="venues" crumbs={[{ label: "Dashboard", href: "#/dashboard" }, { label: "Venue Directory" }]} title="Hotels, resorts & venues" subtitle="Thiruvananthapuram & around" />
 
       <main className="venues-main">
         {dir.note && <p className="venues-note">{dir.note}</p>}

@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import HelpButton from "./help/HelpButton";
 
 export interface Crumb {
   label: string;
@@ -25,7 +26,7 @@ export function Breadcrumbs({ items }: { items: Crumb[] }) {
 }
 
 /** A page's head in the app shell: breadcrumb, title, a line about the page, and its actions on the right. */
-export default function PageHeader({ crumbs, title, subtitle, actions, children, tour }: { crumbs?: Crumb[]; title: ReactNode; subtitle?: ReactNode; actions?: ReactNode; children?: ReactNode; tour?: string }) {
+export default function PageHeader({ crumbs, title, subtitle, actions, children, tour, help }: { crumbs?: Crumb[]; title: ReactNode; subtitle?: ReactNode; actions?: ReactNode; children?: ReactNode; tour?: string; help?: string }) {
   return (
     <header className="page-head" data-tour={tour}>
       {crumbs && crumbs.length > 0 && <Breadcrumbs items={crumbs} />}
@@ -34,7 +35,12 @@ export default function PageHeader({ crumbs, title, subtitle, actions, children,
           <h1>{title}</h1>
           {subtitle && <p>{subtitle}</p>}
         </div>
-        {actions && <div className="page-head-actions">{actions}</div>}
+        {(actions || help) && (
+          <div className="page-head-actions">
+            {actions}
+            {help && <HelpButton topic={help} />}
+          </div>
+        )}
       </div>
       {children}
     </header>

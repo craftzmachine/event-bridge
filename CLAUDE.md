@@ -63,7 +63,11 @@ Photos must show the actual venue and be licensed for commercial use: CC BY, CC 
 - `#/venues` → `Venues` (the Venue Directory)
 - `#/visualize` → `Visualize` (staff sharing)
 - `#/settings` → `Settings` (lazy; company settings, linked from the top bar's gear, not an `APPS` tile)
-- `#/help`, `#/help/<topic>` → `Help` (lazy; how to use each app). Its content lives in `src/lib/help.ts` (`HELP`, `searchHelp`); app topics take their id, label, icon and href from `APPS`, and `help.test.ts` checks every `APPS` entry has one, so add a topic when adding an app and keep the steps in step with the README.
+- `#/help`, `#/help/<topic>[/<step>]` → `Help` (lazy; how to use each app): an overview of grouped topic cards, or one topic at that step (highlighted), with previous/next.
+  - **Content:** `src/lib/help.ts` (`HELP`, `ORDERED`, `GROUPS`, `searchHelp`, `searchHits`). A topic has a `group`, steps, tips, FAQs and optionally `shortcuts`, `related` topic ids and a `figure`. App topics take their id, label, icon and href from `APPS`, and `help.test.ts` checks every `APPS` entry has one and that figures and related ids exist. So add a topic (with a figure if the app has a screen, and its shortcuts) when adding an app, and keep the steps in step with the README.
+  - **Search:** `searchHits` points at the exact step, tip, question or shortcut (topic matches first) and links to `#/help/<topic>/<step>`.
+  - **Figures:** `src/components/help/figures.tsx` draws each as inline SVG wireframes in CSS variables, so they follow every theme. The gold numbered callouts match the topic's step numbers, so renumbering steps means moving callouts.
+  - **In-app help:** `TopicView` renders a topic for both the page and the in-app panel. `HelpButton` (the ? next to a page title: `PageHeader`'s `help` prop, plus the Builder's top bar, the Studio home, the Expenses head and `VenuePlan`) lazy-loads `HelpDrawer`, so the help text and drawings stay out of the main bundle. The drawer renders into `document.fullscreenElement ?? document.body`, keeps focus inside and closes on Esc. A workspace tab opens its own topic (guests, layout, questionnaires, expenses).
 - `#/view/<token>` → `ClientView` (public; the client's password gate and viewer)
 - `#/rsvp/<token>[/<code>]` → `Rsvp` (public, lazy; a guest's RSVP page)
 

@@ -55,7 +55,7 @@ export default function Guests({ list, onNew }: { list: Proposal[]; onNew: () =>
 
   return (
     <div className="ev-page">
-      <PageHeader
+      <PageHeader help="guests"
         crumbs={[{ label: "Dashboard", href: "#/dashboard" }, { label: "Guests & Seating" }]}
         title="Guests & Seating"
         subtitle={rows.length ? `${rows.length} wedding${rows.length === 1 ? "" : "s"} · ${totals.households} households on guest lists · ${totals.coming} people confirmed` : "Guest lists, RSVP links, floor plans and seating for every wedding"}

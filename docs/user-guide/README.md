@@ -39,4 +39,6 @@ Event Bridge is a workspace for wedding planners: build and send proposals, run 
 7. On site → staff record **expenses** with GPay screenshots against their **advance**.
 8. After the wedding → prepare the **handover**, have a colleague review it, and settle the advances.
 
+> In the app: every page has a **?** next to its title that opens its guide beside your work, and **Help** in the top bar has the full guide with drawings, shortcuts and search.
+
 > Screenshots: each page notes where a screenshot helps (`[Screenshot: …]`). Add them to `docs/user-guide/images/` when preparing a customer-facing copy.

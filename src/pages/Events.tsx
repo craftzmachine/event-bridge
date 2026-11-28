@@ -71,7 +71,7 @@ function Index({ list }: { list: Proposal[] }) {
   const shown = eventsFor(list, tab, today).filter((p) => matchesSearch(p, q));
   return (
     <div className="ev-page">
-      <PageHeader crumbs={[{ label: "Dashboard", href: "#/dashboard" }, { label: "Events" }]} title="Events" subtitle="Every wedding in play: accepted proposals and anything with a date." tour="events-page" />
+      <PageHeader help="events" crumbs={[{ label: "Dashboard", href: "#/dashboard" }, { label: "Events" }]} title="Events" subtitle="Every wedding in play: accepted proposals and anything with a date." tour="events-page" />
       <main className="ev-main">
         <div className="ev-filters">
           <div className="seg" role="group" aria-label="Show">
@@ -139,7 +139,7 @@ function Workspace({ p, tab, store, account, onOpen }: { p: Proposal; tab: Tab; 
 
   return (
     <div className="ev-page">
-      <PageHeader
+      <PageHeader help={tab === "guests" ? "guests" : tab === "layout" || tab === "seating" ? "layout" : tab === "questionnaires" ? "questionnaires" : tab === "expenses" ? "expenses" : "events"}
         crumbs={[{ label: "Dashboard", href: "#/dashboard" }, { label: "Events", href: "#/events" }, { label: p.client.name || "Untitled client" }]}
         title={p.client.name || "Untitled client"}
         subtitle={[proposalTitle(p, catalog) || "Occasion not set", dates.length ? formatDates(dates) : "date to be confirmed", p.client.venue].filter(Boolean).join(" · ")}

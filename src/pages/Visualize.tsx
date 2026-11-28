@@ -53,7 +53,7 @@ export default function Visualize({ onReauth }: { onReauth: () => void }) {
 
   return (
     <div className="viz-page">
-      <PageHeader crumbs={[{ label: "Dashboard", href: "#/dashboard" }, { label: "Visualize Proposal" }]} title="Share a proposal with your client" subtitle="Password-protected, view-only links" />
+      <PageHeader help="visualize" crumbs={[{ label: "Dashboard", href: "#/dashboard" }, { label: "Visualize Proposal" }]} title="Share a proposal with your client" subtitle="Password-protected, view-only links" />
 
       <main className="viz-main">
         <p className="lede">

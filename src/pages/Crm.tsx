@@ -100,7 +100,7 @@ export default function Crm({ store, account, onOpen }: { store: Store; account:
 
   return (
     <div className="ev-page">
-      <PageHeader
+      <PageHeader help="crm"
         crumbs={[{ label: "Dashboard", href: "#/dashboard" }, { label: "CRM" }]}
         tour="crm"
         title="Enquiries & clients"

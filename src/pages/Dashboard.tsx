@@ -136,7 +136,7 @@ export default function Dashboard({ list, account, onOpen, onNew }: { list: Prop
 
   return (
     <div className="dash">
-      <PageHeader
+      <PageHeader help="dashboard"
         title={greeting(account, now)}
         subtitle={`${now.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" })} · ${list.length} proposal${list.length === 1 ? "" : "s"} on this device`}
         actions={

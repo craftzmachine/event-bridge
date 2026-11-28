@@ -304,7 +304,7 @@ export const HELP: HelpTopic[] = [
     id: "layout",
     title: "Venue layout & seating",
     icon: "pin",
-    group: "more",
+    group: "apps",
     href: "#/events",
     figure: "layout",
     related: ["plans", "guests", "shortcuts"],
@@ -470,4 +470,51 @@ export function searchHelp(topics: HelpTopic[], query: string): HelpTopic[] {
     else if (hasAll(textOf([main, ...faqs.map((f) => `${f.q} ${f.a}`)]), terms)) out.push(t);
   }
   return out;
+}
+
+export type HitKind = "topic" | "step" | "tip" | "faq" | "shortcut";
+export interface HelpHit {
+  topic: HelpTopic;
+  kind: HitKind;
+  /** the step, tip, question or shortcut's position in its list (0 for the topic itself) */
+  index: number;
+  text: string;
+  score: number;
+}
+
+const WEIGHT: Record<HitKind, number> = { topic: 4, step: 3, faq: 3, tip: 2, shortcut: 2 };
+
+/**
+ * Search results that point at the exact step, tip, question or shortcut, for jumping straight there. An item
+ * matches when it holds every word, or when it and its topic's title do together (ranked lower). Topics whose
+ * title or summary match come first, then steps and questions, then tips and shortcuts.
+ */
+export function searchHits(topics: HelpTopic[], query: string, limit = 40): HelpHit[] {
+  const terms = query.toLowerCase().split(/\s+/).filter(Boolean);
+  if (!terms.length) return [];
+  const hits: HelpHit[] = [];
+  for (const t of topics) {
+    const title = t.title.toLowerCase();
+    const add = (kind: HitKind, index: number, text: string) => {
+      const own = text.toLowerCase();
+      if (hasAll(own, terms)) hits.push({ topic: t, kind, index, text, score: WEIGHT[kind] * 2 });
+      else if (hasAll(`${title} ${own}`, terms)) hits.push({ topic: t, kind, index, text, score: WEIGHT[kind] });
+    };
+    if (hasAll(textOf([t.title, t.summary]), terms)) hits.push({ topic: t, kind: "topic", index: 0, text: t.summary, score: WEIGHT.topic * 3 });
+    t.steps.forEach((s, i) => add("step", i, s));
+    (t.faqs ?? []).forEach((f, i) => add("faq", i, `${f.q} ${f.a}`));
+    (t.tips ?? []).forEach((s, i) => add("tip", i, s));
+    (t.shortcuts ?? []).forEach((s, i) => add("shortcut", i, `${s.keys}: ${s.does}`));
+  }
+  // stable: equal scores keep the topics' order
+  return hits.map((h, i) => ({ h, i })).sort((a, b) => b.h.score - a.h.score || a.i - b.i).slice(0, limit).map((x) => x.h);
+}
+
+/** every topic in reading order: Getting started, then the apps, then the rest */
+export const ORDERED: HelpTopic[] = GROUPS.flatMap((g) => HELP.filter((t) => t.group === g.id));
+
+/** the topic, then the next and previous ones in reading order */
+export function neighbours(topics: HelpTopic[], id: string) {
+  const i = topics.findIndex((t) => t.id === id);
+  return { topic: topics[i], prev: i > 0 ? topics[i - 1] : undefined, next: i >= 0 && i < topics.length - 1 ? topics[i + 1] : undefined };
 }
