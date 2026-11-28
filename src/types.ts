@@ -429,6 +429,8 @@ export interface LayoutItem {
   label?: string;
   /** can't be moved, resized or rotated until unlocked */
   locked?: boolean;
+  /** hidden in the editor (Layers panel); still counted and exported */
+  hidden?: boolean;
 }
 
 export interface VenueLayout {
@@ -436,6 +438,23 @@ export interface VenueLayout {
   w: number;
   h: number;
   items: LayoutItem[];
+  /** a venue drawing under the plan, to trace over (the image is in IndexedDB on this device) */
+  backdrop?: Backdrop;
+}
+
+export interface Backdrop {
+  /** key of the image in the event-bridge-backdrops IndexedDB */
+  imageId: string;
+  /** top-left corner and size in room metres */
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  /** 0.1–1 */
+  opacity: number;
+  /** the file's name, to say which drawing is missing on another device */
+  name?: string;
+  hidden?: boolean;
 }
 
 export type ProposalStatus = "draft" | "sent" | "accepted" | "lost";

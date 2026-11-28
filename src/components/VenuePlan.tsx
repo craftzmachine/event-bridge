@@ -1,6 +1,6 @@
 // The workspace's Layout and Seating tabs: pick a function, then edit its floor plan or seat its guests, in 2D,
 // or look round it in 3D (a viewer; three.js loads only when 3D is opened).
-import { lazy, Suspense, useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { onTutorialEvent, startTutorial, type TutorialEvent, type TutorialState } from "../lib/planTutorial";
 import PlanTutorial, { readTutorial, writeTutorial } from "./layout/PlanTutorial";
 import { planFromWedding } from "../lib/floorPlans";
@@ -58,9 +58,54 @@ export default function VenuePlan({ p, mode, onUpdate, tutorial: startOn = false
     return k ? guests.get(guestOf(k)) : undefined;
   };
 
+  // fullscreen: the browser's own where it's allowed, else the editor fills the window (iPhone)
+  const root = useRef<HTMLDivElement>(null);
+  const [full, setFull] = useState<"native" | "window" | null>(null);
+  const fullRef = useRef(full);
+  fullRef.current = full;
+  const toggleFull = async () => {
+    if (fullRef.current === "native") return void document.exitFullscreen?.().catch(() => setFull(null));
+    if (fullRef.current === "window") return setFull(null);
+    const el = root.current;
+    if (el?.requestFullscreen && document.fullscreenEnabled) {
+      // some embedded views never answer the request, so give it a moment, then fill the window instead
+      const answered = await Promise.race([el.requestFullscreen().then(() => true, () => false), new Promise<boolean>((r) => setTimeout(() => r(false), 900))]);
+      if (answered || document.fullscreenElement === el) return;
+    }
+    setFull("window");
+  };
+  useEffect(() => {
+    const change = () => setFull(document.fullscreenElement && document.fullscreenElement === root.current ? "native" : (f) => (f === "native" ? null : f));
+    const key = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement;
+      if (t?.closest?.("input, textarea, select, [contenteditable]") || e.ctrlKey || e.metaKey || e.altKey) return;
+      if (e.key === "f" || e.key === "F") {
+        e.preventDefault();
+        void toggleFull();
+      } else if (e.key === "Escape" && fullRef.current === "window") setFull(null);
+    };
+    document.addEventListener("fullscreenchange", change);
+    window.addEventListener("keydown", key);
+    return () => {
+      document.removeEventListener("fullscreenchange", change);
+      window.removeEventListener("keydown", key);
+    };
+  }, []);
+  // filling the window: keep the page behind from scrolling
+  useEffect(() => {
+    if (full !== "window") return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [full]);
+  const isFull = !!full;
+
   return (
-    <div className="grid gap-4">
+    <div ref={root} className={isFull ? "fixed inset-0 z-[70] flex flex-col gap-3 overflow-hidden bg-paper p-3 text-ink sm:p-4" : "grid gap-4"}>
       <div className="flex flex-wrap items-center gap-2">
+        {isFull && <strong className="mr-2 font-serif text-lg font-normal text-ink">{[p.client.name, fn.id ? fn.label : ""].filter(Boolean).join(" · ") || "Floor plan"}</strong>}
         {fns.length > 1 && (
           <div className="flex flex-wrap gap-1" role="tablist" aria-label="Function">
             {fns.map((f) => (
@@ -100,20 +145,26 @@ export default function VenuePlan({ p, mode, onUpdate, tutorial: startOn = false
             ))}
           </div>
         )}
+        <button type="button" className={`btn-sm ${isFull ? "btn-primary" : "btn-ghost"}${mode === "layout" ? "" : " ml-auto"}`} onClick={() => void toggleFull()}
+          title={isFull ? "Exit fullscreen (F or Esc)" : "Fullscreen (F)"} aria-pressed={isFull}>
+          {isFull ? "✕ Exit fullscreen" : "⛶ Fullscreen"}
+        </button>
       </div>
       {show3d ? (
         <Suspense fallback={<div className="grid h-80 place-items-center rounded-lg border border-line bg-paper-2 text-sm text-stone">Building the 3D view…</div>}>
-          <Plan3D key={fn.id} layout={layout} title={[p.client.name, fn.id ? fn.label : ""].filter(Boolean).join(" ")}
+          <div className={isFull ? "min-h-0 flex-1" : undefined}>
+          <Plan3D key={fn.id} full={isFull} layout={layout} title={[p.client.name, fn.id ? fn.label : ""].filter(Boolean).join(" ")}
             {...(mode === "seating"
               ? { seatTone: (it: LayoutItem, i: number) => { const g = who(it, i); return g ? SIDE_TONE[g.side] : undefined; }, seatName: (it: LayoutItem, i: number) => who(it, i)?.name }
               : {})} />
+          </div>
           <p className="m-0 text-xs text-stone">3D is for looking round. Switch to 2D to {mode === "layout" ? "move or change things" : "seat guests"}.</p>
         </Suspense>
       ) : mode === "layout" ? (
-        <LayoutEditor key={fn.id} p={p} fnId={fn.id} onSave={(l) => onUpdate((cur) => setLayout(cur, fn.id, l))} onEvent={emit} />
+        <LayoutEditor key={fn.id} p={p} fnId={fn.id} onSave={(l) => onUpdate((cur) => setLayout(cur, fn.id, l))} onEvent={emit} full={isFull} />
       ) : (
         <Suspense fallback={<p className="hint" role="status">Opening seating…</p>}>
-          <SeatingBoard key={fn.id} p={p} fnId={fn.id} onUpdate={onUpdate} />
+          <SeatingBoard key={fn.id} p={p} fnId={fn.id} onUpdate={onUpdate} full={isFull} />
         </Suspense>
       )}
       {tut && <PlanTutorial state={tut} onChange={setTutorial} onClose={() => setTutorial(null)} />}

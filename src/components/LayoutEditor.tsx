@@ -4,7 +4,7 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState, type PointerEvent as RPointerEvent } from "react";
 import type { LayoutItem, LayoutKind, Proposal, VenueLayout } from "../types";
 import { useConfig } from "../config/context";
-import { GRID, ITEMS_MAX, KINDS, PALETTE_GROUPS, ROOM_MAX, SIZE_PRESETS, ROOM_MIN, SEATS_MAX, STARTERS, arrayItems, clampToRoom, clashes, cloneItems, emptyLayout, isTable, layoutCapacity, newItem, renumberTables, resizeItem, snap, starterLayout } from "../lib/layout";
+import { GRID, ITEMS_MAX, KINDS, PALETTE_GROUPS, ROOM_MAX, SIZE_PRESETS, ROOM_MIN, SEATS_MAX, STARTERS, arrayItems, reorder as reorderItems, clampToRoom, clashes, cloneItems, emptyLayout, isTable, layoutCapacity, newItem, renumberTables, resizeItem, snap, starterLayout } from "../lib/layout";
 import { safeFilePart } from "../lib/format";
 import { usePlanView } from "./layout/planView";
 import { confirmedHeadcount } from "../lib/guestList";
@@ -14,15 +14,22 @@ import type { CanvasHandle, MenuRequest } from "./layout/PlanCanvas";
 import type { TutorialEvent } from "../lib/planTutorial";
 import { fitSeats, setSeatsFor } from "../lib/inventory";
 import CountsPanel from "./layout/CountsPanel";
+import KindIcon from "./layout/KindIcon";
+import LayersPanel from "./layout/LayersPanel";
+import ChecksPanel from "./layout/ChecksPanel";
+import { checkPlan } from "../lib/safety";
+import { loadBackdrop, saveBackdrop, useBackdropUrl } from "../state/backdrops";
+import { SCALES, fits, orientationFor, pickScale, type Orientation, type Paper } from "../lib/scalePlan";
+import { calibrate, placeBackdrop, roomForBackdrop } from "../lib/backdrop";
 
 const PlanCanvas = lazy(() => import("./layout/PlanCanvas"));
 
 const r2 = (n: number) => Math.round(n * 100) / 100;
 const HISTORY = 80;
 
-export default function LayoutEditor({ p, fnId, onSave, onEvent }: { p: Proposal; fnId: string; onSave: (l: VenueLayout | undefined) => void; onEvent?: (e: TutorialEvent) => void }) {
+export default function LayoutEditor({ p, fnId, onSave, onEvent, full = false }: { p: Proposal; fnId: string; onSave: (l: VenueLayout | undefined) => void; onEvent?: (e: TutorialEvent) => void; full?: boolean }) {
   const saved = p.layouts?.[fnId];
-  return saved ? <Editor key={fnId} initial={saved} p={p} onSave={onSave} onEvent={onEvent} /> : <Start p={p} onPick={onSave} />;
+  return saved ? <Editor key={fnId} initial={saved} p={p} onSave={onSave} onEvent={onEvent} full={full} /> : <div className={full ? "min-h-0 flex-1 overflow-auto" : undefined}><Start p={p} onPick={onSave} /></div>;
 }
 
 /** No plan yet: pick a starter sized for the guests, a saved venue plan, or an empty room. */
@@ -64,10 +71,19 @@ function Start({ p, onPick }: { p: Proposal; onPick: (l: VenueLayout) => void })
 
 type Menu = MenuRequest & { left: number; top: number };
 
-function Editor({ initial, p, onSave, onEvent }: { initial: VenueLayout; p: Proposal; onSave: (l: VenueLayout | undefined) => void; onEvent?: (e: TutorialEvent) => void }) {
+function Editor({ initial, p, onSave, onEvent, full }: { initial: VenueLayout; p: Proposal; onSave: (l: VenueLayout | undefined) => void; onEvent?: (e: TutorialEvent) => void; full: boolean }) {
+  // fullscreen on a phone: the side panels fold away behind a button
+  const [panels, setPanels] = useState(false);
+  const [layers, setLayers] = useState(false);
+  const [checks, setChecks] = useState(false);
   const { venues, brand } = useConfig();
   const emit = (e: TutorialEvent) => onEvent?.(e);
-  const [pop, setPop] = useState<"tables" | "inventory" | null>(null);
+  const [pop, setPop] = useState<"tables" | "inventory" | "background" | "print" | null>(null);
+  const [print, setPrint] = useState<{ paper: Paper; orientation: Orientation | "auto"; scale: number | "auto"; seatNumbers: boolean; backdrop: boolean }>({ paper: "A3", orientation: "auto", scale: "auto", seatNumbers: false, backdrop: false });
+  // the venue drawing: moving it, and setting its scale from a measured wall
+  const [moveBackdrop, setMoveBackdrop] = useState(false);
+  const [calibrating, setCalibrating] = useState(false);
+  const backdropFile = useRef<HTMLInputElement>(null);
   const [bulk, setBulk] = useState({ seats: 8, guests: 0, kind: "round" as "round" | "rect" | "all" });
   const [layout, setLayout] = useState(initial);
   const [sel, setSel] = useState<string[]>([]);
@@ -78,7 +94,8 @@ function Editor({ initial, p, onSave, onEvent }: { initial: VenueLayout; p: Prop
   const [menu, setMenu] = useState<Menu | null>(null);
   const [ghost, setGhost] = useState<{ kind: LayoutKind; x: number; y: number } | null>(null);
   const [view, setView] = usePlanView();
-  const [tool, setTool] = useState<"select" | "measure">("select");
+  // phones and tablets start with the hand (one finger pans); a mouse starts with box selection
+  const [tool, setTool] = useState<"select" | "hand" | "measure">(() => (window.matchMedia?.("(pointer: coarse)").matches ? "hand" : "select"));
   const [arrayOpen, setArrayOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [find, setFind] = useState("");
@@ -114,6 +131,46 @@ function Editor({ initial, p, onSave, onEvent }: { initial: VenueLayout; p: Prop
     onSave(next);
   };
   const setItems = (items: LayoutItem[]) => commit({ ...layout, items });
+  const backdropUrl = useBackdropUrl(layout.backdrop?.imageId);
+  const setBackdrop = (patch: Partial<NonNullable<VenueLayout["backdrop"]>> | null) =>
+    commit(patch === null ? { ...layout, backdrop: undefined } : { ...layout, backdrop: { ...layout.backdrop!, ...patch } });
+  const uploadBackdrop = async (file: File) => {
+    setSaving(true);
+    try {
+      const { isPdf, pdfPages, prepareBackdrop } = await import("../lib/backdropImage");
+      let page = 1;
+      if (isPdf(file)) {
+        const n = await pdfPages(file);
+        if (n > 1) {
+          const a = window.prompt(`This PDF has ${n} pages. Which page is the floor plan?`, "1");
+          if (a === null) return;
+          page = Math.min(n, Math.max(1, Math.round(Number(a)) || 1));
+        }
+      }
+      const img = await prepareBackdrop(file, page);
+      const id = `bd-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
+      await saveBackdrop(id, img.blob);
+      const prev = layout.backdrop;
+      // the same drawing again (another device): keep where it was and its scale
+      const next = prev && backdropUrl === "missing" ? { ...prev, imageId: id, name: file.name } : { ...placeBackdrop(id, img, layout, file.name), ...(prev ? { opacity: prev.opacity } : {}) };
+      commit({ ...layout, backdrop: next });
+      setNote(prev && backdropUrl === "missing" ? "Drawing restored." : "Drawing added. Use Set the scale on a wall you know, then trace over it.");
+    } catch (e) {
+      setNote((e as Error).message || "That file couldn't be used.");
+    } finally {
+      setSaving(false);
+    }
+  };
+  const onMeasured = (a: { x: number; y: number }, b: { x: number; y: number }) => {
+    if (!calibrating || !layout.backdrop) return;
+    const answer = window.prompt(`You measured ${Math.hypot(b.x - a.x, b.y - a.y).toFixed(2)} m on the drawing. How long is it really, in metres?`);
+    setCalibrating(false);
+    setTool("select");
+    const m = Number(answer?.replace(",", "."));
+    if (!answer || !(m > 0)) return setNote("Scale not changed.");
+    commit({ ...layout, backdrop: calibrate(layout.backdrop, a, b, m) });
+    setNote(`Drawing scaled: that length is now ${m} m.`);
+  };
   const patchItems = (ids: string[], fn: (it: LayoutItem) => LayoutItem) => setItems(layout.items.map((it) => (ids.includes(it.id) ? clampToRoom(fn(it), layout) : it)));
 
   const selected = layout.items.filter((i) => sel.includes(i.id));
@@ -124,7 +181,11 @@ function Editor({ initial, p, onSave, onEvent }: { initial: VenueLayout; p: Prop
   }, [many]);
   const one = selected.length === 1 ? selected[0] : null;
   const movable = sel.filter((id) => !layout.items.find((i) => i.id === id)?.locked);
-  const clash = useMemo(() => clashes(layout.items), [layout.items]);
+  const overlapping = useMemo(() => clashes(layout.items.filter((i) => !i.hidden)), [layout.items]);
+  const issues = useMemo(() => checkPlan(layout, p.client.guests), [layout, p.client.guests]);
+  const warnings = issues.filter((i) => i.level === "warn");
+  // with the Checks panel open, items with a warning are outlined like overlaps
+  const clash = useMemo(() => (checks ? new Set([...overlapping, ...warnings.flatMap((i) => i.itemIds)]) : overlapping), [checks, overlapping, warnings]);
   const capacity = layoutCapacity(layout);
   const coming = confirmedHeadcount(p);
   const venueMax = (p.client.venue ? venueCapacity(venues.venues, p.client.venue) : null)?.capacity ?? null;
@@ -180,10 +241,8 @@ function Editor({ initial, p, onSave, onEvent }: { initial: VenueLayout; p: Prop
     const lock = layout.items.some((i) => ids.includes(i.id) && !i.locked);
     setItems(layout.items.map((i) => (ids.includes(i.id) ? { ...i, locked: lock || undefined } : i)));
   };
-  const reorder = (ids: string[], front: boolean) => {
-    const picked = layout.items.filter((i) => ids.includes(i.id));
-    const rest = layout.items.filter((i) => !ids.includes(i.id));
-    setItems(front ? [...rest, ...picked] : [...picked, ...rest]);
+  const reorder = (ids: string[], how: "front" | "back" | "forward" | "backward") => {
+    if (ids.length) setItems(reorderItems(layout.items, ids, how));
   };
 
   // keyboard shortcuts while the editor has focus
@@ -198,12 +257,20 @@ function Editor({ initial, p, onSave, onEvent }: { initial: VenueLayout; p: Prop
     else if (mod && key === "d") duplicate();
     else if (mod && key === "c") clipboard.current = selected.map((i) => ({ ...i }));
     else if (mod && key === "v") paste(clipboard.current);
-    else if (mod && key === "a") setSel(layout.items.map((i) => i.id));
+    else if (mod && key === "a") setSel(layout.items.filter((i) => !i.hidden).map((i) => i.id));
+    else if (mod && e.key === "]") reorder(sel, e.shiftKey ? "front" : "forward");
+    else if (mod && e.key === "[") reorder(sel, e.shiftKey ? "back" : "backward");
+    else if (mod && (e.code === "BracketRight" || e.code === "BracketLeft")) reorder(sel, e.code === "BracketRight" ? (e.shiftKey ? "front" : "forward") : e.shiftKey ? "back" : "backward");
     else if (e.key === "Escape") {
       setMenu(null);
       setSel([]);
-      setTool("select");
+      if (tool === "measure") setTool("select");
+      setCalibrating(false);
+      setMoveBackdrop(false);
     } else if (!mod && key === "m") setTool((t) => (t === "measure" ? "select" : "measure"));
+    else if (!mod && key === "v") setTool("select");
+    else if (!mod && key === "h") setTool("hand");
+    else if (!mod && key === "l") setLayers((x) => !x);
     else if (!sel.length) return;
     else if (e.key === "ArrowLeft") nudge(-step, 0);
     else if (e.key === "ArrowRight") nudge(step, 0);
@@ -279,8 +346,8 @@ function Editor({ initial, p, onSave, onEvent }: { initial: VenueLayout; p: Prop
   };
 
   return (
-    <div ref={wrap} className="relative grid gap-4 lg:grid-cols-[minmax(0,1fr)_280px]" onKeyDown={onKey}>
-      <div className="min-w-0">
+    <div ref={wrap} className={full ? "relative grid min-h-0 flex-1 grid-rows-[minmax(0,1fr)_auto] gap-3 lg:grid-cols-[minmax(0,1fr)_280px] lg:grid-rows-[minmax(0,1fr)]" : "relative grid gap-4 lg:grid-cols-[minmax(0,1fr)_280px]"} onKeyDown={onKey}>
+      <div className={full ? "flex min-h-0 min-w-0 flex-col" : "min-w-0"}>
         <div className="mb-2 flex flex-wrap items-center gap-1.5" role="toolbar" aria-label="Floor plan tools">
           <span data-tutorial="undo"><ToolBtn label="Undo (Ctrl+Z)" disabled={!past.length} onClick={undo}>↶</ToolBtn></span>
           <ToolBtn label="Redo (Ctrl+Y)" disabled={!future.length} onClick={redo}>↷</ToolBtn>
@@ -293,11 +360,17 @@ function Editor({ initial, p, onSave, onEvent }: { initial: VenueLayout; p: Prop
           <ToolBtn label={view.look === "realistic" ? "Show plain shapes" : "Show furniture"} pressed={view.look === "realistic"} onClick={() => setView({ look: view.look === "realistic" ? "simple" : "realistic" })}>
             {view.look === "realistic" ? "Realistic" : "Simple"}
           </ToolBtn>
+          <span className="flex overflow-hidden rounded-sm border border-solid border-line" role="group" aria-label="Drag on the floor to">
+            <ToolBtn bare label="Select: drag a box to select (V)" pressed={tool === "select"} onClick={() => setTool("select")}>⬚ Select</ToolBtn>
+            <ToolBtn bare label="Hand: drag to move the view (H, or hold Space)" pressed={tool === "hand"} onClick={() => setTool("hand")}>✋ Hand</ToolBtn>
+          </span>
           <ToolBtn label="Measure a distance (M)" pressed={tool === "measure"} onClick={() => setTool(tool === "measure" ? "select" : "measure")}>📏 Measure</ToolBtn>
           <span className="mx-1 h-6 w-px bg-line" aria-hidden="true" />
           <ToolBtn label="Add a grid of tables" onClick={() => setArrayOpen(true)}>▦ Grid of tables</ToolBtn>
           <ToolBtn label="Number the tables left to right, top to bottom" onClick={() => setItems(renumberTables(layout.items))}>1·2·3 Renumber</ToolBtn>
           <span data-tutorial="bulk-seats"><ToolBtn label="Set chairs for many tables" pressed={pop === "tables"} onClick={() => setPop(pop === "tables" ? null : "tables")}>Tables ▾</ToolBtn></span>
+          <ToolBtn label="Venue drawing to trace over" pressed={pop === "background" || moveBackdrop || calibrating} onClick={() => setPop(pop === "background" ? null : "background")}>🗺 Background ▾</ToolBtn>
+          <ToolBtn label="Print the plan to scale" pressed={pop === "print"} onClick={() => setPop(pop === "print" ? null : "print")}>🖨 Print ▾</ToolBtn>
           <span data-tutorial="inventory"><ToolBtn label="Inventory for the vendor" pressed={pop === "inventory"} onClick={() => setPop(pop === "inventory" ? null : "inventory")}>Inventory ▾</ToolBtn></span>
           <ToolBtn label="Download the plan as an image" disabled={saving} onClick={async () => {
             setSaving(true);
@@ -311,7 +384,12 @@ function Editor({ initial, p, onSave, onEvent }: { initial: VenueLayout; p: Prop
               setSaving(false);
             }
           }}>{saving ? "Saving…" : "⤓ Image"}</ToolBtn>
-          <span className="ml-auto text-xs text-stone" aria-live="polite">{layout.items.length} items · {capacity} seats{clash.size ? ` · ${clash.size} overlapping` : ""}</span>
+          {full && <span className="lg:hidden"><ToolBtn label={panels ? "Hide the side panels" : "Show the side panels"} pressed={panels} onClick={() => setPanels(!panels)}>☰ Panels</ToolBtn></span>}
+          <ToolBtn label={`Safety and clearance checks${warnings.length ? `: ${warnings.length} to look at` : ", all clear"}`} pressed={checks} onClick={() => { setChecks(!checks); if (!checks) setPanels(true); }}>
+            {warnings.length ? <span className="text-danger-ink">⚠ Checks {warnings.length}</span> : "✓ Checks"}
+          </ToolBtn>
+          <ToolBtn label="Layers: every item, show, hide, lock and order (L)" pressed={layers} onClick={() => { setLayers(!layers); if (!layers) setPanels(true); }}>☰ Layers</ToolBtn>
+          <span className="ml-auto text-xs text-stone" aria-live="polite">{layout.items.length} items · {capacity} seats{overlapping.size ? ` · ${overlapping.size} overlapping` : ""}</span>
         </div>
         {pop === "tables" && (
           <div data-plan-menu className="mb-2 grid gap-3 rounded-md border border-solid border-line bg-card p-3 text-sm sm:grid-cols-2">
@@ -339,6 +417,94 @@ function Editor({ initial, p, onSave, onEvent }: { initial: VenueLayout; p: Prop
             </div>
           </div>
         )}
+        {pop === "background" && (
+          <div data-plan-menu className="mb-2 grid gap-3 rounded-md border border-solid border-line bg-card p-3 text-sm">
+            <input ref={backdropFile} type="file" accept="image/png,image/jpeg,image/webp,application/pdf,.pdf" hidden
+              onChange={(e) => { const file = e.target.files?.[0]; e.target.value = ""; if (file) void uploadBackdrop(file); }} />
+            {!layout.backdrop ? (
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="mr-auto text-ink-2">Put the venue's floor plan (a photo, scan or PDF page) under your plan, set its scale from one wall you know, and trace over it.</span>
+                <button type="button" className="btn-primary btn-sm" disabled={saving} onClick={() => backdropFile.current?.click()}>{saving ? "Preparing…" : "Upload image or PDF"}</button>
+              </div>
+            ) : (
+              <>
+                {backdropUrl === "missing" && (
+                  <p className="m-0 rounded-sm bg-danger-soft px-2 py-1.5 text-xs text-danger-ink">
+                    The drawing{layout.backdrop.name ? ` "${layout.backdrop.name}"` : ""} isn't on this device. Upload it again; it goes back where it was, at the same scale.
+                  </p>
+                )}
+                <div className="flex flex-wrap items-center gap-2">
+                  <label className="flex items-center gap-2 text-ink-2">
+                    Opacity
+                    <input type="range" min={10} max={100} step={5} value={Math.round(layout.backdrop.opacity * 100)} aria-label="Drawing opacity"
+                      onChange={(e) => setLayout({ ...layout, backdrop: { ...layout.backdrop!, opacity: Number(e.target.value) / 100 } })}
+                      onPointerUp={() => onSave(latest.current)} onKeyUp={() => onSave(latest.current)} />
+                  </label>
+                  <button type="button" className="btn-ghost btn-sm" onClick={() => setBackdrop({ hidden: layout.backdrop!.hidden ? undefined : true })}>{layout.backdrop.hidden ? "Show" : "Hide"}</button>
+                  <button type="button" className={`btn-sm ${moveBackdrop ? "btn-primary" : "btn-ghost"}`} aria-pressed={moveBackdrop} disabled={!!layout.backdrop.hidden} onClick={() => { setMoveBackdrop(!moveBackdrop); setSel([]); }}>{moveBackdrop ? "Done moving" : "Move it"}</button>
+                  <button type="button" className={`btn-sm ${calibrating ? "btn-primary" : "btn-ghost"}`} aria-pressed={calibrating} disabled={!!layout.backdrop.hidden} onClick={() => {
+                    const on = !calibrating;
+                    setCalibrating(on);
+                    setTool(on ? "measure" : "select");
+                    setMoveBackdrop(false);
+                    if (on) setNote("Drag along a wall or length you know on the drawing; you'll be asked how long it really is.");
+                  }}>📏 Set the scale</button>
+                  <button type="button" className="btn-ghost btn-sm" title="Resize the room to the drawing and move the drawing to the corner" onClick={() => commit(roomForBackdrop(layout))}>Fit the room to it</button>
+                </div>
+                <div className="flex flex-wrap items-center gap-2 text-xs text-stone">
+                  <span className="mr-auto">{layout.backdrop.name ? `${layout.backdrop.name} · ` : ""}{layout.backdrop.w} × {layout.backdrop.h} m on the plan</span>
+                  <button type="button" className="link-btn" disabled={saving} onClick={() => backdropFile.current?.click()}>{backdropUrl === "missing" ? "Upload it again" : "Replace"}</button>
+                  <button type="button" className="link-btn link-danger" onClick={() => { setMoveBackdrop(false); setCalibrating(false); setBackdrop(null); }}>Remove</button>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+        {pop === "print" && (() => {
+          const orient = print.orientation === "auto" ? orientationFor(layout) : print.orientation;
+          const auto = pickScale(layout, print.paper, orient);
+          const chosen = print.scale !== "auto" && fits(layout, print.paper, orient, print.scale) ? print.scale : auto;
+          const sel = "rounded-sm border border-line bg-card px-2 py-1.5";
+          return (
+            <div data-plan-menu className="mb-2 grid gap-2 rounded-md border border-solid border-line bg-card p-3 text-sm">
+              <div className="flex flex-wrap items-center gap-2">
+                <select className={sel} aria-label="Paper" value={print.paper} onChange={(e) => setPrint({ ...print, paper: e.target.value as Paper })}>
+                  <option value="A3">A3</option>
+                  <option value="A4">A4</option>
+                </select>
+                <select className={sel} aria-label="Orientation" value={print.orientation} onChange={(e) => setPrint({ ...print, orientation: e.target.value as Orientation | "auto" })}>
+                  <option value="auto">Best way round</option>
+                  <option value="landscape">Landscape</option>
+                  <option value="portrait">Portrait</option>
+                </select>
+                <select className={sel} aria-label="Scale" value={String(print.scale)} onChange={(e) => setPrint({ ...print, scale: e.target.value === "auto" ? "auto" : Number(e.target.value) })}>
+                  <option value="auto">Largest that fits</option>
+                  {SCALES.map((sc) => <option key={sc} value={sc} disabled={!fits(layout, print.paper, orient, sc)}>1:{sc}{fits(layout, print.paper, orient, sc) ? "" : " (too big)"}</option>)}
+                </select>
+                <label className="check min-h-0 text-xs"><input type="checkbox" checked={print.seatNumbers} onChange={(e) => setPrint({ ...print, seatNumbers: e.target.checked })} /> Seat numbers</label>
+                {layout.backdrop && backdropUrl && backdropUrl !== "missing" && (
+                  <label className="check min-h-0 text-xs"><input type="checkbox" checked={print.backdrop} onChange={(e) => setPrint({ ...print, backdrop: e.target.checked })} /> Venue drawing underneath</label>
+                )}
+                <button type="button" className="btn-primary btn-sm ml-auto" disabled={saving} onClick={async () => {
+                  setSaving(true);
+                  try {
+                    const { downloadScalePlan } = await import("../lib/exportScalePlan");
+                    const backdropBlob = print.backdrop && layout.backdrop && !layout.backdrop.hidden ? await loadBackdrop(layout.backdrop.imageId) : undefined;
+                    const sc = await downloadScalePlan({ title: p.client.name || "Floor plan", venue: p.client.venue, layout, paper: print.paper, orientation: print.orientation, scale: print.scale, seatNumbers: print.seatNumbers, backdropBlob }, brand);
+                    setNote(sc ? `Saved at 1:${sc}. Print at 100% (actual size) to keep the scale.` : "Saved, fitted to the page (the room is too big to print to scale on this paper).");
+                  } catch (e) {
+                    setNote((e as Error).message);
+                  } finally {
+                    setSaving(false);
+                  }
+                }}>{saving ? "Saving…" : "⤓ PDF"}</button>
+              </div>
+              <p className="m-0 text-xs text-stone">
+                {chosen ? `1:${chosen} on ${print.paper} ${orient}: 1 m on the floor is ${1000 / chosen} mm on paper.` : `The room is too big for ${print.paper} at 1:500; it will be fitted to the page and marked not to scale.`} With a legend, a scale bar, the main sizes and the counts.
+              </p>
+            </div>
+          );
+        })()}
         {pop === "inventory" && (
           <div data-plan-menu className="mb-2 flex flex-wrap items-center gap-2 rounded-md border border-solid border-line bg-card p-3 text-sm">
             <span className="mr-auto text-ink-2">Chairs, tables, linens, centrepieces and décor with sizes, for the rental vendor.</span>
@@ -358,10 +524,15 @@ function Editor({ initial, p, onSave, onEvent }: { initial: VenueLayout; p: Prop
             ))}
           </div>
         )}
-        <div tabIndex={0} data-tutorial="canvas" className="rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-gold">
+        <div tabIndex={0} data-tutorial="canvas" className={`rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-gold${full ? " min-h-0 flex-1" : ""}`}>
           <Suspense fallback={<div className="grid h-80 place-items-center rounded-lg border border-line bg-paper-2 text-sm text-stone">Opening the floor plan…</div>}>
             <PlanCanvas
               ref={canvas}
+              fill={full}
+              backdrop={layout.backdrop && !layout.backdrop.hidden && backdropUrl && backdropUrl !== "missing" ? { url: backdropUrl, ...layout.backdrop } : null}
+              backdropEdit={moveBackdrop}
+              onBackdropMove={(x, y) => setBackdrop({ x, y })}
+              onMeasured={onMeasured}
               layout={layout}
               mode="edit"
               selected={sel}
@@ -381,8 +552,8 @@ function Editor({ initial, p, onSave, onEvent }: { initial: VenueLayout; p: Prop
             />
           </Suspense>
         </div>
-        <p className="m-0 mt-2 text-xs text-stone">
-          Drag tables to move them (they snap and line up with their neighbours; hold Alt to place freely) · pull a handle to resize, the top knob to rotate · right-click for more · drag the floor to pan, scroll or pinch to zoom · Shift-drag to select several.
+        <p className={full ? "sr-only" : "m-0 mt-2 text-xs text-stone"}>
+          Click a table or any of its chairs to select it · drag across empty floor to select several (left to right: wholly inside; right to left: anything touched; Shift adds) · Alt-click picks the item underneath · drag to move (hold Alt to place freely) · handles resize, the top knob rotates · Space-drag, the middle button, the Hand tool or two fingers pan · scroll or pinch to zoom · right-click for more.
         </p>
         {/* the same items as a list, for keyboards and screen readers */}
         <ul className="sr-only">
@@ -396,7 +567,7 @@ function Editor({ initial, p, onSave, onEvent }: { initial: VenueLayout; p: Prop
         </ul>
       </div>
 
-      <aside className="grid content-start gap-4">
+      <aside className={full ? `grid content-start gap-4 overflow-y-auto lg:min-h-0 ${panels ? "max-lg:max-h-[42dvh]" : "max-lg:hidden"}` : "grid content-start gap-4"}>
         <section className="rounded-lg border border-line bg-card p-4">
           <h3 className="m-0 mb-1 text-sm font-medium text-ink-2">Add</h3>
           <p className="m-0 mb-2 text-xs text-stone">Click, or drag onto the plan.</p>
@@ -463,6 +634,20 @@ function Editor({ initial, p, onSave, onEvent }: { initial: VenueLayout; p: Prop
           </section>
         )}
 
+        {checks && (
+          <ChecksPanel issues={issues} onClose={() => setChecks(false)}
+            onShow={(i) => {
+              const shown = layout.items.filter((x) => i.itemIds.includes(x.id) && !x.hidden);
+              setSel(shown.map((x) => x.id));
+              if (shown.length) canvas.current?.centreOn(shown.reduce((t, x) => t + x.x, 0) / shown.length, shown.reduce((t, x) => t + x.y, 0) / shown.length);
+            }}
+            onFix={(i) => { if (i.fix) { setItems(i.fix.apply(layout.items)); setNote(`Done: ${i.fix.label.toLowerCase()}.`); } }} />
+        )}
+        {layers && (
+          <LayersPanel items={layout.items} sel={sel} onSelect={setSel} onClose={() => setLayers(false)} onOrder={(how) => reorder(sel, how)}
+            onPatch={(id, patch) => setItems(layout.items.map((i) => (i.id === id ? { ...i, ...patch } : i)))} />
+        )}
+
         <CountsPanel layout={layout} onOpen={() => emit("inventory")} />
 
         <section className="rounded-lg border border-line bg-card p-4">
@@ -487,8 +672,10 @@ function Editor({ initial, p, onSave, onEvent }: { initial: VenueLayout; p: Prop
               <MenuItem onClick={() => { duplicate(); setMenu(null); }} hint="Ctrl+D">Duplicate</MenuItem>
               <MenuItem onClick={() => { clipboard.current = selected.map((i) => ({ ...i })); setMenu(null); }} hint="Ctrl+C">Copy</MenuItem>
               <MenuItem onClick={() => { rotateBy(90, sel); setMenu(null); }} hint="R">Rotate 90°</MenuItem>
-              <MenuItem onClick={() => { reorder(sel, true); setMenu(null); }}>Bring to front</MenuItem>
-              <MenuItem onClick={() => { reorder(sel, false); setMenu(null); }}>Send to back</MenuItem>
+              <MenuItem onClick={() => { reorder(sel, "forward"); setMenu(null); }} hint="Ctrl+]">Bring forward</MenuItem>
+              <MenuItem onClick={() => { reorder(sel, "front"); setMenu(null); }} hint="Ctrl+Shift+]">Bring to front</MenuItem>
+              <MenuItem onClick={() => { reorder(sel, "backward"); setMenu(null); }} hint="Ctrl+[">Send backward</MenuItem>
+              <MenuItem onClick={() => { reorder(sel, "back"); setMenu(null); }} hint="Ctrl+Shift+[">Send to back</MenuItem>
               <MenuItem onClick={() => { toggleLock(); setMenu(null); }}>{selected.every((i) => i.locked) ? "Unlock" : "Lock in place"}</MenuItem>
               <MenuItem danger onClick={() => { remove(); setMenu(null); }} hint="Del">Delete</MenuItem>
             </>
@@ -497,7 +684,7 @@ function Editor({ initial, p, onSave, onEvent }: { initial: VenueLayout; p: Prop
               <MenuItem disabled={!clipboard.current.length} onClick={() => { paste(clipboard.current, menu.room); setMenu(null); }} hint="Ctrl+V">Paste here</MenuItem>
               <MenuItem onClick={() => { addAt("round", menu.room); setMenu(null); }}>Add a round table here</MenuItem>
               <MenuItem onClick={() => { addAt("rect", menu.room); setMenu(null); }}>Add a long table here</MenuItem>
-              <MenuItem onClick={() => { setSel(layout.items.map((i) => i.id)); setMenu(null); }} hint="Ctrl+A">Select all</MenuItem>
+              <MenuItem onClick={() => { setSel(layout.items.filter((i) => !i.hidden).map((i) => i.id)); setMenu(null); }} hint="Ctrl+A">Select all</MenuItem>
               <MenuItem onClick={() => { setItems(renumberTables(layout.items)); setMenu(null); }}>Renumber tables</MenuItem>
               <MenuItem onClick={() => { canvas.current?.fit(); setMenu(null); }}>Fit the room</MenuItem>
             </>
@@ -586,41 +773,10 @@ function MenuItem({ children, onClick, hint, danger, disabled }: { children: Rea
   );
 }
 
-/** a tiny drawing of each palette item */
-function KindIcon({ kind }: { kind: LayoutKind }) {
-  const k = KINDS[kind];
-  return (
-    <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true" className="shrink-0">
-      {kind === "round" ? (
-        <>
-          {Array.from({ length: 8 }, (_, i) => <circle key={i} cx={9 + Math.cos((i / 8) * Math.PI * 2) * 7.2} cy={9 + Math.sin((i / 8) * Math.PI * 2) * 7.2} r={1.3} fill="var(--taupe)" />)}
-          <circle cx={9} cy={9} r={4.6} fill="var(--card)" stroke="var(--gold)" strokeWidth={1.2} />
-        </>
-      ) : kind === "rect" ? (
-        <>
-          {[4, 9, 14].flatMap((x) => [<circle key={`a${x}`} cx={x} cy={3.5} r={1.3} fill="var(--taupe)" />, <circle key={`b${x}`} cx={x} cy={14.5} r={1.3} fill="var(--taupe)" />])}
-          <rect x={1.5} y={6} width={15} height={6} rx={1} fill="var(--card)" stroke="var(--gold)" strokeWidth={1.2} />
-        </>
-      ) : kind === "row" ? (
-        [2.5, 6.8, 11.2, 15.5].map((x) => <circle key={x} cx={x} cy={9} r={1.8} fill="var(--taupe)" />)
-      ) : kind === "label" ? (
-        <text x={9} y={13} textAnchor="middle" fontSize={12} fill="var(--ink)" fontFamily="serif">T</text>
-      ) : k.round ? (
-        <circle cx={9} cy={9} r={6} fill="var(--gold-soft)" stroke="var(--taupe)" strokeWidth={1.2} />
-      ) : kind === "aisle" ? (
-        <rect x={6} y={1} width={6} height={16} rx={1} fill="var(--gold-soft)" stroke="var(--gold)" strokeWidth={1.2} />
-      ) : (
-        <rect x={k.w >= k.h * 2 ? 1 : 3} y={k.w >= k.h * 2 ? 6 : 3} width={k.w >= k.h * 2 ? 16 : 12} height={k.w >= k.h * 2 ? 6 : 12} rx={1.5}
-          fill="var(--gold-soft)" stroke="var(--taupe)" strokeWidth={1.2} strokeDasharray={kind === "entrance" ? "2 1.5" : undefined} />
-      )}
-    </svg>
-  );
-}
-
-function ToolBtn({ label, children, onClick, disabled, pressed }: { label: string; children: React.ReactNode; onClick: () => void; disabled?: boolean; pressed?: boolean }) {
+function ToolBtn({ label, children, onClick, disabled, pressed, bare }: { label: string; children: React.ReactNode; onClick: () => void; disabled?: boolean; pressed?: boolean; bare?: boolean }) {
   return (
     <button type="button" title={label} aria-label={label} aria-pressed={pressed} disabled={disabled} onClick={onClick}
-      className={`grid h-9 min-w-9 place-items-center rounded-sm border border-solid px-2 text-sm ${pressed ? "border-gold bg-gold-soft text-ink" : "border-line bg-card text-ink"}`}>
+      className={`grid h-9 min-w-9 place-items-center px-2 text-sm ${bare ? "rounded-none border-0" : "rounded-sm border border-solid"} ${pressed ? "border-gold bg-gold-soft text-ink" : "border-line bg-card text-ink"}`}>
       {children}
     </button>
   );

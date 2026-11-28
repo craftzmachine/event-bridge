@@ -15,7 +15,7 @@ const PlanCanvas = lazy(() => import("./layout/PlanCanvas"));
 type Update = (fn: (cur: Proposal) => Proposal) => void;
 const SIDE_TONE: Record<string, Tone> = { bride: "gold", groom: "ink2", both: "taupe", "": "stone" };
 
-export default function SeatingBoard({ p, fnId, onUpdate }: { p: Proposal; fnId: string; onUpdate: Update }) {
+export default function SeatingBoard({ p, fnId, onUpdate, full = false }: { p: Proposal; fnId: string; onUpdate: Update; full?: boolean }) {
   const { brand } = useConfig();
   const layout = p.layouts?.[fnId];
   const tables = useMemo(() => tablesOf(layout), [layout]);
@@ -107,8 +107,8 @@ export default function SeatingBoard({ p, fnId, onUpdate }: { p: Proposal; fnId:
   const dropping = dragging && over ? tables.find((t) => t.id === over) : null;
 
   return (
-    <div className="grid gap-4 lg:grid-cols-[280px_minmax(0,1fr)]">
-      <aside className="grid content-start gap-3 rounded-lg border border-line bg-card p-4 lg:max-h-[78vh] lg:overflow-auto">
+    <div className={full ? "grid min-h-0 flex-1 grid-rows-[auto_minmax(0,1fr)] gap-3 lg:grid-cols-[280px_minmax(0,1fr)] lg:grid-rows-[minmax(0,1fr)]" : "grid gap-4 lg:grid-cols-[280px_minmax(0,1fr)]"}>
+      <aside className={`grid content-start gap-3 rounded-lg border border-line bg-card p-4 ${full ? "max-h-[30dvh] overflow-auto lg:max-h-none lg:min-h-0" : "lg:max-h-[78vh] lg:overflow-auto"}`}>
         <div>
           <h3 className="m-0 text-sm font-medium text-ink-2">To seat</h3>
           <p className="m-0 mt-1 text-xs text-stone">{seated.size} of {totalPeople} seated · {capacity} seats</p>
@@ -139,7 +139,7 @@ export default function SeatingBoard({ p, fnId, onUpdate }: { p: Proposal; fnId:
         </div>
       </aside>
 
-      <div className="min-w-0">
+      <div className={full ? "flex min-h-0 min-w-0 flex-col" : "min-w-0"}>
         <div className="mb-2 flex flex-wrap items-center gap-2">
           <button type="button" className="btn-primary btn-sm" disabled={!toSeat.length} onClick={() => {
             const r = autoSeat(plan, tables, households);
@@ -163,8 +163,9 @@ export default function SeatingBoard({ p, fnId, onUpdate }: { p: Proposal; fnId:
             {picked ? `Now tap a table for ${byId.get(picked)?.guest.name}.` : note}
           </p>
         )}
+        <div className={full ? "min-h-0 flex-1" : undefined}>
         <Suspense fallback={<div className="grid h-80 place-items-center rounded-lg border border-line bg-paper-2 text-sm text-stone">Opening the seating plan…</div>}>
-          <PlanCanvas ref={canvas} layout={layout} mode="seat" grid={false} selected={openTable ? [openTable] : []} highlight={over}
+          <PlanCanvas ref={canvas} fill={full} layout={layout} mode="seat" grid={false} selected={openTable ? [openTable] : []} highlight={over}
             seatTone={toneFor} seatTitle={seatName} seatName={(t, i) => { const k = plan[t.id]?.[i]; return k ? allGuests.get(guestOf(k))?.name : undefined; }}
             look={view.look} minimap rulers={view.rulers}
             tableTitle={(t) => `${t.label || KINDS[t.kind].label} · ${(plan[t.id] ?? []).filter(Boolean).length}/${t.seats}`}
@@ -172,6 +173,7 @@ export default function SeatingBoard({ p, fnId, onUpdate }: { p: Proposal; fnId:
             onTableClick={(id, seat) => (picked ? place(picked, id, seat) : setOpenTable(id))}
             ariaLabel="Seating plan. Choose a guest from the list, then a table." />
         </Suspense>
+        </div>
         {dropping && <p className="m-0 mt-1 text-xs text-gold-text" role="status">{dropping.label || "Table"}: {freeSeats(plan, dropping.id)} free</p>}
         {/* tables as buttons, for keyboards and screen readers */}
         <ul className="sr-only">

@@ -26,13 +26,40 @@ Starters are sized for your guests (the confirmed headcount, or the proposal's g
 | Exact sizes | Select an item: the panel shows its width and length (or diameter) in metres, and **Common sizes** such as mandap 4 × 4, 5 × 5, 6 × 6 or 8 × 8 m, stage 8 × 4 m, aisle 1.5 × 10 m, or round tables Ø1.5 m (8), Ø1.8 m (10), Ø2.1 m (12) |
 | Lock in place | 🔒 on the toolbar or *Lock in place* in the right-click menu: a locked item can't be moved, resized or rotated |
 | Copy, paste, duplicate | Ctrl+C / Ctrl+V (or right-click → *Paste here*), Ctrl+D, ⧉ on the toolbar |
-| Front / back | Right-click → *Bring to front* / *Send to back* |
-| Select several | Shift-click, or Shift-drag a box on the floor; then move them together, align, line up, space evenly or duplicate |
+| Select | Click the item, or **any of its chairs**. Tiny items (pillars, flower stands, walls, labels) have a bigger invisible target, so they're easy to hit even zoomed out. **Alt-click** picks the item underneath (click again to go deeper) |
+| Front / back | Floor items (dance floor, aisle, stage, mandap, kids' area, entrance) always sit **under** furniture, walls and labels, so a table on a dance floor is still clickable. Within a group: right-click → *Bring forward*, *Bring to front*, *Send backward*, *Send to back*, or Ctrl+] / Ctrl+[ (with Shift for front / back) |
+| Select several | **Drag across empty floor**: left to right picks items wholly inside the box (solid outline), right to left picks anything it touches (dashed). Shift-click or Shift-drag adds to the selection. Click one item of a selection to keep just that one. Then move them together, align, line up, space evenly or duplicate |
+| Layers | **☰ Layers** (or L) lists every item front to back by group: click to select (Shift adds), double-click to rename, 👁 to hide and 🔒 to lock. Hidden items aren't drawn or selectable, but still count and print |
 | Delete | Delete key, 🗑 on the toolbar, or right-click → *Delete* |
 | Undo / redo | Ctrl+Z / Ctrl+Y, or the arrows in the toolbar |
-| Pan and zoom | Drag the empty floor, scroll or pinch, or use − + and **Fit** |
+| Pan and zoom | **✋ Hand** (H) and drag, hold **Space** and drag, drag with the middle mouse button, or use two fingers; scroll or pinch to zoom, or use − + and **Fit**. **⬚ Select** (V) goes back to box selection |
+| Fullscreen | **⛶ Fullscreen** (or F) at the top right: the editor, seating board or 3D view fills the screen. Esc or *Exit fullscreen* brings the page back. On a phone, **☰ Panels** shows the side panels |
 
-On a phone, press and hold an item for the menu; the handles are bigger for fingers.
+On a phone or tablet the editor starts with the Hand tool, so one finger pans; tap ⬚ Select to drag a selection box. Press and hold an item for the menu; the handles are bigger for fingers.
+
+### Tracing the venue's drawing
+**🗺 Background ▾ → Upload image or PDF** puts the venue's floor plan (a photo, a scan or a page of a PDF) under your plan, faded so you can draw over it.
+
+1. **📏 Set the scale**: drag along a wall or length you know on the drawing, then type how long it really is. The drawing is resized so that length is right.
+2. **Move it** to drag the drawing into place (*Done moving* when it's there), or **Fit the room to it** to make the room the drawing's size.
+3. Change the **Opacity**, **Hide** it, **Replace** it or **Remove** it.
+
+The drawing stays on this device. On another device (or after an Export / Import) the plan remembers where it was and at what scale, and asks you to upload it again.
+
+### Safety and clearance checks
+**✓ Checks** (it shows ⚠ and a number when something needs a look) opens a panel that flags:
+- aisles narrower than **1.2 m** (*Widen to 1.2 m* fixes it),
+- less than **0.9 m** between the chairs of neighbouring tables, for guests and servers to pass,
+- chairs within **1.5 m** of the stage or mandap,
+- anything within **1.5 m** of an entrance,
+- items outside the room (*Move inside*),
+- a crowded room: about **1.1 m²** for each dinner guest and **0.6 m²** in chair rows,
+- more guests expected than seats, and hidden items.
+
+**Show** selects the items and centres them; while the panel is open they're outlined in red. These are planning figures, not a fire code: the venue's own rules come first.
+
+### Printing to scale
+**🖨 Print ▾** saves the plan as a PDF on **A3** or **A4**, the best way round or the one you choose, at the largest of **1:50, 1:100, 1:200, 1:250 or 1:500** that fits (or the scale you pick). It has a scale bar, a legend of what's in the plan with counts, the sizes of the mandap, stage, dance floor and aisle, and a title block. Tick **Seat numbers** to number every chair, and **Venue drawing underneath** to print the background too. Print it at **100% (actual size)**, not "fit to page", so 1 m stays 1 cm at 1:100. A room too big for the paper is fitted to the page and marked *not to scale*.
 
 ### What you can add
 The **Add** panel is grouped (type in **Find an item** to filter):

@@ -46,7 +46,14 @@ export interface ItemNodeProps {
   seatName?: (it: LayoutItem, seat: number) => string | undefined;
   title?: (it: LayoutItem) => string;
   register: (n: Konva.Group | null) => void;
-  onSelect: (additive: boolean) => void;
+  /** pressed in edit mode (mouse down or touch); the canvas decides what that selects */
+  onPress: (mods: { shift: boolean; alt: boolean }) => void;
+  /** a click or tap without a drag, in edit mode */
+  onRelease: () => void;
+  /** smallest hit target in screen pixels, so tiny items stay easy to pick */
+  hitPx: number;
+  /** the hand tool or Space is on: items neither drag nor take presses, so the drag pans */
+  still?: boolean;
   onDragStart: (e: KonvaEventObject<DragEvent>, it: LayoutItem) => void;
   onDragMove: (e: KonvaEventObject<DragEvent>, it: LayoutItem) => void;
   onDragEnd: () => void;
@@ -55,7 +62,7 @@ export interface ItemNodeProps {
 }
 
 export default function ItemNode(props: ItemNodeProps) {
-  const { it, c, mode, look, zoom, selected, clash, highlight, seatTone, seatName, title, register, onSelect, onDragStart, onDragMove, onDragEnd, onTable, onSeatHover } = props;
+  const { it, c, mode, look, zoom, selected, clash, highlight, seatTone, seatName, title, register, onPress, onRelease, hitPx, still = false, onDragStart, onDragMove, onDragEnd, onTable, onSeatHover } = props;
   const k = KINDS[it.kind];
   const table = isTable(it);
   const real = look === "realistic";
@@ -87,18 +94,25 @@ export default function ItemNode(props: ItemNodeProps) {
 
   const floor = useMemo(() => (it.kind === "dance" && real ? chequer(c.card, c.goldSoft) : null), [it.kind, real, c.card, c.goldSoft]);
   const label = it.kind === "wall" ? "" : it.label || k.label;
-  const seatProps = (i: number) => ({ seat: i, listening: mode === "seat", perfectDrawEnabled: false, onMouseEnter: () => onSeatHover(i, true), onMouseLeave: () => onSeatHover(i, false) });
+  // chairs take clicks in edit mode too, so pressing a chair picks up its table
+  const seatProps = (i: number) => ({ seat: i, perfectDrawEnabled: false, onMouseEnter: () => onSeatHover(i, true), onMouseLeave: () => onSeatHover(i, false) });
 
   return (
-    <Group ref={setRef} name="item" itemId={it.id} bodyW={it.w} bodyH={it.h} x={it.x} y={it.y} rotation={it.rot}
-      draggable={mode === "edit" && !it.locked}
-      onMouseDown={(e) => { if (mode === "edit" && e.evt.button === 0) { e.cancelBubble = true; if (e.evt.shiftKey || !selected) onSelect(e.evt.shiftKey); } }}
-      onTouchStart={(e) => { if (mode === "edit") { e.cancelBubble = true; if (!selected) onSelect(false); } }}
+    <Group ref={setRef} name="item" itemId={it.id} locked={!!it.locked} bodyW={it.w} bodyH={it.h} x={it.x} y={it.y} rotation={it.rot}
+      draggable={mode === "edit" && !it.locked && !still}
+      // a locked item lets the press through, so a box selection can start on it
+      onMouseDown={(e) => { if (mode === "edit" && !still && e.evt.button === 0) { if (!it.locked) e.cancelBubble = true; onPress({ shift: e.evt.shiftKey, alt: e.evt.altKey }); } }}
+      onTouchStart={(e) => { if (mode === "edit" && !still && e.evt.touches.length === 1) { if (!it.locked) e.cancelBubble = true; onPress({ shift: false, alt: false }); } }}
       onDragStart={(e) => onDragStart(e, it)} onDragMove={(e) => onDragMove(e, it)} onDragEnd={onDragEnd}
-      onClick={(e) => { if (mode === "seat" && table) { e.cancelBubble = true; onTable?.(it.id, e.target.getAttr("seat")); } }}
-      onTap={(e) => { if (mode === "seat" && table) { e.cancelBubble = true; onTable?.(it.id, e.target.getAttr("seat")); } }}
-      onMouseEnter={(e) => { const s = e.target.getStage(); if (s) s.container().style.cursor = mode === "edit" ? (it.locked ? "not-allowed" : "move") : table ? "pointer" : "grab"; }}
-      onMouseLeave={(e) => { const s = e.target.getStage(); if (s) s.container().style.cursor = "grab"; }}>
+      onClick={(e) => { if (mode === "edit" && e.evt.button === 0) onRelease(); if (mode === "seat" && table) { e.cancelBubble = true; onTable?.(it.id, e.target.getAttr("seat")); } }}
+      onTap={(e) => { if (mode === "edit") onRelease(); if (mode === "seat" && table) { e.cancelBubble = true; onTable?.(it.id, e.target.getAttr("seat")); } }}
+      onMouseEnter={(e) => { const s = e.target.getStage(); if (s) s.container().style.cursor = still ? s.getAttr("baseCursor") : mode === "edit" ? (it.locked ? "not-allowed" : "move") : table ? "pointer" : "grab"; }}
+      onMouseLeave={(e) => { const s = e.target.getStage(); if (s) s.container().style.cursor = s.getAttr("baseCursor") ?? "default"; }}>
+
+      {/* an invisible, bigger target for items that would be tiny on screen */}
+      {Math.min(it.w, it.h) * zoom < hitPx && (
+        <Rect x={-Math.max(it.w, hitPx / zoom) / 2} y={-Math.max(it.h, hitPx / zoom) / 2} width={Math.max(it.w, hitPx / zoom)} height={Math.max(it.h, hitPx / zoom)} fill="transparent" perfectDrawEnabled={false} />
+      )}
 
       {/* chairs: a seat with a backrest on the side away from the table */}
       {seats.map((s, i) => {
