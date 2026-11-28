@@ -4,7 +4,9 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState, type PointerEvent as RPointerEvent } from "react";
 import type { LayoutItem, LayoutKind, Proposal, VenueLayout } from "../types";
 import { useConfig } from "../config/context";
-import { GRID, ITEMS_MAX, KINDS, PALETTE, ROOM_MAX, ROOM_MIN, SEATS_MAX, STARTERS, clampToRoom, clashes, cloneItems, emptyLayout, isTable, layoutCapacity, newItem, resizeItem, snap, starterLayout } from "../lib/layout";
+import { GRID, ITEMS_MAX, KINDS, PALETTE, ROOM_MAX, ROOM_MIN, SEATS_MAX, STARTERS, arrayItems, clampToRoom, clashes, cloneItems, emptyLayout, isTable, layoutCapacity, newItem, renumberTables, resizeItem, snap, starterLayout } from "../lib/layout";
+import { safeFilePart } from "../lib/format";
+import { usePlanView } from "./layout/planView";
 import { confirmedHeadcount } from "../lib/guestList";
 import { venueCapacity } from "../lib/guests";
 import { removeTemplate, saveTemplate, templatesFor } from "../state/layouts";
@@ -69,6 +71,10 @@ function Editor({ initial, p, onSave }: { initial: VenueLayout; p: Proposal; onS
   const [note, setNote] = useState("");
   const [menu, setMenu] = useState<Menu | null>(null);
   const [ghost, setGhost] = useState<{ kind: LayoutKind; x: number; y: number } | null>(null);
+  const [view, setView] = usePlanView();
+  const [tool, setTool] = useState<"select" | "measure">("select");
+  const [arrayOpen, setArrayOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
   const canvas = useRef<CanvasHandle>(null);
   const wrap = useRef<HTMLDivElement>(null);
   const latest = useRef(layout);
@@ -163,7 +169,9 @@ function Editor({ initial, p, onSave }: { initial: VenueLayout; p: Proposal; onS
     else if (e.key === "Escape") {
       setMenu(null);
       setSel([]);
-    } else if (!sel.length) return;
+      setTool("select");
+    } else if (!mod && key === "m") setTool((t) => (t === "measure" ? "select" : "measure"));
+    else if (!sel.length) return;
     else if (e.key === "ArrowLeft") nudge(-step, 0);
     else if (e.key === "ArrowRight") nudge(step, 0);
     else if (e.key === "ArrowUp") nudge(0, -step);
@@ -242,6 +250,26 @@ function Editor({ initial, p, onSave }: { initial: VenueLayout; p: Proposal; onS
           <ToolBtn label="Zoom in" onClick={() => canvas.current?.zoomBy(1.25)}>+</ToolBtn>
           <ToolBtn label="Fit the room" onClick={() => canvas.current?.fit()}>Fit</ToolBtn>
           <ToolBtn label={grid ? "Hide the grid" : "Show the grid"} pressed={grid} onClick={() => setGrid(!grid)}>Grid</ToolBtn>
+          <ToolBtn label="Rulers" pressed={view.rulers} onClick={() => setView({ rulers: !view.rulers })}>Rulers</ToolBtn>
+          <ToolBtn label={view.look === "realistic" ? "Show plain shapes" : "Show furniture"} pressed={view.look === "realistic"} onClick={() => setView({ look: view.look === "realistic" ? "simple" : "realistic" })}>
+            {view.look === "realistic" ? "Realistic" : "Simple"}
+          </ToolBtn>
+          <ToolBtn label="Measure a distance (M)" pressed={tool === "measure"} onClick={() => setTool(tool === "measure" ? "select" : "measure")}>📏 Measure</ToolBtn>
+          <span className="mx-1 h-6 w-px bg-line" aria-hidden="true" />
+          <ToolBtn label="Add a grid of tables" onClick={() => setArrayOpen(true)}>▦ Grid of tables</ToolBtn>
+          <ToolBtn label="Number the tables left to right, top to bottom" onClick={() => setItems(renumberTables(layout.items))}>1·2·3 Renumber</ToolBtn>
+          <ToolBtn label="Download the plan as an image" disabled={saving} onClick={async () => {
+            setSaving(true);
+            try {
+              const { downloadPlanImage } = await import("../lib/planImage");
+              const title = [p.client.name || "Floor plan", p.client.venue].filter(Boolean).join(" · ");
+              await downloadPlanImage(layout, {}, title, `Floor_plan_${safeFilePart(p.client.name) || "event"}.png`);
+            } catch (e) {
+              setNote((e as Error).message);
+            } finally {
+              setSaving(false);
+            }
+          }}>{saving ? "Saving…" : "⤓ Image"}</ToolBtn>
           <span className="ml-auto text-xs text-stone" aria-live="polite">{layout.items.length} items · {capacity} seats{clash.size ? ` · ${clash.size} overlapping` : ""}</span>
         </div>
         <div tabIndex={0} className="rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-gold">
@@ -253,6 +281,10 @@ function Editor({ initial, p, onSave }: { initial: VenueLayout; p: Proposal; onS
               selected={sel}
               clash={clash}
               grid={grid}
+              look={view.look}
+              rulers={view.rulers}
+              minimap
+              tool={tool}
               ariaLabel={`Floor plan, ${layout.w} by ${layout.h} metres. Select an item, then use the arrow keys to move it, R to rotate, plus and minus for seats, Delete to remove.`}
               onSelect={(ids) => { setSel(ids); setMenu(null); }}
               onEdit={onEdit}
@@ -359,10 +391,21 @@ function Editor({ initial, p, onSave }: { initial: VenueLayout; p: Proposal; onS
               <MenuItem onClick={() => { addAt("round", menu.room); setMenu(null); }}>Add a round table here</MenuItem>
               <MenuItem onClick={() => { addAt("rect", menu.room); setMenu(null); }}>Add a long table here</MenuItem>
               <MenuItem onClick={() => { setSel(layout.items.map((i) => i.id)); setMenu(null); }} hint="Ctrl+A">Select all</MenuItem>
+              <MenuItem onClick={() => { setItems(renumberTables(layout.items)); setMenu(null); }}>Renumber tables</MenuItem>
               <MenuItem onClick={() => { canvas.current?.fit(); setMenu(null); }}>Fit the room</MenuItem>
             </>
           )}
         </div>
+      )}
+      {arrayOpen && (
+        <ArrayDialog onClose={() => setArrayOpen(false)} onAdd={(kind, rows, cols, gapX, gapY, seats) => {
+          const at = canvas.current?.viewCentre() ?? { x: layout.w / 2, y: layout.h / 2 };
+          const made = arrayItems(kind, rows, cols, gapX, gapY, at, layout.items, seats).map((i) => clampToRoom(i, layout));
+          if (layout.items.length + made.length > ITEMS_MAX) return setNote(`A plan holds up to ${ITEMS_MAX} items.`);
+          setItems([...layout.items, ...made]);
+          setSel(made.map((i) => i.id));
+          setArrayOpen(false);
+        }} />
       )}
       {ghost && (
         <div className="pointer-events-none fixed z-50 flex items-center gap-2 rounded-md border border-solid border-gold bg-card px-3 py-1.5 text-sm text-ink" style={{ left: ghost.x + 12, top: ghost.y + 12 }}>
@@ -511,5 +554,39 @@ function NumField({ label, value, min, max, step = 0.5, onCommit }: { label: str
       <span>{label}</span>
       <input type="number" inputMode="decimal" min={min} max={max} step={step} value={text} onChange={(e) => setText(e.target.value)} onBlur={done} onKeyDown={(e) => e.key === "Enter" && done()} />
     </label>
+  );
+}
+
+/** "Add a grid of tables": kind, rows × columns, the gap between them and seats per table */
+function ArrayDialog({ onClose, onAdd }: { onClose: () => void; onAdd: (kind: LayoutKind, rows: number, cols: number, gapX: number, gapY: number, seats: number) => void }) {
+  const [kind, setKind] = useState<LayoutKind>("round");
+  const [rows, setRows] = useState(3);
+  const [cols, setCols] = useState(4);
+  const [gap, setGap] = useState(1.2);
+  const [seats, setSeats] = useState(KINDS.round.seats ?? 10);
+  const kinds: LayoutKind[] = ["round", "rect", "row"];
+  return (
+    <div data-plan-menu role="dialog" aria-label="Add a grid of tables" className="absolute left-1/2 top-16 z-40 grid w-[min(22rem,calc(100%-2rem))] -translate-x-1/2 gap-3 rounded-lg border border-solid border-line bg-card p-4">
+      <h3 className="m-0 font-serif text-xl text-ink">Add a grid of tables</h3>
+      <div className="flex gap-1">
+        {kinds.map((k) => (
+          <button key={k} type="button" aria-pressed={kind === k} onClick={() => { setKind(k); setSeats(KINDS[k].seats ?? 8); }}
+            className={`flex-1 rounded-sm border border-solid px-2 py-1.5 text-xs ${kind === k ? "border-gold bg-gold-soft text-ink" : "border-line bg-paper text-ink-2"}`}>
+            {KINDS[k].label}
+          </button>
+        ))}
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        <NumField label="Rows" value={rows} min={1} max={30} step={1} onCommit={(n) => setRows(Math.round(n))} />
+        <NumField label="Columns" value={cols} min={1} max={30} step={1} onCommit={(n) => setCols(Math.round(n))} />
+        <NumField label="Gap between (m)" value={gap} min={0} max={10} step={0.1} onCommit={setGap} />
+        <NumField label="Seats each" value={seats} min={1} max={SEATS_MAX[kind] ?? 24} step={1} onCommit={(n) => setSeats(Math.round(n))} />
+      </div>
+      <p className="m-0 text-xs text-stone">{rows * cols} {rows * cols === 1 ? "item" : "items"} · {rows * cols * seats} seats, placed in the middle of the view. The gap is between chairs.</p>
+      <div className="flex justify-end gap-2">
+        <button type="button" className="btn-ghost btn-sm" onClick={onClose}>Cancel</button>
+        <button type="button" className="btn-primary btn-sm" onClick={() => onAdd(kind, rows, cols, gap, gap, seats)}>Add {rows * cols}</button>
+      </div>
+    </div>
   );
 }

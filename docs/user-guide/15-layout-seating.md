@@ -33,6 +33,26 @@ Starters are sized for your guests (the confirmed headcount, or the proposal's g
 
 On a phone, press and hold an item for the menu; the handles are bigger for fingers.
 
+### Seeing it clearly
+| Tool | What it does |
+|---|---|
+| **Realistic / Simple** | Realistic draws chairs with backrests, tablecloths with **numbered badges**, a chequered dance floor, the mandap's pillars and garland, the stage's skirt and steps, and soft shadows. Simple draws plain shapes. Your choice is remembered on this device |
+| **Rulers** | Metre rulers along the top and left that follow as you pan and zoom |
+| **📏 Measure** (or M) | Drag to measure any distance in metres; hold Shift to keep the line straight; Esc to finish |
+| **Minimap** | The small map in the corner: the red box is what's on screen; click or drag on it to jump there |
+| **▦ Grid of tables** | Add rows × columns of round tables, long tables or chair rows in one go, with the gap between them and seats each. They're placed in the middle of the view and selected, so you can drag them all into place |
+| **1·2·3 Renumber** | Numbers the tables "Table 1, 2, 3…" left to right, top to bottom (also in the right-click menu) |
+| **⤓ Image** | Downloads the plan as a PNG on white, with the client's name, to send to the family or the venue |
+
+### 3D view
+Press **3D** at the top right of the Layout or Seating tab to look round the room in 3D: tables with linens and centrepieces, gold chairs, the stage with its steps, the mandap's pillars and canopy, the dance floor and table numbers.
+
+- **Overview**, **Top**, **From the entrance** and **From the stage** move the camera; drag to orbit, right-drag to pan, scroll or pinch to zoom.
+- **Walk** puts you at eye height at the entrance: drag to look around, **W A S D** or the arrow keys to walk.
+- **Save image** downloads what you see, ready to send to the family.
+- In the **Seating** tab the chairs are coloured by side, and hovering one shows who sits there.
+- 3D is for looking round: switch back to **2D** to move things or seat guests. If a browser can't show 3D, it says so and the 2D plan works as usual.
+
 With nothing selected, the **Room** panel sets the room's size and compares the seats in the plan with the guests coming and the venue's capacity. Items that overlap are outlined in red.
 
 **Save as a venue plan** keeps the room for the next wedding at the same venue. **Start again** clears the plan (and its seating).
