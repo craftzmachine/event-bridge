@@ -196,6 +196,21 @@ export const HELP: HelpTopic[] = [
       "Guests never appear on the proposal or portal you share with the family.",
     ],
   }),
+  app("plans", {
+    summary: "Floor plans and seating that aren't tied to a wedding: a venue's standard layout, a mock-up for a pitch, or practice.",
+    steps: [
+      "Open Floor Plans from the Dashboard and press New plan: a name, the venue and roughly how many guests.",
+      "Layout: start from a starter sized for the guests, a saved venue plan or an empty room, then add tables, the mandap, an aisle and the rest (see Venue layout & seating).",
+      "Guests: add households or paste a list from a spreadsheet (name, phone, side, group, people). There's no RSVP: everyone on the list is seated.",
+      "Seating: drag households onto tables or use Auto-seat, as for a wedding.",
+      "The Counts panel totals tables and chairs; Inventory ▾ downloads the list for the rental vendor as PDF or Excel.",
+      "Copy into a wedding puts the layout on one of a wedding's functions (the wedding seats its own guests). Duplicate makes a copy to try another idea.",
+    ],
+    tips: [
+      "New to the editor? Start the tutorial opens a practice plan and walks you through it step by step.",
+      "Plans are saved on this device; Export and Import move them to another.",
+    ],
+  }),
   {
     id: "layout",
     title: "Venue layout & seating",

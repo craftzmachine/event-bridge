@@ -410,7 +410,9 @@ export interface GuestList {
   rsvp?: RsvpSettings;
 }
 
-export type LayoutKind = "round" | "rect" | "row" | "stage" | "mandap" | "dance" | "bar" | "buffet" | "entrance" | "dj" | "photo" | "wall" | "label";
+export type LayoutKind =
+  | "round" | "rect" | "row" | "stage" | "mandap" | "dance" | "bar" | "buffet" | "entrance" | "dj" | "photo" | "wall" | "label"
+  | "aisle" | "pillar" | "sofa" | "screen" | "plant" | "desk" | "gifts" | "kids";
 
 /** one thing on the floor plan, in metres from the room's top-left corner; x, y is its centre */
 export interface LayoutItem {

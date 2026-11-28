@@ -1,6 +1,10 @@
 // The workspace's Layout and Seating tabs: pick a function, then edit its floor plan or seat its guests, in 2D,
 // or look round it in 3D (a viewer; three.js loads only when 3D is opened).
 import { lazy, Suspense, useMemo, useState } from "react";
+import { onTutorialEvent, startTutorial, type TutorialEvent, type TutorialState } from "../lib/planTutorial";
+import PlanTutorial, { readTutorial, writeTutorial } from "./layout/PlanTutorial";
+import { planFromWedding } from "../lib/floorPlans";
+import { addFloorPlan } from "../state/floorPlans";
 import type { LayoutItem, Proposal, VenueLayout } from "../types";
 import { functionHeading } from "../lib/functions";
 import { guestFunctions } from "../lib/guestList";
@@ -24,7 +28,20 @@ export function setLayout(cur: Proposal, fnId: string, l: VenueLayout | undefine
   return { ...cur, layouts, seating };
 }
 
-export default function VenuePlan({ p, mode, onUpdate }: { p: Proposal; mode: "layout" | "seating"; onUpdate: Update }) {
+export default function VenuePlan({ p, mode, onUpdate, tutorial: startOn = false, extraActions, standalone = false }: { p: Proposal; mode: "layout" | "seating"; onUpdate: Update; tutorial?: boolean; extraActions?: React.ReactNode; standalone?: boolean }) {
+  const [saved, setSaved] = useState("");
+  // the hands-on tutorial: started from the Tutorial button (or a practice plan); progress kept on this device
+  const [tut, setTut] = useState<TutorialState | null>(() => (startOn ? startTutorial() : readTutorial()?.active ? readTutorial() : null));
+  const setTutorial = (s: TutorialState | null) => {
+    setTut(s);
+    writeTutorial(s);
+  };
+  const emit = (e: TutorialEvent) => setTut((cur) => {
+    if (!cur) return cur;
+    const next = onTutorialEvent(cur, e);
+    if (next !== cur) writeTutorial(next);
+    return next;
+  });
   const fns = guestFunctions(p);
   const [fnId, setFnId] = useState(fns[0]?.id ?? "");
   const [view, setView] = usePlanView();
@@ -59,10 +76,24 @@ export default function VenuePlan({ p, mode, onUpdate }: { p: Proposal; mode: "l
             Copy the {others[0].label} plan
           </button>
         )}
+        {extraActions}
+        {mode === "layout" && !standalone && layout && (
+          <button type="button" className="btn-ghost btn-sm" title="Keep a copy of this layout in Floor Plans, without the guests" onClick={() => {
+            const plan = planFromWedding(p, fn.id, fn.id ? fn.label : "");
+            if (plan) {
+              addFloorPlan(plan);
+              setSaved(plan.id);
+            }
+          }}>Save as a floor plan</button>
+        )}
+        {saved && <a className="text-xs" href={`#/plans/${saved}/layout`}>Saved in Floor Plans →</a>}
+        {mode === "layout" && (
+          <button type="button" className="btn-ghost btn-sm ml-auto" onClick={() => setTutorial(startTutorial())}>🎓 Tutorial</button>
+        )}
         {layout && (
-          <div className="ml-auto flex overflow-hidden rounded-sm border border-solid border-line" role="group" aria-label="View">
+          <div className="flex overflow-hidden rounded-sm border border-solid border-line" role="group" aria-label="View">
             {(["2d", "3d"] as const).map((m) => (
-              <button key={m} type="button" aria-pressed={view.mode === m} onClick={() => setView({ mode: m })}
+              <button key={m} type="button" data-tutorial={m === "3d" ? "view-3d" : undefined} aria-pressed={view.mode === m} onClick={() => { setView({ mode: m }); if (m === "3d") emit("3d"); }}
                 className={`border-0 px-4 py-1.5 text-sm font-medium ${view.mode === m ? "bg-primary text-on-primary" : "bg-card text-ink-2"}`}>
                 {m.toUpperCase()}
               </button>
@@ -79,12 +110,13 @@ export default function VenuePlan({ p, mode, onUpdate }: { p: Proposal; mode: "l
           <p className="m-0 text-xs text-stone">3D is for looking round. Switch to 2D to {mode === "layout" ? "move or change things" : "seat guests"}.</p>
         </Suspense>
       ) : mode === "layout" ? (
-        <LayoutEditor key={fn.id} p={p} fnId={fn.id} onSave={(l) => onUpdate((cur) => setLayout(cur, fn.id, l))} />
+        <LayoutEditor key={fn.id} p={p} fnId={fn.id} onSave={(l) => onUpdate((cur) => setLayout(cur, fn.id, l))} onEvent={emit} />
       ) : (
         <Suspense fallback={<p className="hint" role="status">Opening seating…</p>}>
           <SeatingBoard key={fn.id} p={p} fnId={fn.id} onUpdate={onUpdate} />
         </Suspense>
       )}
+      {tut && <PlanTutorial state={tut} onChange={setTutorial} onClose={() => setTutorial(null)} />}
     </div>
   );
 }

@@ -116,6 +116,11 @@ export default function ItemNode(props: ItemNodeProps) {
       {/* the body */}
       {it.kind === "row" ? (
         <Rect x={-it.w / 2} y={-it.h / 2} width={it.w} height={it.h} fill="rgba(0,0,0,0.001)" stroke={selected || clash || highlight ? stroke : undefined} strokeWidth={1.5} strokeScaleEnabled={false} />
+      ) : k.round && k.zone ? (
+        <>
+          <Ellipse radiusX={it.w / 2} radiusY={it.h / 2} fill={it.kind === "pillar" ? c.paper2 : c.goldSoft} stroke={stroke} strokeWidth={sw} strokeScaleEnabled={false} {...shadow} />
+          {real && <ZoneDetail it={it} c={c} />}
+        </>
       ) : k.round ? (
         <>
           <Ellipse radiusX={it.w / 2} radiusY={it.h / 2} stroke={stroke} strokeWidth={sw} strokeScaleEnabled={false} {...shadow}
@@ -214,6 +219,50 @@ function ZoneDetail({ it, c }: { it: LayoutItem; c: Colors }) {
       );
     case "photo":
       return <Rect x={-w + 0.25} y={-h + 0.25} width={Math.max(0, it.w - 0.5)} height={Math.max(0, it.h - 0.5)} {...line} />;
+    case "aisle": {
+      // a runner: gold borders down the long sides and petals scattered along it
+      const long = it.h >= it.w;
+      const n = Math.max(2, Math.min(40, Math.floor(Math.max(it.w, it.h) / 0.8)));
+      return (
+        <>
+          <Rect x={-w + 0.08} y={-h + 0.08} width={Math.max(0, it.w - 0.16)} height={Math.max(0, it.h - 0.16)} {...line} />
+          {Array.from({ length: n }, (_, i) => {
+            const t = -0.5 + (i + 0.5) / n;
+            const side = i % 2 ? 0.22 : -0.22;
+            return <Circle key={i} x={long ? side * it.w : t * it.w} y={long ? t * it.h : side * it.h} radius={0.06} fill={c.gold} listening={false} />;
+          })}
+        </>
+      );
+    }
+    case "pillar":
+      return <Circle radius={Math.min(w, h) * 0.6} {...line} />;
+    case "plant":
+      return <>{Array.from({ length: 6 }, (_, i) => <Circle key={i} x={Math.cos((i / 6) * Math.PI * 2) * w * 0.5} y={Math.sin((i / 6) * Math.PI * 2) * h * 0.5} radius={Math.min(w, h) * 0.22} fill={c.card} {...line} />)}</>;
+    case "sofa": {
+      // backrest along the top edge and seat cushions
+      const n = Math.max(1, Math.round(it.w / 0.75));
+      return (
+        <>
+          <Rect x={-w} y={-h} width={it.w} height={it.h * 0.28} cornerRadius={0.08} fill={c.taupe} listening={false} />
+          {Array.from({ length: n }, (_, i) => (
+            <Rect key={i} x={-w + 0.06 + (it.w - 0.12) * (i / n)} y={-h + it.h * 0.32} width={(it.w - 0.12) / n - 0.06} height={it.h * 0.6} cornerRadius={0.08} fill={c.card} {...line} />
+          ))}
+        </>
+      );
+    }
+    case "screen":
+      return <Rect x={-w + 0.04} y={-h + 0.04} width={Math.max(0, it.w - 0.08)} height={Math.max(0, it.h - 0.08)} fill={c.ink} listening={false} />;
+    case "desk":
+      return <Line points={[-w + 0.15, h * 0.4, w - 0.15, h * 0.4]} {...line} />;
+    case "gifts":
+      return <>{[-0.5, 0, 0.5].map((f, i) => <Rect key={i} x={f * w - 0.15} y={-0.15} width={0.3} height={0.3} fill={c.card} {...line} />)}</>;
+    case "kids":
+      return (
+        <>
+          <Rect x={-w + 0.2} y={-h + 0.2} width={Math.max(0, it.w - 0.4)} height={Math.max(0, it.h - 0.4)} {...line} dash={[4, 3]} />
+          {[[-0.3, -0.25], [0.25, -0.1], [-0.1, 0.3], [0.3, 0.28]].map(([fx, fy], i) => <Circle key={i} x={fx * it.w} y={fy * it.h} radius={0.25} fill={c.card} {...line} />)}
+        </>
+      );
     case "entrance":
       return (
         <>
