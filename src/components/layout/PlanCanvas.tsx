@@ -3,7 +3,7 @@
 // Colours come from the theme's CSS tokens and are re-read when the theme changes. Loaded lazily with Konva.
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState, type ReactNode } from "react";
 import Konva from "konva";
-import { Group, Layer, Line, Rect, Stage, Text, Transformer } from "react-konva";
+import { Group, Image as KImage, Layer, Line, Rect, Stage, Text, Transformer } from "react-konva";
 import type { KonvaEventObject } from "konva/lib/Node";
 import type { LayoutItem, VenueLayout } from "../../types";
 import { KINDS, bounds, boxSelect, clampToRoom, distance, drawOrder, isTable, itemsAt, resizeItem, snap, snapGuides, type Guide } from "../../lib/layout";
@@ -105,6 +105,13 @@ interface Props {
   tool?: "select" | "hand" | "measure";
   /** fill the container's height (fullscreen) instead of keeping a 16:10 plan */
   fill?: boolean;
+  /** a venue drawing under the plan (object URL and its place in room metres) */
+  backdrop?: { url: string; x: number; y: number; w: number; h: number; opacity: number } | null;
+  /** the drawing can be dragged into place; the items don't take clicks meanwhile */
+  backdropEdit?: boolean;
+  onBackdropMove?: (x: number, y: number) => void;
+  /** a measurement was finished (room metres), for setting a drawing's scale */
+  onMeasured?: (a: { x: number; y: number }, b: { x: number; y: number }) => void;
   rulers?: boolean;
   minimap?: boolean;
 }
@@ -113,7 +120,7 @@ const coarse = () => typeof window !== "undefined" && window.matchMedia?.("(poin
 const r2 = (n: number) => Math.round(n * 100) / 100;
 
 const PlanCanvas = forwardRef<CanvasHandle, Props>(function PlanCanvas(props, ref) {
-  const { layout, mode, selected = [], clash, grid = true, seatTone, seatTitle, highlight, tableTitle, onSelect, onEdit, onTableClick, onMenu, overlay, ariaLabel, look = "realistic", seatName, tool = "select", rulers = false, minimap = false, fill = false } = props;
+  const { layout, mode, selected = [], clash, grid = true, seatTone, seatTitle, highlight, tableTitle, onSelect, onEdit, onTableClick, onMenu, overlay, ariaLabel, look = "realistic", seatName, tool = "select", rulers = false, minimap = false, fill = false, backdrop, backdropEdit = false, onBackdropMove, onMeasured } = props;
   const [measure, setMeasure] = useState<{ a: { x: number; y: number }; b: { x: number; y: number }; live: boolean } | null>(null);
   useEffect(() => {
     if (tool !== "measure") setMeasure(null);
@@ -454,7 +461,10 @@ const PlanCanvas = forwardRef<CanvasHandle, Props>(function PlanCanvas(props, re
       pan.current = null;
       setPanning(false);
     }
-    if (measure?.live) setMeasure({ ...measure, live: false });
+    if (measure?.live) {
+      setMeasure({ ...measure, live: false });
+      if (distance(measure.a, measure.b) > 0.05) onMeasured?.(measure.a, measure.b);
+    }
     if (!marquee) return;
     setMarquee(null);
     if (!boxBig(marquee)) return;
@@ -529,7 +539,12 @@ const PlanCanvas = forwardRef<CanvasHandle, Props>(function PlanCanvas(props, re
             <Text x={5.3} y={-0.2} text={`5 m · room ${layout.w} × ${layout.h} m`} fontSize={0.38} fill={c.stone} fontFamily="Inter, system-ui, sans-serif" />
           </Group>
         </Layer>
-        <Layer>
+        {backdrop && (
+          <Layer listening={backdropEdit}>
+            <BackdropImage {...backdrop} draggable={backdropEdit} onMove={onBackdropMove} />
+          </Layer>
+        )}
+        <Layer listening={!backdropEdit}>
           {/* an invisible floor so clicks on the room count as "the floor" */}
           <Rect name="floor" x={0} y={0} width={layout.w} height={layout.h} fill="transparent" />
           {visible.map((it) => (
@@ -587,3 +602,23 @@ const PlanCanvas = forwardRef<CanvasHandle, Props>(function PlanCanvas(props, re
 });
 
 export default PlanCanvas;
+
+/** the venue drawing, loaded from its object URL */
+function BackdropImage({ url, x, y, w, h, opacity, draggable, onMove }: { url: string; x: number; y: number; w: number; h: number; opacity: number; draggable: boolean; onMove?: (x: number, y: number) => void }) {
+  const [img, setImg] = useState<HTMLImageElement | null>(null);
+  useEffect(() => {
+    const i = new window.Image();
+    i.onload = () => setImg(i);
+    i.src = url;
+    return () => {
+      i.onload = null;
+    };
+  }, [url]);
+  if (!img) return null;
+  return (
+    <KImage image={img} x={x} y={y} width={w} height={h} opacity={opacity} draggable={draggable}
+      onMouseEnter={(e) => { if (draggable) e.target.getStage()!.container().style.cursor = "move"; }}
+      onMouseLeave={(e) => { e.target.getStage()!.container().style.cursor = e.target.getStage()!.getAttr("baseCursor") ?? "default"; }}
+      onDragEnd={(e) => onMove?.(Math.round(e.target.x() * 100) / 100, Math.round(e.target.y() * 100) / 100)} />
+  );
+}

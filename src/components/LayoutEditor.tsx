@@ -16,6 +16,8 @@ import { fitSeats, setSeatsFor } from "../lib/inventory";
 import CountsPanel from "./layout/CountsPanel";
 import KindIcon from "./layout/KindIcon";
 import LayersPanel from "./layout/LayersPanel";
+import { saveBackdrop, useBackdropUrl } from "../state/backdrops";
+import { calibrate, placeBackdrop, roomForBackdrop } from "../lib/backdrop";
 
 const PlanCanvas = lazy(() => import("./layout/PlanCanvas"));
 
@@ -72,7 +74,11 @@ function Editor({ initial, p, onSave, onEvent, full }: { initial: VenueLayout; p
   const [layers, setLayers] = useState(false);
   const { venues, brand } = useConfig();
   const emit = (e: TutorialEvent) => onEvent?.(e);
-  const [pop, setPop] = useState<"tables" | "inventory" | null>(null);
+  const [pop, setPop] = useState<"tables" | "inventory" | "background" | null>(null);
+  // the venue drawing: moving it, and setting its scale from a measured wall
+  const [moveBackdrop, setMoveBackdrop] = useState(false);
+  const [calibrating, setCalibrating] = useState(false);
+  const backdropFile = useRef<HTMLInputElement>(null);
   const [bulk, setBulk] = useState({ seats: 8, guests: 0, kind: "round" as "round" | "rect" | "all" });
   const [layout, setLayout] = useState(initial);
   const [sel, setSel] = useState<string[]>([]);
@@ -120,6 +126,46 @@ function Editor({ initial, p, onSave, onEvent, full }: { initial: VenueLayout; p
     onSave(next);
   };
   const setItems = (items: LayoutItem[]) => commit({ ...layout, items });
+  const backdropUrl = useBackdropUrl(layout.backdrop?.imageId);
+  const setBackdrop = (patch: Partial<NonNullable<VenueLayout["backdrop"]>> | null) =>
+    commit(patch === null ? { ...layout, backdrop: undefined } : { ...layout, backdrop: { ...layout.backdrop!, ...patch } });
+  const uploadBackdrop = async (file: File) => {
+    setSaving(true);
+    try {
+      const { isPdf, pdfPages, prepareBackdrop } = await import("../lib/backdropImage");
+      let page = 1;
+      if (isPdf(file)) {
+        const n = await pdfPages(file);
+        if (n > 1) {
+          const a = window.prompt(`This PDF has ${n} pages. Which page is the floor plan?`, "1");
+          if (a === null) return;
+          page = Math.min(n, Math.max(1, Math.round(Number(a)) || 1));
+        }
+      }
+      const img = await prepareBackdrop(file, page);
+      const id = `bd-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
+      await saveBackdrop(id, img.blob);
+      const prev = layout.backdrop;
+      // the same drawing again (another device): keep where it was and its scale
+      const next = prev && backdropUrl === "missing" ? { ...prev, imageId: id, name: file.name } : { ...placeBackdrop(id, img, layout, file.name), ...(prev ? { opacity: prev.opacity } : {}) };
+      commit({ ...layout, backdrop: next });
+      setNote(prev && backdropUrl === "missing" ? "Drawing restored." : "Drawing added. Use Set the scale on a wall you know, then trace over it.");
+    } catch (e) {
+      setNote((e as Error).message || "That file couldn't be used.");
+    } finally {
+      setSaving(false);
+    }
+  };
+  const onMeasured = (a: { x: number; y: number }, b: { x: number; y: number }) => {
+    if (!calibrating || !layout.backdrop) return;
+    const answer = window.prompt(`You measured ${Math.hypot(b.x - a.x, b.y - a.y).toFixed(2)} m on the drawing. How long is it really, in metres?`);
+    setCalibrating(false);
+    setTool("select");
+    const m = Number(answer?.replace(",", "."));
+    if (!answer || !(m > 0)) return setNote("Scale not changed.");
+    commit({ ...layout, backdrop: calibrate(layout.backdrop, a, b, m) });
+    setNote(`Drawing scaled: that length is now ${m} m.`);
+  };
   const patchItems = (ids: string[], fn: (it: LayoutItem) => LayoutItem) => setItems(layout.items.map((it) => (ids.includes(it.id) ? clampToRoom(fn(it), layout) : it)));
 
   const selected = layout.items.filter((i) => sel.includes(i.id));
@@ -210,6 +256,8 @@ function Editor({ initial, p, onSave, onEvent, full }: { initial: VenueLayout; p
       setMenu(null);
       setSel([]);
       if (tool === "measure") setTool("select");
+      setCalibrating(false);
+      setMoveBackdrop(false);
     } else if (!mod && key === "m") setTool((t) => (t === "measure" ? "select" : "measure"));
     else if (!mod && key === "v") setTool("select");
     else if (!mod && key === "h") setTool("hand");
@@ -312,6 +360,7 @@ function Editor({ initial, p, onSave, onEvent, full }: { initial: VenueLayout; p
           <ToolBtn label="Add a grid of tables" onClick={() => setArrayOpen(true)}>▦ Grid of tables</ToolBtn>
           <ToolBtn label="Number the tables left to right, top to bottom" onClick={() => setItems(renumberTables(layout.items))}>1·2·3 Renumber</ToolBtn>
           <span data-tutorial="bulk-seats"><ToolBtn label="Set chairs for many tables" pressed={pop === "tables"} onClick={() => setPop(pop === "tables" ? null : "tables")}>Tables ▾</ToolBtn></span>
+          <ToolBtn label="Venue drawing to trace over" pressed={pop === "background" || moveBackdrop || calibrating} onClick={() => setPop(pop === "background" ? null : "background")}>🗺 Background ▾</ToolBtn>
           <span data-tutorial="inventory"><ToolBtn label="Inventory for the vendor" pressed={pop === "inventory"} onClick={() => setPop(pop === "inventory" ? null : "inventory")}>Inventory ▾</ToolBtn></span>
           <ToolBtn label="Download the plan as an image" disabled={saving} onClick={async () => {
             setSaving(true);
@@ -355,6 +404,49 @@ function Editor({ initial, p, onSave, onEvent, full }: { initial: VenueLayout; p
             </div>
           </div>
         )}
+        {pop === "background" && (
+          <div data-plan-menu className="mb-2 grid gap-3 rounded-md border border-solid border-line bg-card p-3 text-sm">
+            <input ref={backdropFile} type="file" accept="image/png,image/jpeg,image/webp,application/pdf,.pdf" hidden
+              onChange={(e) => { const file = e.target.files?.[0]; e.target.value = ""; if (file) void uploadBackdrop(file); }} />
+            {!layout.backdrop ? (
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="mr-auto text-ink-2">Put the venue's floor plan (a photo, scan or PDF page) under your plan, set its scale from one wall you know, and trace over it.</span>
+                <button type="button" className="btn-primary btn-sm" disabled={saving} onClick={() => backdropFile.current?.click()}>{saving ? "Preparing…" : "Upload image or PDF"}</button>
+              </div>
+            ) : (
+              <>
+                {backdropUrl === "missing" && (
+                  <p className="m-0 rounded-sm bg-danger-soft px-2 py-1.5 text-xs text-danger-ink">
+                    The drawing{layout.backdrop.name ? ` "${layout.backdrop.name}"` : ""} isn't on this device. Upload it again; it goes back where it was, at the same scale.
+                  </p>
+                )}
+                <div className="flex flex-wrap items-center gap-2">
+                  <label className="flex items-center gap-2 text-ink-2">
+                    Opacity
+                    <input type="range" min={10} max={100} step={5} value={Math.round(layout.backdrop.opacity * 100)} aria-label="Drawing opacity"
+                      onChange={(e) => setLayout({ ...layout, backdrop: { ...layout.backdrop!, opacity: Number(e.target.value) / 100 } })}
+                      onPointerUp={() => onSave(latest.current)} onKeyUp={() => onSave(latest.current)} />
+                  </label>
+                  <button type="button" className="btn-ghost btn-sm" onClick={() => setBackdrop({ hidden: layout.backdrop!.hidden ? undefined : true })}>{layout.backdrop.hidden ? "Show" : "Hide"}</button>
+                  <button type="button" className={`btn-sm ${moveBackdrop ? "btn-primary" : "btn-ghost"}`} aria-pressed={moveBackdrop} disabled={!!layout.backdrop.hidden} onClick={() => { setMoveBackdrop(!moveBackdrop); setSel([]); }}>{moveBackdrop ? "Done moving" : "Move it"}</button>
+                  <button type="button" className={`btn-sm ${calibrating ? "btn-primary" : "btn-ghost"}`} aria-pressed={calibrating} disabled={!!layout.backdrop.hidden} onClick={() => {
+                    const on = !calibrating;
+                    setCalibrating(on);
+                    setTool(on ? "measure" : "select");
+                    setMoveBackdrop(false);
+                    if (on) setNote("Drag along a wall or length you know on the drawing; you'll be asked how long it really is.");
+                  }}>📏 Set the scale</button>
+                  <button type="button" className="btn-ghost btn-sm" title="Resize the room to the drawing and move the drawing to the corner" onClick={() => commit(roomForBackdrop(layout))}>Fit the room to it</button>
+                </div>
+                <div className="flex flex-wrap items-center gap-2 text-xs text-stone">
+                  <span className="mr-auto">{layout.backdrop.name ? `${layout.backdrop.name} · ` : ""}{layout.backdrop.w} × {layout.backdrop.h} m on the plan</span>
+                  <button type="button" className="link-btn" disabled={saving} onClick={() => backdropFile.current?.click()}>{backdropUrl === "missing" ? "Upload it again" : "Replace"}</button>
+                  <button type="button" className="link-btn link-danger" onClick={() => { setMoveBackdrop(false); setCalibrating(false); setBackdrop(null); }}>Remove</button>
+                </div>
+              </>
+            )}
+          </div>
+        )}
         {pop === "inventory" && (
           <div data-plan-menu className="mb-2 flex flex-wrap items-center gap-2 rounded-md border border-solid border-line bg-card p-3 text-sm">
             <span className="mr-auto text-ink-2">Chairs, tables, linens, centrepieces and décor with sizes, for the rental vendor.</span>
@@ -379,6 +471,10 @@ function Editor({ initial, p, onSave, onEvent, full }: { initial: VenueLayout; p
             <PlanCanvas
               ref={canvas}
               fill={full}
+              backdrop={layout.backdrop && !layout.backdrop.hidden && backdropUrl && backdropUrl !== "missing" ? { url: backdropUrl, ...layout.backdrop } : null}
+              backdropEdit={moveBackdrop}
+              onBackdropMove={(x, y) => setBackdrop({ x, y })}
+              onMeasured={onMeasured}
               layout={layout}
               mode="edit"
               selected={sel}
